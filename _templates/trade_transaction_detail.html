@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+{% spaceless %}
+<h4>Who</h4>
+<dl class="transaction">
+	<dt>Character</dt><dd>{{ transaction.character }}</dd>
+	<dt>Client</dt><dd>{{ transaction.client }}</dd>
+</dl>
+<h4>When</h4>
+<dl class="transaction">
+	<dt>Time</dt><dd>{{ transaction.time }}</dd>
+</dl>
+<h4>What</h4>
+<dl class="transaction">
+	<dt>Item</dt><dd><a href="{{ transaction.item.get_absolute_url }}">{{ transaction.item }}</a></dd>
+	<dt>Sold?</dt><dd>{% if transaction.sold %} Yes {% else %} No {% endif %}</dd>
+	<dt>Quantity</dt><dd>{{ transaction.quantity }}</dd>
+	<dt>Price</dt><dd>{{ transaction.price|isk }}</dd>
+	<dt>Total</dt><dd>{{ transaction.total|isk }}</dd>
+<h4>Where</h4>
+<dl class="transaction">
+	<dt>Station</dt><dd><a href="{{ transaction.station.get_absolute_url }}">{{ transaction.station }}</a></dd>
+	<dt>Solar System</dt><dd><a href="{{ transaction.station.solarsystem.get_absolute_url }}">
+	                          {{ transaction.station.solarsystem }}</a></dd>
+	<dt>Constellation</dt><dd><a href="{{ transaction.station.constellation.get_absolute_url }}">
+	                           {{ transaction.station.constellation }}</a></dd>
+	<dt>Region</dt><dd><a href="{{ transaction.region.get_absolute_url }}">
+	                           {{ transaction.region }}</a></dd>
+</dl>
+</ul>
+{% endspaceless %}
+{% endblock %}

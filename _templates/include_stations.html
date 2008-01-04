@@ -1,0 +1,22 @@
+{% load trade %}
+
+{% expr item.stations.count() < 20 as shouldprint %} 
+{% if shouldprint %}
+    <div id="stations">
+    <h4>Stations</h4>
+    {% if item.stations.count %}
+        <table>
+        <tr><th>System</th><th>Station</th></tr>
+        {% for s in item.stations.all %}
+            <tr>
+            	<td><a href="{{ s.solarsystem.get_absolute_url }}">{{ s.solarsystem }}</a></td>
+            	<td>{{ s.name }}</td>
+            </tr>
+        {% endfor %}
+        </tr>
+        </table>
+    {% else %}
+      <p>No staitons.</p>
+    {% endif %}
+    </div>
+{% endif %}

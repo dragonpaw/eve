@@ -1,0 +1,58 @@
+-- MySQL dump 10.10
+--
+-- Host: localhost    Database: trinity
+-- ------------------------------------------------------
+-- Server version	5.0.24a-log
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `mapUniverse`
+--
+
+DROP TABLE IF EXISTS `mapUniverse`;
+CREATE TABLE `mapUniverse` (
+  `universeID` int(11) NOT NULL default '0',
+  `universeName` char(100) default NULL,
+  `x` double default NULL,
+  `y` double default NULL,
+  `z` double default NULL,
+  `xMin` double default NULL,
+  `xMax` double default NULL,
+  `yMin` double default NULL,
+  `yMax` double default NULL,
+  `zMin` double default NULL,
+  `zMax` double default NULL,
+  `radius` double default NULL,
+  PRIMARY KEY  (`universeID`)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `mapUniverse`
+--
+
+
+/*!40000 ALTER TABLE `mapUniverse` DISABLE KEYS */;
+LOCK TABLES `mapUniverse` WRITE;
+INSERT INTO `mapUniverse` VALUES (9,'',-7.8414612025763e+16,4.00068382454404e+16,1.87911133534779e+16,-4.49013589606488e+17,2.92184365554962e+17,-3.13915018760047e+16,1.11405178366885e+17,-4.33602446107849e+17,4.71184672814804e+17,4.52393559461327e+17);
+UNLOCK TABLES;
+/*!40000 ALTER TABLE `mapUniverse` ENABLE KEYS */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block title %} Market Indexes {% endblock %}
+
+{% block content %}
+{% spaceless %}
+<ul class="links">
+    {% for i in indexes %}
+	    <li class="index"><a href="{{ i.get_absolute_url }}">
+	    {{ i.name }}
+	    <span class="items">{{ i.items.count }} Items</span>
+	    <br>
+	    <span class="url">{{ i.url }}</span>
+	    </a>
+	    </li>
+    {% endfor %}
+</ul>
+{% endspaceless %}
+{% endblock %}

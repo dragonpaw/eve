@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}
+<!-- {{ blueprints|pprint }} -->
+<p><a href="/trade/blueprints/edit/">Add a blueprint to your owned list.</a></p>
+<ul class="links">
+{% for b in blueprints %}
+	<li class="blueprint"><a href="/trade/blueprints/edit/{{ b.blueprint.id }}/">
+		<img src="{{ b.blueprint.icon32 }}">
+    	<span class="name">{{ b.blueprint.blueprint_makes.name }}</span>
+    	{% if b.original %}
+        	<span class="original">Original</span>
+    	{% else %}
+        	<span class="copy">Copy</span>
+    	{% endif %}
+    	<br>
+    	<span class="me">ME:{{ b.me }}</span>
+    	<span class="pe">PE:{{ b.pe }}</span>
+    	<span class="waste">Waste: {{ b.waste_display }}</span>
+    	</a>
+    </li>
+{% endfor %}
+</ul>
+{% endblock %}

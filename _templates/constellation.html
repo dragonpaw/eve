@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}
+{% spaceless %}
+<div class="item">
+    <div class="item-description">
+        <h3>{{ item.name }}</h3>
+    </div>
+    <div class="item-details">
+    <h4>Details</h4>
+    <dl>
+        <dt>Region:</dt><dd><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></dd>
+        <dt>Systems:</dt><dd>{{ item.solarsystems.count }}</dd>
+    </dl>
+    </div>
+    
+    <div class="item-materials">
+    <h4>Systems</h4>
+	<ul class="links" >
+	{% for o in item.solarsystems.all %}
+    	<li class="constellation">
+        	<a href="{{ o.get_absolute_url }}">
+            <img src="{{ o.icon32 }}">
+            {% expr o.security < 0.5 as lowsec %}
+            <span class="security-{% if lowsec %}low{% else %}high{% endif %}">
+            {{ o.name }}
+            <span class="security">({{ o.security|floatformat:3 }})</span>
+            </span>
+            <br>
+            {% expr o.stations.count() == 1 as singlestation %}
+            {% if singlestation %}<span class="stations">{{ o.stations.all.0.name }}</span>{% else %}
+            {% if o.stations.count %}<span class="stations">Stations: {{ o.stations.count }}</span>{% endif %}
+            {% endif %}
+            <!--  <span class="faction">{{ o.faction }}</span>  -->
+            <span class="belts">B: {{ o.belts.count }}</span>
+            <span class="moons">M: {{ o.moons.count }}</span>
+        	</a>
+    	</li>
+	{% endfor %}
+	</ul>
+
+    {% include "include_stations.html" %}
+    
+</div>
+{% endspaceless %}
+{% endblock %}

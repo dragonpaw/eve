@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}{% spaceless %}
+<!-- pos: {{ pos|pprint }} --> 
+<h4>{{ pos.moon }}</h4>
+<p>{{ pos.note }}</p>
+	<dl class="pos">
+	<dt>Owning corp</dt><dd>{{ pos.corporation }}</dd>
+	<dt>Depot</dt><dd>{{ pos.depot }}</dd>
+	<dt>Online time</dt><dd>{{ pos.online_time }}</dd>
+	<dt>State</dt>
+	{% if pos.is_online %}<dd class="online">{% else %}<dd class="offline">{% endif %}
+	{{ pos.state_name }}</dd>
+	<dt>State time</dt><dd>{{ pos.state_time }}</dd>
+	<dt>Solar System</dt><dd><a href="{{ pos.solarsystem.get_absolute_url }}">{{ pos.solarsystem }}</a></dd>
+	<dt>Constellation</dt><dd><a href="{{ pos.constellation.get_absolute_url }}">{{ pos.constellation }}</a></dd>
+	<dt>Region</dt><dd><a href="{{ pos.region.get_absolute_url }}">{{ pos.region }}</a></dd>
+	<dt>Tower Type</dt><dd><a href="{{ pos.tower.get_absolute_url }}">{{ pos.tower }}</a></dd>
+	<dt>Corporation use</dt>
+		{% if pos.corporation_use %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
+	<dt>Alliance use</dt>
+		{% if pos.alliance_use %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
+	<dt>Claiming Sovereignty</dt>
+		{% if pos.claim %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
+	<dt>Attack standing below</dt>
+		{% if pos.attack_standing_value %}<dd class="enabled">{{ pos.attack_standing_value }}{% else %}<dd class="disabled">Disabled{% endif %}</dd>
+	<dt>Attack sec status below</dt>
+		{% if pos.attack_secstatus_value %}<dd class="enabled">{{ pos.attack_secstatus_value }}{% else %}<dd class="disabled">Disabled{% endif %}</dd>
+	<dt>Attack at war</dt>
+		{% if pos.attack_atwar %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
+	<dt>Attack on aggression</dt>
+		{% if pos.attack_aggression %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
+	<dt>Deployment flag</dt><dd>{{ pos.deploy_flags }}</dd>
+	<dt>Usage flag</dt><dd>{{ pos.usage_flags }}</dd>
+	</dl>
+<h4>Fuel Loaded</h4>
+  <table class="pos-fuel">
+    <tr><th>Fuel</th><th>Qty</th><th>Burn</th><th>Remaining</th></tr>
+	{% for fuel in pos.fuel.all %}
+	<tr>
+	  <td><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></td>
+	  <td class="quantity">{{ fuel.quantity|comma }}</td>
+	  <td class="rate">{{ fuel.max_consumption|comma }}</td>
+	  {% expr fuel.type in pos.fuel_needed as lowest %}
+	  <td class="remaining{% if lowest %} lowest{% endif %}">{{ fuel.time_remaining|time }}</td>
+	</tr>  
+	{% endfor %}
+  <tr><th class="runtime" colspan=3>Remaining runtime</th><th class="runtime remaining">{{ pos.time_remaining|time }}</th></tr>
+  </table>
+  <p>NOTE: At this time, sovergnity discounts are not being included in calculations. Please add 25% (sov 2) or 30% (sov 3) to the runtime.</p>
+{% endspaceless %}
+{% endblock %}

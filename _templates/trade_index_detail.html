@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}
+{% spaceless %}
+<h4>{{ index.name }}</h4>
+<p>Taken from: <a href="{{ index.url }}">{{ index.url }}</a></p>
+<ul class="links">
+	{% for i in values %}
+	<li class="index">
+		<a href="{{ i.item.get_absolute_url }}">
+		<img src="{{ i.item.graphic.icon32 }}">
+		{{ i.item.name }}<br>
+		<span class="price">{{ i.value|floatformat:2|comma }}</span>
+		</a>
+	</li>
+	{% endfor %}
+</ul>
+{% endspaceless %}
+{% endblock %}

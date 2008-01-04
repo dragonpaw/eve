@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+{% spaceless %}
+<ul class="links" >
+{% for o in objects %}
+    <li class="region">
+        <a href="{{ o.get_absolute_url }}">
+            <img src="{{ o.icon32 }}">{{ o.name }}<br>
+            <span class="faction">{{ o.faction }}</span>
+        </a>
+    </li>
+{% endfor %}
+</ul>
+{% endspaceless %}
+{% endblock %}

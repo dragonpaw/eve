@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<ul class="links" >
+{% for o in objects %}
+    <li>
+        <a href="{{ o.get_absolute_url }}">
+            <img src="{{ o.icon32 }}">{{ o.name }}
+        </a>
+    </li>
+{% endfor %}
+</ul>
+<!--
+        <li class="pagination">
+        	<a href="http://digg.com/iphone?page=4" class="next">Page 4</a>
+        	<a href="http://digg.com/iphone?page=2" class="previous">Page 2</a>
+        	<strong>3</strong>
+        </li>
+-->
+{% endblock %}
+
