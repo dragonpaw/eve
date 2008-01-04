@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}
+<!-- poses: {{ poses|pprint }} --> 
+{% if poses %}
+{% for corp in poses %}
+<!-- corp: {{ corp|pprint }} -->
+<h4>{{ corp.name }}</h4>
+	<ul class="links">
+	{% for pos in corp.pos %}
+		<li class="pos">{% spaceless %}
+			<a href="{{ pos.get_absolute_url }}">
+			<img src="{{ pos.tower.icon32 }}">
+			{{ pos.moon }}
+    		{% if pos.is_online %}
+	        	<span class="state online">Online</span>
+    		{% else %}
+	        	<span class="state offline">{{ pos.state_name }}</span>
+    		{% endif %}
+    		<br>
+    		<span class="type">{{ pos.tower }}</span>
+    		{% expr pos.time_remaining.days >= 2 as runtime_good %}
+    		{% if runtime_good %}
+    		<span class="runtime runtime-good">{{ pos.time_remaining|time }}</span>
+    		{% else %}
+    		<span class="runtime runtime-bad">{{ pos.time_remaining|time }}</span>
+    		{% endif %}
+    		</a>
+    	</li>{% endspaceless %}
+	{% endfor %}
+	</ul>
+{% endfor %}
+<p>NOTE: At this time, sovergnity discounts are not being included in calculations. Please add 25% (sov 2) or 30% (sov 3) to the runtime.</p>
+{% else %}
+<p>You are not director in any corporation owning a station.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block title %} Item: {{ item.name }} {% endblock %}
+
+{% block content %}
+{% spaceless %}
+<div class="item">
+    <div class="item-description">
+        <h3>{{ item.name }}</h3>
+        {% if item.is_blueprint %}
+        <p>{{ item.blueprint_makes.description }}</p>
+        {% else %}
+        {% if item.description %}
+        <p>{{ item.description|markdown }}</p>
+        {% else %}
+        <p>No description</p>
+        {% endif %}
+        {% endif %}
+        <img src="{{ item.icon64 }}" class="icon">
+    </div>
+    <div class="item-details">
+    <h4>Details</h4>
+    <dl>
+    {% if item.is_blueprint %}
+        <dt>Batch Size:</dt><dd>{{ item.blueprint_makes.portionsize }}</dd>
+        <dt>Tech Level:</dt><dd>{{ item.blueprint_details.techlevel }}</dd>
+        <dt>Production Time:</dt><dd>{{ item.blueprint_details.productiontime|time }}</dd>
+        <dt>Research, material:</dt><dd>{{ item.blueprint_details.researchmaterialtime|time }}</dd>
+        <dt>Research, productivity:</dt><dd>{{ item.blueprint_details.researchproductivitytime|time }}</dd>
+        <dt>Research, copy:</dt><dd>{{ item.blueprint_details.researchcopytime|time }}</dd>
+        <dt>Base Waste Factor:</dt><dd>{{ item.blueprint_details.wastefactor }} %</dd>
+    {% else %}
+        {% for a in attributes %}
+        {% if a.value and a.displayname %}
+            <!-- AttID: {{ a.id }} UnitID: {{ a.unit.id }} GraphicID: {{ a.graphic.id }} -->
+            <dt><img src="{{ a.graphic.icon16 }}">{{ a.name }}</dt><dd>{{ a.display_value }}</dd>
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+    </dl>
+    </div>
+    
+    {% if item.blueprint %}
+    <div class="item-blueprint">
+    <!-- Blueprint: {{ blueprint|pprint }} -->
+    <h4>Blueprint</h4>
+    {% if not item.is_blueprint %}
+    <p><a href="{{ item.blueprint.get_absolute_url }}">
+    <img src="{{ item.blueprint.icon32 }}">The blueprint for this is: 
+    {{ item.blueprint.name }}</a></p>
+    {% else %}
+    <p><img src="{{ item.blueprint_makes.icon32 }}">
+    <A href="{{ item.blueprint_makes.get_absolute_url }}">This blueprint makes the
+    {{ item.blueprint_makes.name }}</A></p>
+    {% endif %}
+    {% if blueprint %}
+    <p><a href="/blueprints/edit/{{ item.blueprint.id }}/">Edit owned blueprint.</a></p>
+    <dl>
+        <dt>Material Efficiency:</dt><dd>{{ blueprint.me }}</dd>
+        <dt>Production Efficiency:</dt><dd>{{ blueprint.pe }}</dd>
+        <dt>Calculated Waste:</dt><dd>{{ blueprint.waste_display }}</dd>
+        {% if blueprint.original %}
+        <dt>Original:</dt><dd>Yes</dd>
+        {% else %}
+        <dt>Original:</dt><dd>No</dd>
+        {% endif %}
+    </dl>
+    {% else %}
+    <p>You do not own this blueprint. 
+    <a href="/blueprints/edit/{{ item.blueprint.id }}/">Actually, I do.</a></p>
+    
+    {% endif %}
+    </div>
+    {% endif %}
+    
+    <!-- Materials: {{ materials|pprint }} -->
+    {% if materials %}
+    <div class="item-materials">
+    <h4>Materials{% ifnotequal item.portionsize 1 %} (per {{ item.portionsize }}){% endifnotequal %}</h4>
+        <table>
+        <tr><th></th>
+        {% for title in materials.titles %}
+            <th class="materials-qty">{{ title }}</th>
+        {% endfor %}
+        </tr>
+        {% for m in materials.materials %}
+        <!-- {{ m|pprint }} -->
+        <tr>
+            <td><img src="{{ m.material.icon16 }}"><a href="{{ m.material.get_absolute_url }}">{{ m.material.name }}</a></td>
+	        {% for v in m.values %}
+            <td class="materials-qty">{{ v|default:"N/A"|comma }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        {% if materials.isk %}
+        <tr><td>ISK{% ifnotequal item.portionsize 1 %} (Each){% endifnotequal %}</td>
+        {% for cost in materials.isk %}
+        <td class="materials-qty">{{ cost|default:"N/A"|isk }}</td>
+        {% endfor %}
+        </tr>
+        {% endif %}
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- Invention: {{ invention|pprint }} -->
+    {% if invention %}
+    <div class="item-invention">
+        <h4>Invention</h4>
+        <table>
+        <tr><th>Item</th><th>Quantity</th></tr>
+        {% for m in invention %}
+        <tr><td><img src="{{ m.0.icon16 }}"> <a
+         href="{{ m.0.get_absolute_url }}">{{ m.0.name }}</a></td>
+         <td class="materials-qty">{{ m.1 }}</td></tr>
+        {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    
+    <div class="item-index">
+    <h4>Market Indexes</h4>
+    {% if item.index_values.count %}
+    {% for i in item.index_values.all %}
+    <p>{{ i.index }} lists this item as {{ i.value|isk }}. (As of {{ i.date }}.)
+    {% endfor %}
+    {% else %}
+    <p>This item is not listed on any known indexes.</p>
+    {% endif %}
+    
+    <!-- Used to makes: {{ makes|pprint }} -->
+    {% if makes %}
+    <div class="item-makes">
+        <h4>Used to Manufacture</h4>
+        <table>
+        {% for i in makes %}
+        	<tr>
+            <td><A href="{{ i.item.get_absolute_url }}">{{ i.item }}</a></td>
+            <td class="materials-qty">{{ i.quantity }}</td>
+            </tr>
+        {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- Trade values: {{ values|pprint }} Best: {{ best_values|pprint }}-->
+    <div class="item-trade">
+    <h4>Trade values (for the last {{ time_span }})</h4>
+    {% if user.is_authenticated %}
+    {% if not values.items %}
+    <p>No recorded transactions for any of your characters.</p>
+    {% else %}
+    {% for key, value in values.items %}
+    <h5><a href="{{ value.region.get_absolute_url }}">{{ key }}</a></h5>            
+    <em>{{ value.gross|isk }}</em>
+    {% if value.sell_volume %}
+    <p>{{ value.sell_volume|comma }} units sold at average of
+    {{ value.sell_price|isk }}.</p>
+    {% else %}
+    <p>0 units sold.</p>
+    {% endif %}
+    {% if value.buy_volume %}
+    <p>{{ value.buy_volume|default:0|comma }} units bought at average of
+    {{ value.buy_price|default:0|isk }}.</p>
+    {% else %}
+    <p>0 units bought.</p>
+    {% endif %}
+    {% if value.profit_isk %}
+    <p>This works out to a per-unit resale profit of {{ value.profit_isk|isk }}
+    ({{ value.profit_pct|floatformat:2 }}%)</p>
+    {% endif %} <!-- if value.profit_isk -->                                                                                          
+    {% endfor %}<!-- for key, value in values.items -->
+    {% endif %}<!-- if not values.items : else -->
+    {% if best_values.sale or best_values.buy %}
+      <h5>Best Trades</h5>
+      <em>{{ best_values.gross|isk }}</em>
+    {% endif %}
+    {% if best_values.sell.sell_price %}
+      <p>Your best sale price was {{ best_values.sell.sell_price|isk }} in
+      {{ best_values.sell.region }}.</p>
+    {% endif %}
+    {% if best_values.buy.buy_price %}
+      <p>Your best buy price was {{ best_values.buy.buy_price|isk }} in
+      {{ best_values.buy.region }}.</p>
+    {% endif %}
+    {% if best_values.profit_isk %}
+        <p>This works out to a maximum possible per-unit profit of {{ best_values.profit_isk|isk }}
+    ({{ best_values.profit_pct|floatformat:2 }}%)</p>
+    {% endif %}
+    {% if best_values.manufacturing_profit_isk %}
+    <p>If you are to manufacture the item instead, your best per-unit profit is
+     {{ best_values.manufacturing_profit_isk|isk }} 
+    ({{ best_values.manufacturing_profit_pct|floatformat:2 }}%)</p>
+    {% endif %}
+    {% else %}<!-- if user.is_authenticated -->
+      <p>You have to log in if you want to see your transaction data.</p>
+    {% endif %}
+    </div>
+</div>
+{% endspaceless %}
+{% endblock %}

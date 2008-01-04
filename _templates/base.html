@@ -1,0 +1,40 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+{% load trade %}
+<title>{{ nav|title|safe }}</title>
+
+<meta name="viewport" content="width=320; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+<link rel="stylesheet" href="/static/iphone.css">
+{% block head %}{% endblock %}
+</head>
+<body orient="landscape">
+    {% spaceless %}<div><h1>EVE Magic Widget for iPhone
+    <!--  {% if user %}:
+    <span id="user">
+    {% if user.is_authenticated %}
+    <A href="/user/">
+    {{ user.username }}
+    </A>
+    {% else %}
+    <A href="/login/">
+    login
+    </A>
+    {% endif %}
+    {% endif %}
+    </span>
+    -->
+    </h1>
+    </div>
+    <!--
+    <a class="showPage button" href="#loginForm">Login</a>
+    <a class="showPage settings" href="#settingsForm">Topics</a>
+    -->
+    
+<!-- {{ nav|pprint }} -->    
+<div class="trail"><a href="/">Top</a>
+    {% for n in nav %} &raquo; {% if not forloop.last %}<a href="{{ n.get_absolute_url }}">{{ n.name }}</a>{% else %}{{ n.name }}{% endif %}{% endfor %}
+</div>{% endspaceless %}
+<div class="content">
+{% block content %}{% endblock %}
+</div>
+</body></html>

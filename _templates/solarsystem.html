@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block title %} {{ item.name }}) {% endblock %}
+
+{% block content %}
+{% spaceless %}
+<div class="item">
+    <div class="item-description">
+        <h3>{{ item.name }}</h3>
+    </div>
+    <div class="item-details">
+    <h4>Details</h4>
+    <dl>
+        <dt>Security:</dt><dd>{{ item.security|floatformat:"-3" }}</dd>
+        <dt>Region:</dt><dd><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></dd>
+        <dt>Constelation:</dt><dd><a href="{{ item.constellation.get_absolute_url }}">{{ item.constellation }}</a></dd>
+        <dt>Asteroid Belts:</dt><dd>{{ item.belts.count }}</dd>
+        <dt>Moons:</dt><dd>{{ item.moons.count }}</dd>
+    </dl>
+    </div>
+    
+  	{% include "include_stations.html" %}
+        
+    <div class="item-materials">
+    <h4>Asteroid Belts</h4>
+        <table>
+        {% for s in item.belts %}
+            <tr>
+            	<td>{{ s.name }}</td>
+            </tr>
+        {% endfor %}
+        </tr>
+        </table>
+    </div>
+
+    <div class="item-materials">
+    <h4>Moons</h4>
+        <table>
+        {% for i in item.moons %}
+            <tr>
+            	<td>{{ i.name }}</td>
+            </tr>
+        {% endfor %}
+        </tr>
+        </table>
+    </div>    
+</div>
+{% endspaceless %}
+{% endblock %}

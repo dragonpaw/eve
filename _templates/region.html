@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block title %} {{ item.name }}) {% endblock %}
+
+{% block content %}
+{% spaceless %}
+<div class="item">
+    <div class="item-description">
+        <h3>{{ item.name }}</h3>
+    </div>
+    <div class="item-details">
+    <h4>Details</h4>
+    <dl>
+        <dt>Constellations:</dt><dd>{{ item.constellations.count }}</dd>
+        <dt>Systems:</dt><dd>{{ item.solarsystems.count }}</dd>
+        <dt>Stations:</dt><dd>{{ item.stations.count }}</dd>
+    </dl>
+    </div>
+    
+    <h4>Constellations</h4>
+    <ul class="links">
+    {% for c in item.constellations.all %}
+		<li class="region"><a href="{{ c.get_absolute_url }}">
+<!--		<img src="http://www.eve-online.com/bitmaps/icons/corporations/32_32/corps28_03.jpg"> -->
+			<!--  <img src="{{ c.faction.race.graphic.icon32 }}"> -->
+			{{ c.name }}<br>
+			<span class="systems">Systems: {{ c.solarsystems.count }}</span>
+			{% if c.stations.count %}<span class="stations">Stations: {{ c.stations.count }}</span>{% endif %}
+		</a></li>
+    {% endfor %}
+	</ul>
+	{% include "include_stations.html" %}
+
+</div>
+{% endspaceless %}
+{% endblock %}

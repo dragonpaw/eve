@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+{% spaceless %}
+<ul class="links transactions">
+
+        {% for t in transactions %}
+            <li class="transaction-detail"><a href="{{ t.get_absolute_url }}">
+                <img src="{{ t.item.icon32 }}">
+            	{{ t.item }}<br>
+            	<span class="transaction-quantity">x{{ t.quantity|comma }}</span>
+            	{% if t.sold %}
+            	<span class="transaction-value transaction-sold">+ {{ t.value|floatformat:2|comma }}</span>
+            	{% else %}
+            	<span class="transaction-value transaction-bought">- {{ t.value|floatformat:2|comma }}</span>
+            	{% endif %}
+            </a></li>
+        {% endfor %}
+</ul>
+{% endspaceless %}
+{% endblock %}
