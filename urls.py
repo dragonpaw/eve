@@ -29,5 +29,5 @@ urlpatterns = patterns('',
         {'template_name': 'auth_logout.html'}),
 
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
-        {'document_root': 'c:/django-sites/eve/_static'}),
+        {'document_root': '/home/ash/django-sites/eve/_static'}),
 )

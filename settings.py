@@ -10,9 +10,9 @@ ADMINS = (
 MANAGERS = ADMINS
 
 DATABASE_ENGINE = 'mysql'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'eve'             # Or path to database file if using sqlite3.
-DATABASE_USER = 'eve'             # Not used with sqlite3.
-DATABASE_PASSWORD = 'boom'         # Not used with sqlite3.
+DATABASE_NAME = 'ash_eve'             # Or path to database file if using sqlite3.
+DATABASE_USER = 'ash_eve'             # Not used with sqlite3.
+DATABASE_PASSWORD = 'bang'         # Not used with sqlite3.
 DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
 DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
@@ -70,11 +70,12 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    "C:/django-sites/eve/_templates"
+    "C:/django-sites/eve/_templates",
+    "/home/ash/django-sites/eve/_templates",
 )
 
 AUTHENTICATION_BACKENDS = (
-    "email-auth.EmailBackend",
+    #"email-auth.EmailBackend",
     "django.contrib.auth.backends.ModelBackend",
 )
 
