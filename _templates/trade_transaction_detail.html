@@ -16,9 +16,9 @@
 <dl class="transaction">
 	<dt>Item</dt><dd><a href="{{ transaction.item.get_absolute_url }}">{{ transaction.item }}</a></dd>
 	<dt>Sold?</dt><dd>{% if transaction.sold %} Yes {% else %} No {% endif %}</dd>
-	<dt>Quantity</dt><dd>{{ transaction.quantity }}</dd>
-	<dt>Price</dt><dd>{{ transaction.price|isk }}</dd>
-	<dt>Total</dt><dd>{{ transaction.total|isk }}</dd>
+	<dt>Quantity</dt><dd>{{ transaction.quantity|comma }}</dd>
+	<dt>Price</dt><dd>{{ transaction.price|floatformat:"-2"|comma }} ISK</dd>
+	<dt>Total</dt><dd>{{ transaction.total|floatformat:"-2"|comma }} ISK</dd>
 <h4>Where</h4>
 <dl class="transaction">
 	<dt>Station</dt><dd><a href="{{ transaction.station.get_absolute_url }}">{{ transaction.station }}</a></dd>
