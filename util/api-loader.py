@@ -220,10 +220,10 @@ def update_stations():
             station = Station.objects.get(id=s.stationID)
         except Station.DoesNotExist:
             solarsystem = SolarSystem.objects.get(id=s.solarSystemID)
-            station = Station(id=s.stationID, name=s.stationName, solarsystem=solarsystem, 
+            station = Station(id=s.stationID, solarsystem=solarsystem, 
                               region=solarsystem.region, constellation=solarsystem.constellation)
-            station.save()
-            print "Added station '%s' to DB. [%d]" % (station.name, station.id)
+        station.name = s.stationName
+        station.save()
 
 def update_pos(character, corp):
     assert( isinstance(character, Character) )
