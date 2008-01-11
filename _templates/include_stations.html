@@ -6,10 +6,11 @@
     <h4>Stations</h4>
     {% if item.stations.count %}
         <table>
-        <tr><th>System</th><th>Station</th></tr>
+        <tr><th></th><th>System</th><th>Station</th></tr>
         {% for s in item.stations.all %}
             <tr>
-            	<td><a href="{{ s.solarsystem.get_absolute_url }}">{{ s.solarsystem }}</a></td>
+                <th><img src="{{ s.icon32 }}"></th>
+            	<th><a href="{{ s.solarsystem.get_absolute_url }}">{{ s.solarsystem }}</a></th>
             	<td>{{ s.name }}</td>
             </tr>
         {% endfor %}

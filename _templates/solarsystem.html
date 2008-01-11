@@ -16,6 +16,7 @@
         <dt>Security:</dt><dd>{{ item.security|floatformat:"-3" }}</dd>
         <dt>Region:</dt><dd><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></dd>
         <dt>Constelation:</dt><dd><a href="{{ item.constellation.get_absolute_url }}">{{ item.constellation }}</a></dd>
+        <dt>Soverignity:</dt><dd>{% if item.alliance %}{{ item.alliance }}{% else %}Unclaimed{% endif %}</dd>
         <dt>Asteroid Belts:</dt><dd>{{ item.belts.count }}</dd>
         <dt>Moons:</dt><dd>{{ item.moons.count }}</dd>
     </dl>

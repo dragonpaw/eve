@@ -10,6 +10,7 @@
 from django.db import models
 from decimal import Decimal
 from django.db.models.query import Q, QNot
+from eve.util.alliance_graphics import id
 
 TRUE_FALSE = (
     ('true', 'Yes'),
@@ -56,7 +57,45 @@ class AgentType(models.Model):
  
     def __str__(self):
         return self.agenttype
-        
+    
+class Alliance(models.Model):
+
+    name = models.CharField(max_length=100)
+    executor = models.ForeignKey('Corporation', blank=True, null=True, related_name='executors')
+    ticker = models.CharField(max_length=10)
+    member_count = models.IntegerField()
+    
+    class Admin:
+        pass
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+    @property
+    def icon16(self):
+        return self.icon(16)
+
+    @property
+    def icon32(self):
+        return self.icon(32)
+
+    @property
+    def icon64(self):
+        return self.icon(64)
+
+    @property
+    def icon128(self):
+        return self.icon(128)
+
+    def icon(self, size):
+        if id.has_key(self.id):
+            return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, id[self.id])
+        else:
+            return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, '01_01')
+    
 # class Agent_config(models.Model):
 #     id = models.IntegerField(primary_key=True, db_column='agentid')
 #     k = models.CharField(max_length=150)
@@ -231,8 +270,10 @@ class Faction(models.Model):
     name = models.CharField(max_length=300, db_column='factionname')
     description = models.TextField()
     raceids = models.IntegerField(null=True, blank=True)
-    solarsystem = models.ForeignKey('SolarSystem', null=True, blank=True, db_column='solarsystemid')
-    corporation = models.ForeignKey('Corporation', null=True, blank=True, db_column='corporationid', related_name='corporations')
+    solarsystem = models.ForeignKey('SolarSystem', null=True, blank=True,
+                                    db_column='solarsystemid', related_name='home_system')
+    corporation = models.ForeignKey('Corporation', null=True, blank=True,
+                                    db_column='corporationid', related_name='corporations')
     sizefactor = models.FloatField(null=True, blank=True)
     stationcount = models.IntegerField(null=True, blank=True)
     stationsystemcount = models.IntegerField(null=True, blank=True)
@@ -385,6 +426,9 @@ class Corporation(models.Model):
     #sizefactor = models.FloatField()
     #stationcount = models.IntegerField()
     #stationsystemcount = models.IntegerField()
+    alliance = models.ForeignKey(Alliance, null=True)
+    
+    
     class Meta:
 
         ordering = ('id', )
@@ -487,7 +531,8 @@ class Attribute(models.Model):
             return self.valuefloat
     value = property(get_value, None, None, None)
 
-    def get_display_value(self):
+    @property
+    def display_value(self):
         value = self.get_value()
         if self.unit is None:
             return value
@@ -525,16 +570,37 @@ class Attribute(models.Model):
             value = str(value) + " " + self.unit.displayname
         return value
         
-    display_value = property(get_display_value)    
     
-#     There are two name fields, but they are not always filled in.
-    def get_name(self):
+    # There are two name fields, but they are not always filled in.
+    @property
+    def name(self):
         if self.displayname:
             return self.displayname
         else:
             return self.attributename
-    name = property(get_name, None, None, None)
             
+    def get_icon(self, size):
+        if self.graphic:
+            return self.graphic.get_icon(size)
+        else:
+            return Graphic.objects.get(icon='07_15').get_icon(size)
+    
+            
+    @property
+    def icon16(self):
+        return self.get_icon(16)
+        
+    @property
+    def icon32(self):
+        return self.get_icon(32)
+
+    @property
+    def icon64(self):
+        return self.get_icon(64)
+
+    @property
+    def icon128(self):
+        return self.get_icon(128)
             
 class Effect(models.Model):
     id = models.IntegerField(primary_key=True, db_column='effectid')
@@ -625,7 +691,7 @@ class Graphic(models.Model):
         dir = "/static/ccp-icons"
         # TODO: This is garbage. Search for the file instead.
         if item is None:
-            return "%s/%d_%d/icon%s.png" % (dir, size, size, self.icon)
+            return "%s/white/%d_%d/icon%s.png" % (dir, size, size, self.icon)
         elif item.category == 'Blueprint':
             return "%s/blueprints/%d_%d/%d.png" % (dir, size, size, item.id)
         elif item.category == 'Drone':
@@ -918,21 +984,21 @@ class Item(models.Model):
 
     #-------------------------------------------------------------------------
     # All things iconic.
-    def get_icon16(self):
+    @property
+    def icon16(self):
         return self.graphic.get_icon(16, item=self)
-    icon16 = property(get_icon16)
         
-    def get_icon32(self):
+    @property
+    def icon32(self):
         return self.graphic.get_icon(32, item=self)
-    icon32 = property(get_icon32)
 
-    def get_icon64(self):
+    @property
+    def icon64(self):
         return self.graphic.get_icon(64, item=self)
-    icon64 = property(get_icon64)
 
-    def get_icon128(self):
+    @property
+    def icon128(self):
         return self.graphic.get_icon(128, item=self)
-    icon128 = property(get_icon128)
 
     #-------------------------------------------------------------------------
     # Fancy way to get the attributes and their values.    
@@ -1254,6 +1320,8 @@ class Constellation(models.Model):
     zmin = models.FloatField()
     zmax = models.FloatField()
     radius = models.FloatField()
+    alliance = models.ForeignKey(Alliance, null=True, blank=True, db_column='allianceID')
+    
     class Meta:
         ordering = ( 'name',)
 
@@ -1281,6 +1349,22 @@ class Constellation(models.Model):
     def moons(self):
         return self.map.filter(type__name='Moon')
 
+    @property
+    def icon16(self):
+        return self.alliance.icon16
+    
+    @property
+    def icon32(self):
+        return self.alliance.icon32
+
+    @property
+    def icon64(self):
+        return self.alliance.icon64
+    
+    @property
+    def icon128(self):
+        return self.alliance.icon128
+    
 class SolarSystem(models.Model):
     region = models.ForeignKey(Region, db_column='regionid', related_name='solarsystems')
     constellation = models.ForeignKey(Constellation, db_column='constellationid', raw_id_admin=True,
@@ -1305,11 +1389,16 @@ class SolarSystem(models.Model):
     regional = models.CharField(max_length=15)
     #constellation = models.CharField(max_length=15)
     security = models.FloatField()
-    factionid = models.IntegerField(null=True, blank=True)
+    faction = models.ForeignKey(Faction, null=True, blank=True, db_column='factionid', 
+                                related_name='solarsystems')
     radius = models.FloatField()
     suntypeid = models.IntegerField(null=True, blank=True)
     securityclass = models.CharField(blank=True, max_length=6)
-    allianceid = models.IntegerField(null=True, blank=True)
+    alliance = models.ForeignKey(Alliance, null=True, blank=True, db_column='allianceid')
+    alliance_old = models.ForeignKey(Alliance, null=True, blank=True,
+                                     related_name='solarsystems_lost')
+    sov = models.IntegerField(null=True, blank=True, db_column='sovereigntyLevel')
+    sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDateTime')
     
     class Meta:
         ordering = ( 'name',)
@@ -1329,6 +1418,22 @@ class SolarSystem(models.Model):
     
     def get_absolute_url(self):
         return "/solarsystem/%s/" % self.name
+    
+    @property
+    def icon16(self):
+        return self.alliance.icon16
+    
+    @property
+    def icon32(self):
+        return self.alliance.icon32
+
+    @property
+    def icon64(self):
+        return self.alliance.icon64
+    
+    @property
+    def icon128(self):
+        return self.alliance.icon128
     
 class MapDenormalize(models.Model):
     id = models.IntegerField(primary_key=True, db_column='itemid')
@@ -1589,6 +1694,11 @@ class Station(models.Model):
         
     def __str__(self):
         return self.name
+    
+    def icon32(self):
+        if self.corporation.alliance:
+            return self.corporation.alliance.icon32
+        
     
 class StationResourcePurpose(models.Model):
     purpose = models.IntegerField(primary_key=True)

@@ -23,8 +23,7 @@
     <ul class="links">
     {% for c in item.constellations.all %}
 		<li class="region"><a href="{{ c.get_absolute_url }}">
-<!--		<img src="http://www.eve-online.com/bitmaps/icons/corporations/32_32/corps28_03.jpg"> -->
-			<!--  <img src="{{ c.faction.race.graphic.icon32 }}"> -->
+			{% if c.icon32 %}<img src="{{ c.icon32 }}">{% endif %}
 			{{ c.name }}<br>
 			<span class="systems">Systems: {{ c.solarsystems.count }}</span>
 			{% if c.stations.count %}<span class="stations">Stations: {{ c.stations.count }}</span>{% endif %}

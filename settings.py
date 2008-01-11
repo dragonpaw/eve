@@ -1,4 +1,5 @@
 # Django settings for eve project.
+# $Id$
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -9,12 +10,10 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
-DATABASE_ENGINE = 'mysql'           # 'postgresql_psycopg2', 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'ash_eve'             # Or path to database file if using sqlite3.
-DATABASE_USER = 'ash_eve'             # Not used with sqlite3.
-DATABASE_PASSWORD = 'bang'         # Not used with sqlite3.
-DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
+from database_settings import (DATABASE_ENGINE, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD,
+                              DATABASE_HOST, DATABASE_PORT, SECRET_KEY)
+
+import sys
 
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/8.1/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
@@ -45,9 +44,6 @@ MEDIA_URL = ''
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
 ADMIN_MEDIA_PREFIX = '/media/'
-
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'l3wuj0#nuz@!d!i!2s-3o*f@9yd)d!86$@bkel*!1#y_x3sctk'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -87,16 +83,19 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.flatpages',
     'django.contrib.markup',
-    #'django.contrib.databrowse',
     'eve.tracker',
     'eve.ccp',
     'eve.user',
     'eve.emails',
     'eve.corp',
-    #'eve.market',
     'eve.trade',
     'eve.pos',
 )
+
+if sys.platform == 'win32':
+    STATIC_DIR = 'C:/django-sites/eve/_static/'
+else:
+    STATIC_DIR = '/home/ash/django-sites/eve/_static/'
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/user/' 
