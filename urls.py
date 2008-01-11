@@ -27,7 +27,10 @@ urlpatterns = patterns('',
         {'template_name': 'auth_login.html'}),
     (r'^logout/$', 'django.contrib.auth.views.logout',
         {'template_name': 'auth_logout.html'}),
+)
 
+if settings.DEBUG:
+    urlpatterns += patterns('',
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
         {'document_root': STATIC_DIR}),
-)
+    )
