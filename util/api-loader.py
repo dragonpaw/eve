@@ -52,13 +52,16 @@ def update_alliances():
             alliance = Alliance.objects.get(id=a.allianceID)
         except Alliance.DoesNotExist:
             alliance = Alliance(id=a.allianceID, name=a.name, ticker=a.shortName)
+        alliance.member_count = a.memberCount
+        # Save twice so that the update_corporation call below has an alliance to find.
+        alliance.save()
+
             
         try:
             alliance.executor = update_corporation(a.executorCorpID)
         except eveapi.Error, e:
             print "WTF?! Corp %d is executor of alliance '%s' [%d], but not in an alliance?! [%s]" % (
                     a.executorCorpID, a.name, a.allianceID, e)
-        alliance.member_count = a.memberCount
         alliance.save()
         
     
@@ -86,8 +89,8 @@ def update_map():
         old = datetime.utcnow() - timedelta(days=7)
                 
         if system.alliance_id != alliance:
-            print "Differing: %s Old: %s, current: %s, new: %s" % (system.name, system.alliance_old,
-                                                                 system.alliance, alliance)
+            print "Differing: %s Old: %s, current: %s, new: %s" % (system.name, system.alliance_old_id,
+                                                                 system.alliance_id, alliance)
             if alliance != None and system.alliance == None:
                 # Don't overwrite old sovereignty data with null.
                 pass

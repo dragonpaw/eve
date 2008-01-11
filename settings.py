@@ -1,9 +1,6 @@
 # Django settings for eve project.
 # $Id$
 
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
-
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )
@@ -11,9 +8,10 @@ ADMINS = (
 MANAGERS = ADMINS
 
 from database_settings import (DATABASE_ENGINE, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD,
-                              DATABASE_HOST, DATABASE_PORT, SECRET_KEY)
-
+                              DATABASE_HOST, DATABASE_PORT, SECRET_KEY, DEBUG)
 import sys
+
+TEMPLATE_DEBUG = DEBUG
 
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/8.1/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
@@ -95,7 +93,7 @@ INSTALLED_APPS = (
 if sys.platform == 'win32':
     STATIC_DIR = 'C:/django-sites/eve/_static/'
 else:
-    STATIC_DIR = '/home/ash/django-sites/eve/_static/'
+    STATIC_DIR = ''
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/user/' 
