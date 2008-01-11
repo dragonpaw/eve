@@ -20,27 +20,27 @@
         {% endif %}
         <img src="{{ item.icon64 }}" class="icon">
     </div>
-    <div class="item-details">
     <h4>Details</h4>
-    <dl>
+    <table class="item-details">
     {% if item.is_blueprint %}
-        <dt>Batch Size:</dt><dd>{{ item.blueprint_makes.portionsize }}</dd>
-        <dt>Tech Level:</dt><dd>{{ item.blueprint_details.techlevel }}</dd>
-        <dt>Production Time:</dt><dd>{{ item.blueprint_details.productiontime|time }}</dd>
-        <dt>Research, material:</dt><dd>{{ item.blueprint_details.researchmaterialtime|time }}</dd>
-        <dt>Research, productivity:</dt><dd>{{ item.blueprint_details.researchproductivitytime|time }}</dd>
-        <dt>Research, copy:</dt><dd>{{ item.blueprint_details.researchcopytime|time }}</dd>
-        <dt>Base Waste Factor:</dt><dd>{{ item.blueprint_details.wastefactor }} %</dd>
+        <tr><th>Batch Size:</th><td>{{ item.blueprint_makes.portionsize }}</td></tr>
+        <tr><th>Tech Level:</th><td>{{ item.blueprint_details.techlevel }}</td></tr>
+        <tr><th>Production Time:</th><td>{{ item.blueprint_details.productiontime|time }}</td></tr>
+        <tr><th>Research, material:</th><td>{{ item.blueprint_details.researchmaterialtime|time }}</td></tr>
+        <tr><th>Research, productivity:</th><td>{{ item.blueprint_details.researchproductivitytime|time }}</td></tr>
+        <tr><th>Research, copy:</th><td>{{ item.blueprint_details.researchcopytime|time }}</td></tr>
+        <tr><th>Base Waste Factor:</th><td>{{ item.blueprint_details.wastefactor }} %</td></tr>
     {% else %}
         {% for a in attributes %}
         {% if a.value and a.displayname %}
-            <!-- AttID: {{ a.id }} UnitID: {{ a.unit.id }} GraphicID: {{ a.graphic.id }} -->
-            <dt><img src="{{ a.graphic.icon16 }}">{{ a.name }}</dt><dd>{{ a.display_value }}</dd>
+            <tr>
+            <td><img src="{{ a.icon16 }}"></td>
+            <th>{{ a.name }}</th>
+            <td>{{ a.display_value }}</td></tr>
         {% endif %}
         {% endfor %}
     {% endif %}
-    </dl>
-    </div>
+    </table>
     
     {% if item.blueprint %}
     <div class="item-blueprint">
@@ -58,13 +58,13 @@
     {% if blueprint %}
     <p><a href="/blueprints/edit/{{ item.blueprint.id }}/">Edit owned blueprint.</a></p>
     <dl>
-        <dt>Material Efficiency:</dt><dd>{{ blueprint.me }}</dd>
-        <dt>Production Efficiency:</dt><dd>{{ blueprint.pe }}</dd>
-        <dt>Calculated Waste:</dt><dd>{{ blueprint.waste_display }}</dd>
+        <tr><th>Material Efficiency:</th><td>{{ blueprint.me }}</td></tr>
+        <tr><th>Production Efficiency:</th><td>{{ blueprint.pe }}</td></tr>
+        <tr><th>Calculated Waste:</th><td>{{ blueprint.waste_display }}</td></tr>
         {% if blueprint.original %}
-        <dt>Original:</dt><dd>Yes</dd>
+        <tr><th>Original:</th><td>Yes</td></tr>
         {% else %}
-        <dt>Original:</dt><dd>No</dd>
+        <tr><th>Original:</th><td>No</td></tr>
         {% endif %}
     </dl>
     {% else %}

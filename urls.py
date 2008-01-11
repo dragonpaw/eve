@@ -1,7 +1,6 @@
-from django.conf.urls.defaults import *
-#from django.contrib import databrowse
-#databrowse.site.register(Character)
-#databrowse.site.register()
+# $Id$
+from django.conf.urls.defaults import include, patterns
+from eve.settings import STATIC_DIR
 
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
@@ -29,5 +28,5 @@ urlpatterns = patterns('',
         {'template_name': 'auth_logout.html'}),
 
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
-        {'document_root': '/home/ash/django-sites/eve/_static'}),
+        {'document_root': STATIC_DIR}),
 )

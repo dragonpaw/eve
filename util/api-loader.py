@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# $Id$
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'eve.settings'
 
@@ -6,7 +7,7 @@ from eve.ccp.models import *
 from eve.user.models import *
 from eve.trade.models import *
 from eve.pos.models import *
-from sys import exit
+import sys
 
 from cachehandler import MyCacheHandler
 
@@ -22,23 +23,88 @@ sp = [0, 250, 1414, 8000, 45255, 256000]
 debug = False
 
 skills = Item.skill_objects.all()
-api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=True))
+api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=False)).context(version=2)
 
 def auth(d_account):
+    """Login as a EVE account."""
     auth = api.auth(userID=d_account.id, apiKey=d_account.api_key)
     return auth
 
 def auth_corp(d_character):
+    """Login as a specific character and setup to access the corporation pages."""
     d_account = d_character.account
     auth_o = auth(d_account)
     me = auth_o.corporation(d_character.id)
     return me
 
 def auth_character(d_character):
+    """Login as a specific character and setup to access the user's data"""
     d_account = d_character.account
     auth_o = auth(d_account)
     me = auth_o.character(d_character.id)
     return me
+    
+def update_alliances():
+    print "Starting alliance list..."
+    corp_to_alliance = {}
+    for a in api.eve.AllianceList().alliances:
+        try:
+            alliance = Alliance.objects.get(id=a.allianceID)
+        except Alliance.DoesNotExist:
+            alliance = Alliance(id=a.allianceID, name=a.name, ticker=a.shortName)
+            
+        try:
+            alliance.executor = update_corporation(a.executorCorpID)
+        except eveapi.Error, e:
+            print "WTF?! Corp %d is executor of alliance '%s' [%d], but not in an alliance?! [%s]" % (
+                    a.executorCorpID, a.name, a.allianceID, e)
+        alliance.member_count = a.memberCount
+        alliance.save()
+        
+    
+def update_map():
+    print "Starting galaxy map..."
+    for s in api.map.Sovereignty().solarSystems:
+        system = SolarSystem.objects.get(pk=s.solarSystemID)
+        faction = None
+        if s.factionID != 0:
+            faction = Faction.objects.get(pk=s.factionID)
+
+        alliance = None
+        if s.allianceID != 0:
+            alliance = s.allianceID
+            
+        constellation_sov = None
+        if s.constellationSovereignty != 0:
+            constellation_sov = Alliance.objects.get(pk=s.constellationSovereignty)
+
+        old = datetime.utcnow() - timedelta(days=7)
+        #print "System: %s" % system.name
+        if system.alliance_id != s.allianceID:
+            if alliance != None and system.alliance == None:
+                # Don't overwrite old sovereignty data with null.
+                pass
+            else:
+                system.alliance_old = system.alliance
+            system.alliance = alliance
+            system.sov_time = datetime.utcnow()
+        elif system.sov_time < old and system.alliance_old != None:
+            # You only get a certain time to reclaim it.
+            system.alliance_old = None
+        elif system.sov_time == None:
+            # Set a default time of 2 weeks ago when we have no data.
+            # This only should occur when we reload the DB from CCP.
+            system.sov_time = datetime.utcnow() - timedelta(days=15)
+            
+            
+        system.sov = s.sovereigntyLevel
+        system.faction = faction
+        
+        constellation = system.constellation
+        constellation.alliance = constellation_sov
+        constellation.save()
+        
+        system.save()
     
 def update_account(d_account):
     assert( isinstance(d_account, Account) )
@@ -52,8 +118,6 @@ def update_account(d_account):
         
     d_account.last_refreshed = datetime.now()
     d_account.save()
-    
-    
     
 def update_character(d_account, character):
     assert( isinstance(d_account, Account) )
@@ -69,7 +133,7 @@ def update_character(d_account, character):
         d_character = Character(id = character.characterID,
                                 name = character.name,
                                 account = d_account)
-    corp = update_corporation(character.corporationID, character.corporationName)
+    corp = update_corporation(character.corporationID, name=character.corporationName)
     d_character.corporation = corp
     d_character.user = d_account.user
     d_character.save()
@@ -182,16 +246,23 @@ def update_character_transactions_single(d_character, t):
                           )
         obj.save()
 
-def update_corporation(id, name):
+def update_corporation(id, name=None):
     # http://api.eve-online.com/eve/AllianceList.xml.aspx
-    # http://api.eve-online.com/corp/CorporationSheet.xml.aspx?version=2&corporationID=XXXXXXXXX
+    # http://api.eve-online.com/corp/CorporationSheet.xml.aspx?version=2&corporationID=483314419
     #try:
     #    r = api.corp.CorporationSheet(corporationID=id)
     #except eveapi.Error, e:
     #    pass
     i = Item.objects.get(name='Corporation')
     # Fuckall if I can find where it is in the DB.
-    # ticker = r.ticker 
+    # ticker = r.ticker
+    api_corp = None 
+    try:
+        api_corp = api.corp.CorporationSheet(corporationID=id)
+        name = api_corp.corporationName
+    except eveapi.Error:
+        pass
+            
     try:
         corp = Corporation.objects.get(pk=id)
     except Corporation.DoesNotExist:
@@ -199,8 +270,12 @@ def update_corporation(id, name):
         name.save()
         print "Added: %s to name database. [%d]" % (name.name, name.id)
         corp = Corporation(name=name, id=id)
-        corp.save()
         print "Added: %s to corp database. [%d]" % (name.name, id)
+
+    if api_corp:
+        corp.alliance = Alliance.objects.get(pk=api_corp.allianceID) 
+    
+    corp.save()
     #print "%s [%s]" % (corp.name, corp.id)
     #corp.shares = r.shares
     
@@ -211,11 +286,12 @@ def update_stations():
     # http://api.eve-online.com//eve/ConquerableStationList.xml.aspx
     # <rowset name="outposts" key="stationID" columns="stationID,stationName,stationTypeID,solarSystemID,corporationID,corporationName">
     # <row stationID="60014926" stationName="The Alamo" stationTypeID="12295" solarSystemID="30004712" corporationID="844498619" corporationName="Tin Foil"/>
-
+    print 'Starting outposts...'
     for s in api.eve.ConquerableStationList().outposts:
         print "%s: %s (%s)" % (s.solarSystemID, s.stationName, s.corporationID)
         
-        corporation = update_corporation(s.corporationID, s.corporationName)
+        corporation = update_corporation(s.corporationID, name=s.corporationName)
+
         try:
             station = Station.objects.get(id=s.stationID)
         except Station.DoesNotExist:
@@ -223,6 +299,7 @@ def update_stations():
             station = Station(id=s.stationID, solarsystem=solarsystem, 
                               region=solarsystem.region, constellation=solarsystem.constellation)
         station.name = s.stationName
+        station.corporation = corporation
         station.save()
 
 def update_pos(character, corp):
@@ -290,8 +367,31 @@ def update_pos_detail(api, detail, corp):
         fuel.region = station.moon.region
         fuel.corporation = corp
         fuel.save()
-        
-update_stations()
+
+exit = 0
+try:
+    update_alliances()
+except eveapi.Error, e:
+    print "Failed! [%s]" % e
+    exit = 1
+    
+try:
+    update_map()
+except eveapi.Error, e:
+    print "Failed! [%s]" % e
+    exit = 1
+
+try:
+    update_stations()
+except eveapi.Error, e:
+    print "Failed! [%s]" % e
+    exit = 1
+
 for d_account in Account.objects.all():
-    update_account(d_account)
+    try:
+        update_account(d_account)
+    except eveapi.Error, e:
+        print "Failed! [%s]" % e
+        exit = 1
         
+sys.exit(exit)

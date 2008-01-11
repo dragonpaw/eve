@@ -12,6 +12,7 @@
     <h4>Details</h4>
     <dl>
         <dt>Region:</dt><dd><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></dd>
+        <dt>Soverignity:</dt><dd>{% if item.alliance %}{{ item.alliance }}{% else %}Unclaimed{% endif %}</dd>
         <dt>Systems:</dt><dd>{{ item.solarsystems.count }}</dd>
     </dl>
     </div>
@@ -22,11 +23,11 @@
 	{% for o in item.solarsystems.all %}
     	<li class="constellation">
         	<a href="{{ o.get_absolute_url }}">
-            <img src="{{ o.icon32 }}">
+            {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
             {% expr o.security < 0.5 as lowsec %}
-            <span class="security-{% if lowsec %}low{% else %}high{% endif %}">
+            <span class="name">
             {{ o.name }}
-            <span class="security">({{ o.security|floatformat:3 }})</span>
+            <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">({{ o.security|floatformat:3 }})</span>
             </span>
             <br>
             {% expr o.stations.count() == 1 as singlestation %}

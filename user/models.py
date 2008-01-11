@@ -147,6 +147,17 @@ class Character(models.Model):
     def __str__(self):
         return self.name
         
+    def icon(self, size):
+        return "http://img.eve.is/serv.asp?s=%d&c=%s" % (size, self.id)
+        
+    @property
+    def icon64(self):
+        return self.icon(64)
+    
+    @property
+    def icon128(self):
+        return self.icon(128)
+        
     @property
     def skill_points(self):
         total = 0
