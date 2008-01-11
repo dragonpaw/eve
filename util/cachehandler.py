@@ -12,10 +12,11 @@ class MyCacheHandler(object):
 	# a -real- handler should probably be thread-safe and handle errors
 	# properly (and perhaps use a better hashing scheme).
 
-	def __init__(self, debug=False):
+	def __init__(self, debug=False, throw=False):
 		self.debug = debug
 		self.count = 0
 		self.cache = {}
+		self.throw = throw
 		self.tempdir = join(tempfile.gettempdir(), "eveapi")
 		if not exists(self.tempdir):
 			os.makedirs(self.tempdir)

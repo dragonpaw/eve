@@ -184,6 +184,28 @@ dd {
 	vertical-align: middle;
 }
 
+.sov-changes .date {
+	text-align: right;
+	position: absolute;
+	right: 40px;
+	font-weight: normal;
+}
+
+.sov-changes .old {
+	color: red;
+	font-weight: normal;
+}
+
+.sov-changes .new {
+	color: blue;
+	font-weight: normal;
+}
+
+.stations .solarsystem {
+	color: grey;
+	font-weight: normal;
+}
+
 .transaction-quantity {
 	font-weight: bold;
 	color: grey;
@@ -209,17 +231,19 @@ dd {
 	color: grey;
 }
 
-
+.stations .security,
 .constellation .security {
 	position: absolute;
 	right: 40px;
 	text-align: right; 
 }
 
+.stations .security-low,
 .constellation .security-low {
 	color: red;
 }
 
+.stations .security-high,
 .constellation .security-high {
 	color: blue;
 }
@@ -403,6 +427,7 @@ h1 {
     background: #32598b;
     /* background: #32598b url(logo.gif) 5px 2px no-repeat; */
     min-height: 21px;
+    text-align: center;
 }
 
 ax {

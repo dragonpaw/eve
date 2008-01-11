@@ -2,22 +2,25 @@
 
 {% expr item.stations.count() < 20 as shouldprint %} 
 {% if shouldprint %}
-    <div id="stations">
     <h4>Stations</h4>
     {% if item.stations.count %}
-        <table>
-        <tr><th></th><th>System</th><th>Station</th></tr>
-        {% for s in item.stations.all %}
-            <tr>
-                <th><img src="{{ s.icon32 }}"></th>
-            	<th><a href="{{ s.solarsystem.get_absolute_url }}">{{ s.solarsystem }}</a></th>
-            	<td>{{ s.name }}</td>
-            </tr>
-        {% endfor %}
-        </tr>
-        </table>
+    <ul class="links" >
+	{% for o in item.stations.all %}
+    	<li class="stations">
+        	<a href="{{ o.solarsystem.get_absolute_url }}">
+            {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
+            {% expr o.solarsystem.security < 0.5 as lowsec %}
+            <span class="name">
+            {{ o.name }}
+            <br>
+            <span class="solarsystem">{{ o.solarsystem }}</span>
+            <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">
+            ({{ o.solarsystem.security|floatformat:3 }})</span>
+        	</a>
+    	</li>
+    {% endfor %}
+    </ul>
     {% else %}
       <p>No staitons.</p>
     {% endif %}
-    </div>
 {% endif %}

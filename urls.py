@@ -19,6 +19,7 @@ urlpatterns = patterns('',
     (r'^item/(?P<item_id>\d+)/$', 'eve.ccp.views.item'),
     (r'^group/$', 'eve.ccp.views.group_index'),
     (r'^group/(?P<group_id>\d+)/$', 'eve.ccp.views.group'),
+    (r'^sov/changes/$', 'eve.ccp.views.sov_changes'),
 
     (r'^user/$', 'eve.user.views.main'),
 

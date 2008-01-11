@@ -6,10 +6,12 @@ from django.template import RequestContext
 from eve.ccp.models import *
 from eve.trade.models import BlueprintOwned
 from eve.util.formatting import make_nav
+from datetime import datetime, timedelta
 import re
 
 item_nav = make_nav("Items", "/group/", '24_05')
 region_nav = make_nav("Regions", "/regions/", '17_03')
+sov_nav = make_nav('Sovereignty Changes', '/sov/changes/', '70_11')
 
 def generate_navigation(object):
     """Build up a heiracy of objects"""
@@ -256,4 +258,15 @@ def item(request, item_id, days=14):
     
     return render_to_response('trade_item.html', d,
                               context_instance=RequestContext(request))
-                   
+    
+               
+def sov_changes(request, days=14):
+    """Show all of the changes in system sov since the last update."""
+    old_date = datetime.utcnow() - timedelta(days)
+    d = {}
+    d['objects'] = SolarSystem.objects.filter(sov_time__gt=old_date).order_by('-sov_time')
+    d['nav'] = [ sov_nav ]
+    
+    return render_to_response('sov_changes.html', d,
+                              context_instance=RequestContext(request))
+    
