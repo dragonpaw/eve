@@ -23,7 +23,7 @@ sp = [0, 250, 1414, 8000, 45255, 256000]
 debug = False
 
 skills = Item.skill_objects.all()
-api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=False)).context(version=2)
+api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=False, throw=False)).context(version=2)
 
 def auth(d_account):
     """Login as a EVE account."""
@@ -66,6 +66,7 @@ def update_map():
     print "Starting galaxy map..."
     for s in api.map.Sovereignty().solarSystems:
         system = SolarSystem.objects.get(pk=s.solarSystemID)
+        #print "System: %s" % s.solarSystemName
         faction = None
         if s.factionID != 0:
             faction = Faction.objects.get(pk=s.factionID)
@@ -73,36 +74,47 @@ def update_map():
         alliance = None
         if s.allianceID != 0:
             alliance = s.allianceID
+
+        # Data cleanup.
+        if system.alliance_id == 0:
+            system.alliance = None
             
         constellation_sov = None
         if s.constellationSovereignty != 0:
-            constellation_sov = Alliance.objects.get(pk=s.constellationSovereignty)
+            constellation_sov = s.constellationSovereignty
 
         old = datetime.utcnow() - timedelta(days=7)
-        #print "System: %s" % system.name
-        if system.alliance_id != s.allianceID:
+                
+        if system.alliance_id != alliance:
+            print "Differing: %s Old: %s, current: %s, new: %s" % (system.name, system.alliance_old,
+                                                                 system.alliance, alliance)
             if alliance != None and system.alliance == None:
                 # Don't overwrite old sovereignty data with null.
                 pass
             else:
                 system.alliance_old = system.alliance
-            system.alliance = alliance
+            system.alliance_id = alliance
             system.sov_time = datetime.utcnow()
-        elif system.sov_time < old and system.alliance_old != None:
-            # You only get a certain time to reclaim it.
-            system.alliance_old = None
         elif system.sov_time == None:
             # Set a default time of 2 weeks ago when we have no data.
             # This only should occur when we reload the DB from CCP.
             system.sov_time = datetime.utcnow() - timedelta(days=15)
+        elif system.sov_time < old and system.alliance_old != None:
+            # You only get a certain time to reclaim it.
+            system.alliance_old = None
             
             
         system.sov = s.sovereigntyLevel
         system.faction = faction
         
         constellation = system.constellation
-        constellation.alliance = constellation_sov
-        constellation.save()
+        if constellation.alliance_id != constellation_sov:
+            if constellation.sov_time == None:
+                constellation.sov_time = datetime.utcnow() - timedelta(days=15)
+            else:
+                constellation.sov_time = datetime.utcnow()
+            constellation.alliance_id = constellation_sov
+            constellation.save()
         
         system.save()
     
@@ -266,6 +278,10 @@ def update_corporation(id, name=None):
     try:
         corp = Corporation.objects.get(pk=id)
     except Corporation.DoesNotExist:
+        if name == None:
+            print "Unable to add %s to corp DB, no name available." % id
+            return
+            
         name = Name(id=id, name=name, type=i, group=i.group, category=i.group.category)
         name.save()
         print "Added: %s to name database. [%d]" % (name.name, name.id)
@@ -288,7 +304,7 @@ def update_stations():
     # <row stationID="60014926" stationName="The Alamo" stationTypeID="12295" solarSystemID="30004712" corporationID="844498619" corporationName="Tin Foil"/>
     print 'Starting outposts...'
     for s in api.eve.ConquerableStationList().outposts:
-        print "%s: %s (%s)" % (s.solarSystemID, s.stationName, s.corporationID)
+        #print "%s: %s (%s)" % (s.solarSystemID, s.stationName, s.corporationID)
         
         corporation = update_corporation(s.corporationID, name=s.corporationName)
 

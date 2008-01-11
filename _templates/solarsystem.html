@@ -9,18 +9,21 @@
 <div class="item">
     <div class="item-description">
         <h3>{{ item.name }}</h3>
+        {% if item.alliance %}
+        <img src="{{ item.icon64 }}" class="icon">
+        {% endif %}
     </div>
-    <div class="item-details">
     <h4>Details</h4>
-    <dl>
-        <dt>Security:</dt><dd>{{ item.security|floatformat:"-3" }}</dd>
-        <dt>Region:</dt><dd><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></dd>
-        <dt>Constelation:</dt><dd><a href="{{ item.constellation.get_absolute_url }}">{{ item.constellation }}</a></dd>
-        <dt>Soverignity:</dt><dd>{% if item.alliance %}{{ item.alliance }}{% else %}Unclaimed{% endif %}</dd>
-        <dt>Asteroid Belts:</dt><dd>{{ item.belts.count }}</dd>
-        <dt>Moons:</dt><dd>{{ item.moons.count }}</dd>
-    </dl>
-    </div>
+    <table class="item-details">
+        <tr><th>Security:</th><td>{{ item.security|floatformat:"-3" }}</td></tr>
+        <tr><th>Region:</th><td><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></td></tr>
+        <tr><th>Constelation:</th>
+        <td><a href="{{ item.constellation.get_absolute_url }}">{{ item.constellation }}</a></td></tr>
+        <tr><th>Soverignity:</th>
+        <td>{% if item.alliance %}{{ item.alliance }}, Sov: {{ item.sov }}{% else %}Unclaimed{% endif %}</td>
+        <tr><th>Asteroid Belts:</th><td>{{ item.belts.count }}</td></tr>
+        <tr><th>Moons:</th><td>{{ item.moons.count }}</td></tr>
+    </table>
     
   	{% include "include_stations.html" %}
         

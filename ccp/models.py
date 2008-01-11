@@ -1321,6 +1321,7 @@ class Constellation(models.Model):
     zmax = models.FloatField()
     radius = models.FloatField()
     alliance = models.ForeignKey(Alliance, null=True, blank=True, db_column='allianceID')
+    sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDateTime')
     
     class Meta:
         ordering = ( 'name',)
