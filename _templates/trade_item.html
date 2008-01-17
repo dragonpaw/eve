@@ -126,7 +126,7 @@
 			<span class="skill">Skill</span>
 			{% else %}
 			{% if m.index.value %}
-			<span class="index">{{ m.index.value|isk }} ISK</span>
+			<span class="index">{{ m.index.value|floatformat:2|comma }} ISK</span>
 			{% else %}
 			<span class="index">Unknown</span>
 			{% endif %}
