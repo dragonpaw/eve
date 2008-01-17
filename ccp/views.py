@@ -179,18 +179,18 @@ def item(request, item_id, days=14):
 
     # We don't want isk prices on where things refine -from-
     if item.group.name in ('Mineral','Ice Product'):
-        materials['titles']['Per Unit'] = "Per Unit"
+        materials['titles']['Refined From'] = "Refined From"
         for mat in item.helps_make.filter(activity=50):
             value = "%0.2f" % mat.quantity_per_unit()
             materials['materials'][mat.item.id] = {'material' : mat.item,
                                                        'index'    : mat.item.index,
-                                                       'Per Unit' : value}
+                                                       'Refined From' : value}
 
     # Display order, and filter out actions we cannot perform.
     materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
     materials['materials'].sort(lambda a,b: cmp(a['material'].name, b['material'].name))
     materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
-                          'Research Time Production', 'Copying', 'Inventing', 'Refining', 'Per Unit']
+                          'Research Time Production', 'Copying', 'Inventing', 'Refining', 'Refined From']
     materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
 
     d['materials'] = materials
