@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+<h3>Operation</h3>
+<table>
+<tr><th>When:</th><td>{{ op.datetime }}</td></tr>
+<tr><th>Description:</th><td>{{ op.description }}</td></tr>
+</table>
+
+<h3>Totals</h3>
+<table>
+<tr><th>Type</th><th>Quantity</th><th>Value</th>
+{% for ore in ores.values %}
+	<tr><td>{{ ore.type }}</td>
+	    <td class="number">{{ ore.quantity|floatformat:0|comma }}</td>
+	    <td class="number">{{ ore.value|floatformat:0|comma }}</td>
+	</tr>
+{% endfor %}
+</table>
+<p>Total operation value: {{ total_value|isk }}</p>
+
+<h3>Shares</h3>
+{% for miner in ore_per_person.values %}
+	<h4>{{ miner.miner.user }}</h4>
+	<table>
+	<tr><th>Type</th><th>Quantity</th><th>%</th><th>Value</th></tr>
+	{% for share in miner.shares.values %}
+	<!-- {{ share|pprint|safe }} -->
+	<tr><td>{{ share.type }}</td>
+	    <td class="number">{{ share.share|floatformat:0|comma }}</td>
+	    <td class="number">{{ share.pct|floatformat:2|comma }} %</td>
+	    <td class="number">{{ share.value|floatformat:0|comma }}</td>
+	</tr>
+	{% endfor %}
+</table>
+<p>Total value: {{ miner.total_value|isk }}</p>
+{% endfor %}
+
+<h3>Phases</h3>
+{% for phase in op.phases.all %}
+	<h4>{{ phase.description }}</h4>
+	<table>
+	<tr><th>Miner</th><th>Share</th></tr>
+	{% for miner in phase.miners.all %}
+	  <tr><td>{{ miner.user }}</td><td class="number">{{ miner.share }}</td></tr>
+	{% endfor %}
+	<tr><th>Ore</th><th>Quantity</th></tr>
+	{% for ore in phase.ores.all %}
+	  <tr><td>{{ ore.type }}</td><td class="number">{{ ore.quantity|comma }}</td></tr>
+	{% endfor %}
+	{% expr phase.shares > 1 as manyshares %}
+	{% if manyshares %}
+	<tr><th>Ore</th><th>Quantity per share</th></tr>
+	{% for ore in phase.sharesizelist %}
+	  <tr><td>{{ ore.type }}</td>
+	      <td class="number">{{ ore.quantity|floatformat:2|comma }}</td></tr>
+	{% endfor %}
+	{% endif %}
+	</table>
+{% endfor %}
+{% endblock %}

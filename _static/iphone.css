@@ -23,6 +23,12 @@ h3 {
 	margin: 12px 0 6px 10px;
 	font-size: 20px;
 	line-height: 1em;
+	border-top: 1px solid #ccc;
+    background: url(comments.gif) repeat-x;
+    padding: 10px 10px 5px 10px;
+    margin: 10px 0;
+	color: #222;
+    clear: both;
 }
 
 h3 a {
@@ -36,7 +42,7 @@ h4 {
     margin: 10px 0;
 	color: #666;
     clear: both;
-    font-size: 17px;
+    font-size: 16px;
 }
 
 h5 {
@@ -48,13 +54,6 @@ h5 {
     xmargin: 0 10px;
 }
 
-.item-description {
-	padding-left: 80px;
-    width: 240px;
-	position: relative;
-    min-height: 80px;
-}
-
 .item p {
     padding: 0 10px 0 10px;
 }
@@ -62,23 +61,78 @@ h5 {
 table {
     width: 300px;
     margin: 0 10px 0 10px;
-    padding: 0;
-}
-
-th {
-    padding: 0;
+    color: #666;
+    border-bottom: 1px solid #999;
+    border-top: 1px solid #999;
+    border-collapse: collapse;
 }
 
 td {
-    border-top: 1px #ddd solid;
+    border-bottom: 1px solid #999;
+	text-align: right;
+	padding: 2;
 }
 
-.item-description img {
+th {
+	text-align: left;
+	border-top: 1px solid #999;
+    padding: 2;
+}
+
+.item .materials .name {
+	border-bottom: none;
+	text-align: left;
+}
+
+.item .materials td,
+.item .materials th {
+	text-align: center;
+}
+
+.item .materials .quantity {
+	color: grey;
+}
+
+.item .materials .index,
+.item .materials .skill {
+	text-align: right;
+	position: absolute;
+	right: 40px;
+}
+
+.item .materials .skill {
+	color: green;
+}
+
+.item .materials .index {
+	color: grey;
+}
+
+.item .description {
+	padding-left: 80px;
+    width: 240px;
+	position: relative;
+    min-height: 80px;
+}
+
+.item .description img {
 	display: block;
 	position: absolute;
 	top: 0;
 	left: 10px;
     border: 1px #ddd solid;
+}
+
+.item .blueprint img {
+    margin: 0 10px 10px 0;
+    border: 1px #ddd solid;
+    float: left;
+}
+
+.item .description h3 {
+	padding: 0px 10px 5px 10px;
+	background: none;
+	border: none;
 }
 
 td img,
@@ -88,14 +142,15 @@ dt img {
     border: 0px;
 }
 
-.item-blueprint img {
+td.icon {
+	width: 20px;
+	max-width: 20px;
+}
+
+.item .description img {
     margin: 0 10px 10px 0;
     border: 1px #ddd solid;
     float: left;
-}
-
-.materials-qty {
-    text-align: right;
 }
 
 dl {
@@ -168,20 +223,10 @@ dd {
 .trail a {
 	text-decoration: none;
 	color: #666;
-}
-
-.item-details th {
-	text-align: left;
-}
-
-.item-details td {
-	text-align: right;
-}
-
-.item-details th,
-.item-details td {
-	border-top: 1px #ddd solid;
-	vertical-align: middle;
+	left: 6px;
+    right: auto;
+    -webkit-border-image: url(/static/iPhoneBackButton.png) 0 8 0 14;
+    border-width: 0 8px 0 14px;
 }
 
 .sov-changes .date {
@@ -280,8 +325,6 @@ dd {
 
 .blueprint .name {
 	width: 170px;
-	xxborder: solid pink 1px;
-	xxdisplay: block;
 }
 
 .blueprint .original {
@@ -327,14 +370,6 @@ dd {
 }
 .pos .disabled {
 	color: grey;
-}
-
-.pos dt {
-    width: 130px;
-}
-
-.pos dd {
-    width: 170px;
 }
 
 .pos .state {

@@ -4,31 +4,31 @@
 {% block content %}
 {% spaceless %}
 <h4>Who</h4>
-<dl class="transaction">
-	<dt>Character</dt><dd>{{ transaction.character }}</dd>
-	<dt>Client</dt><dd>{{ transaction.client }}</dd>
-</dl>
+<table class="transaction">
+	<tr><th>Character</th><td>{{ transaction.character }}</td></tr>
+	<tr><th>Client</th><td>{{ transaction.client }}</td></tr>
+</table>
 <h4>When</h4>
-<dl class="transaction">
-	<dt>Time</dt><dd>{{ transaction.time }}</dd>
-</dl>
+<table class="transaction">
+	<tr><th>Time</th><td>{{ transaction.time }}</td></tr>
+</table>
 <h4>What</h4>
-<dl class="transaction">
-	<dt>Item</dt><dd><a href="{{ transaction.item.get_absolute_url }}">{{ transaction.item }}</a></dd>
-	<dt>Sold?</dt><dd>{% if transaction.sold %} Yes {% else %} No {% endif %}</dd>
-	<dt>Quantity</dt><dd>{{ transaction.quantity|comma }}</dd>
-	<dt>Price</dt><dd>{{ transaction.price|floatformat:"-2"|comma }} ISK</dd>
-	<dt>Total</dt><dd>{{ transaction.total|floatformat:"-2"|comma }} ISK</dd>
+<table class="transaction">
+	<tr><th>Item</th><td><a href="{{ transaction.item.get_absolute_url }}">{{ transaction.item }}</a></td></tr>
+	<tr><th>Sold?</th><td>{% if transaction.sold %} Yes {% else %} No {% endif %}</td></tr>
+	<tr><th>Quantity</th><td>{{ transaction.quantity|comma }}</td></tr>
+	<tr><th>Price</th><td>{{ transaction.price|floatformat:"-2"|comma }} ISK</td></tr>
+	<tr><th>Total</th><td>{{ transaction.total|floatformat:"-2"|comma }} ISK</td></tr>
+</table>
 <h4>Where</h4>
-<dl class="transaction">
-	<dt>Station</dt><dd><a href="{{ transaction.station.get_absolute_url }}">{{ transaction.station }}</a></dd>
-	<dt>Solar System</dt><dd><a href="{{ transaction.station.solarsystem.get_absolute_url }}">
-	                          {{ transaction.station.solarsystem }}</a></dd>
-	<dt>Constellation</dt><dd><a href="{{ transaction.station.constellation.get_absolute_url }}">
-	                           {{ transaction.station.constellation }}</a></dd>
-	<dt>Region</dt><dd><a href="{{ transaction.region.get_absolute_url }}">
-	                           {{ transaction.region }}</a></dd>
-</dl>
-</ul>
+<table class="transaction">
+	<tr><th>Station</th><td><a href="{{ transaction.station.get_absolute_url }}">{{ transaction.station }}</a></td></tr>
+	<tr><th>Solar System</th><td><a href="{{ transaction.station.solarsystem.get_absolute_url }}">
+	                          {{ transaction.station.solarsystem }}</a></td></tr>
+	<tr><th>Constellation</th><td><a href="{{ transaction.station.constellation.get_absolute_url }}">
+	                           {{ transaction.station.constellation }}</a></td></tr>
+	<tr><th>Region</th><td><a href="{{ transaction.region.get_absolute_url }}">
+	                           {{ transaction.region }}</a></td></tr>
+</table>
 {% endspaceless %}
 {% endblock %}

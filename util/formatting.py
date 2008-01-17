@@ -2,6 +2,7 @@ import datetime
 import re
 from decimal import Decimal, InvalidOperation
 from eve.ccp.models import icon32
+import math
 
 comma_regex = re.compile(r'^(-?\d+)(\d{3})')
 
@@ -18,7 +19,7 @@ def comma(num, separator=','):
         (num, more_to_do) = comma_regex .subn(r'\1%s\2' % separator,num)
     return num
 
-isk_map = (" KMBT")
+isk_map = (" kmbt")
 def isk(isk):
     try:    
         isk = Decimal(str(isk))
@@ -32,7 +33,12 @@ def isk(isk):
         value = abs(isk)
         for mag in isk_map:
             if value < floor:
-                return "%0.2f%s ISK" % (isk/(floor/1000), mag)
+                if isk/(floor/1000) > 100:
+                    return "%0.0f%s" % (isk/(floor/1000), mag)
+                elif isk/(floor/1000) > 10:
+                    return "%0.1f%s" % (isk/(floor/1000), mag)
+                else:
+                    return "%0.2f%s" % (isk/(floor/1000), mag)
             else:
                 floor *= 1000
         return isk
