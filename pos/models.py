@@ -114,7 +114,7 @@ class PlayerStation(models.Model):
         remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
         remaining += self.state_time
         remaining -= datetime.utcnow()
-        return remaining
+        return max(remaining, timedelta(0))
 
     #@property
     #def fuel(self):
@@ -165,18 +165,21 @@ class PlayerStationFuelSupply(models.Model):
     
     @property
     def time_remaining(self):
-        remaining = timedelta(hours=self.hours_of_fuel) 
+        remaining = timedelta(hours=self.hours_of_fuel)
+        #remaining = max(remaining, 0) # Don't show negative values.
+        now = datetime.utcnow()
         
         if self.type.name == 'Strontium Clathrates':
             if self.station.is_reinforced:
-                return self.station.state_time - datetime.utcnow()
+                remaining = self.station.state_time - now
+                return max(remaining, timedelta(0))
             else:
                 return remaining
         else:
             remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
             remaining += self.station.state_time
-            remaining -= datetime.utcnow()
-            return remaining
+            remaining -= now
+            return max(remaining, timedelta(0))
     
     @property
     def runs_until(self):

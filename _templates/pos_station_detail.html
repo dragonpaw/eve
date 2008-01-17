@@ -40,14 +40,15 @@
     <tr><th>Fuel</th><th>Qty</th><th>Burn</th><th>Remaining</th></tr>
 	{% for fuel in pos.fuel.all %}
 	<tr>
-	  <td><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></td>
+	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
 	  <td class="quantity">{{ fuel.quantity|comma }}</td>
 	  <td class="rate">{{ fuel.max_consumption|comma }}</td>
 	  {% expr fuel.type in pos.fuel_needed as lowest %}
 	  <td class="remaining{% if lowest %} lowest{% endif %}">{{ fuel.time_remaining|time }}</td>
 	</tr>  
 	{% endfor %}
-  <tr><th class="runtime" colspan=3>Remaining runtime</th><th class="runtime remaining">{{ pos.time_remaining|time }}</th></tr>
+  <tr><th class="runtime" colspan=3>Remaining runtime</th>
+  <td class="runtime remaining">{{ pos.time_remaining|time }}</td></tr>
   </table>
   <p>NOTE: At this time, sovergnity discounts are not being included in calculations. Please add 25% (sov 2) or 30% (sov 3) to the runtime.</p>
 {% endspaceless %}

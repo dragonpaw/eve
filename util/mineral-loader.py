@@ -91,9 +91,10 @@ for m in minerals.items():
         exit(1)
     set_value(item, value = m[1])
 
-for m in Item.objects.filter(group__category__name='Asteroid', published=True):
+filter = (Q(group__name='Refinables') | Q(group__category__name='Asteroid')) & Q(published=True)
+for m in Item.objects.filter(filter):
     value = derrived_value(m)
     if value: 
         set_value(m, value)
     else:
-        print "Unable to calculate value of asteroid type: %s" % m
+        print "Unable to calculate value of: %s" % m

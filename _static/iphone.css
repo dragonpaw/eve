@@ -68,6 +68,7 @@ table {
 }
 
 td {
+	border-top: 1px solid #999;
     border-bottom: 1px solid #999;
 	text-align: right;
 	padding: 2;
@@ -76,6 +77,7 @@ td {
 th {
 	text-align: left;
 	border-top: 1px solid #999;
+	border-bottom: 1px solid #999;
     padding: 2;
 }
 
@@ -93,19 +95,19 @@ th {
 	color: grey;
 }
 
-.item .materials .index,
-.item .materials .skill {
+.item .index,
+.item .skill {
 	text-align: right;
 	position: absolute;
 	right: 40px;
 }
 
-.item .materials .skill {
-	color: green;
+.item .skill {
+	color: grey;
 }
 
-.item .materials .index {
-	color: grey;
+.item .index {
+	color: green;
 }
 
 .item .description {
@@ -135,6 +137,7 @@ th {
 	border: none;
 }
 
+th img,
 td img,
 dt img {
     margin: 0 5px 0 0;
@@ -421,20 +424,14 @@ dd {
 	display: block;
 }
 
-.pos-fuel .quantity,
-.pos-fuel .rate,
-.pos-fuel .remaining {
-	text-align: right;
-}
-
 .pos-fuel .lowest {
 	font-weight: bold;
 	color: red;
 }
 
-.pos-fuel .runtime {
-	border-top: solid black 1px;
-} 
+.left {
+	text-align: left;
+}
 
 /************************************************************************************************/
 

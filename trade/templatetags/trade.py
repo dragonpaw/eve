@@ -24,11 +24,13 @@ class ExprNode(template.Node):
             d['_'] = _
             for c in clist:
                 d.update(c)
+                
+            string = self.expr_string
             if self.var_name:
-                context[self.var_name] = eval(self.expr_string, d)
+                context[self.var_name] = eval(string, d)
                 return ''
             else:
-                return str(eval(self.expr_string, d))
+                return str(eval(string, d))
         except:
             raise
 
