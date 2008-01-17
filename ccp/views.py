@@ -182,7 +182,7 @@ def item(request, item_id, days=14):
         materials['titles']['Per Unit'] = "Per Unit"
         for mat in item.helps_make.filter(activity=50):
             value = "%0.2f" % mat.quantity_per_unit()
-            materials['materials'][mat.material.id] = {'material' : mat.item,
+            materials['materials'][mat.item.id] = {'material' : mat.item,
                                                        'index'    : mat.item.index,
                                                        'Per Unit' : value}
 
