@@ -45,6 +45,31 @@ def find_price(node):
             #print x.childNodes[0].data
             return x.childNodes[0].data
 
+def set_value(item, value):
+    try:
+        index = MarketIndexValue.objects.get(index=qtc, item=item)
+    except MarketIndexValue.DoesNotExist:
+        index = MarketIndexValue(index=qtc, item=item)
+    index.value = value
+    index.date = today
+    index.save()
+    print "Value: %s = %s" % (index.item, index.value)
+
+
+def derrived_value(item):
+    refines_into = item.refines()
+    if refines_into.count() == 0:
+        return None
+    
+    value = 0
+    for r in refines_into:
+        #print "Refines into: %s" % r
+        if r.value:
+            value += r.value
+        else:
+            return None
+    return value/item.portionsize
+
 minerals = {}
 for node in doc.getElementsByTagName("index"):
     days = node.getAttribute("timeperiod")
@@ -64,11 +89,11 @@ for m in minerals.items():
     except KeyError:
         print "No such key in item mapping: '%s'" % (m[0])
         exit(1)
-    try:
-        index = MarketIndexValue.objects.get(index=qtc, item=item)
-        index.value = m[1]
-        index.date = today
-    except MarketIndexValue.DoesNotExist:
-        index = MarketIndexValue(index=qtc, item=item,
-                                  date=today, value = m[1])
-    index.save()                                         
+    set_value(item, value = m[1])
+
+for m in Item.objects.filter(group__category__name='Asteroid', published=True):
+    value = derrived_value(m)
+    if value: 
+        set_value(m, value)
+    else:
+        print "Unable to calculate value of asteroid type: %s" % m

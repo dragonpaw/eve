@@ -903,8 +903,16 @@ class Material(models.Model):
     def quantity_per_unit(self):
         return float(self.quantity) / float(self.item.portionsize)    
     
+    @property
     def volume(self):
         return Decimal(self.material.volume) * self.quantity 
+  
+    @property
+    def value(self):
+        if self.material.value:
+            return self.material.value * self.quantity
+        else:
+            return None
   
 class ItemSkillManager(models.Manager):
     def get_query_set(self):
@@ -1095,30 +1103,36 @@ class Item(models.Model):
         else:
             return self.blueprint_details.makes
     
-    def materials(self, activity=1):
+    def materials(self, activity=None):
         # If it can't be made, then it has no mats.
         if self.blueprint:
             item = self.blueprint
         else:
             item = self
             
-        mats = []
-        set = item.material_set.filter(activity=activity)
-        for s in set:
-            mats.append( [s.material, s.quantity] )
-            
-        return mats
+        if activity:
+            set = item.material_set.filter(activity__name=activity, quantity__gt=0)
+        else:
+            set = item.material_set.filter(quantity__gt=0)
+        return set
     
-    def materials_by_name(self, activity=1):
-        set = self.get_materials(activity=activity)
-        if set is None:
+    @property
+    def value(self):
+        index = self.index
+        if index:
+            return index.value
+        else:
             return None
-            
-        mats = {}
-        for s in set:
-            mats[s[0].name] = s[1]
-        return mats
         
+    @property
+    def index(self):
+        if self.index_values.order_by('-date').count():
+            return self.index_values.all()[0]
+        else:
+            return None
+        
+    def refines(self):
+        return self.materials(activity='Refining') 
 
 class Name(models.Model):
     """This table contains the names of planets, stars, systems and corporations."""

@@ -7,6 +7,7 @@ urlpatterns = patterns('',
     
     (r'^trade/', include('eve.trade.urls')),
     (r'^pos/', include('eve.pos.urls')),
+    (r'^mining/', include('eve.mining.urls')),
 
     (r'^$', 'eve.views.home'),
 

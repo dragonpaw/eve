@@ -81,6 +81,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.flatpages',
     'django.contrib.markup',
+    'eve.mining',
     'eve.tracker',
     'eve.ccp',
     'eve.user',

@@ -140,78 +140,50 @@ def item(request, item_id, days=14):
         d['blueprint'] = None
    
    
-    materials = {'titles':[],
-                 'materials':[],
-                 'isk': [],
-                 'isk_by_name': {} }
+    materials = {'titles':{},
+                 'materials':{},
+                 'isk': {} }
         
     # Can it be manufactured?
-    if item.blueprint:
-        # First, the perfect manufacture/recycle values.
-        materials['titles'] = ['Perfect',]
-        for material, qty in item.materials():
-            try:
-                index = material.index_values.order_by('-date')[0]
-            except IndexError:
-                index = None
-            materials['materials'].append({'material': material, 'index': index, 'values':[qty]})
-
-        # Then, if we own the blueprint, the manufacture values.
-        if d['blueprint']:
-            materials['titles'].append( "PE%s/ME%d" % (max_pe, d['blueprint'].me) )
-            for m in materials['materials']:
-                qty = m['values'][0]
-                qty = d['blueprint'].mineral(qty, max_pe)
-                m['values'].append(qty)
-                            
-        materials['titles'].append('Reprocess')
-        for m in materials['materials']:
-            # TODO: Recycle values.
-            m['values'].append(None) 
-            
-    refines = item.material_set.filter(activity=50)
-    if refines.count():
-        assert(len(materials['materials']) == 0) # Nothing manufactured can be also refined as such.
+    for mat in item.materials():
+        name = mat.activity.name
+        materials['titles'][name] = name
+        if not materials['materials'].has_key(mat.material.id):
+            materials['materials'][mat.material.id] = {'material': mat.material,
+                                                       'index': mat.material.index}
+        materials['materials'][mat.material.id][name] = mat.quantity
         
-        materials['titles'].append('Refined')
-        for m in refines:
-            try:
-                index = m.material.index_values.order_by('-date')[0]
-            except IndexError:
-                index = None
-            materials['materials'].append({'material': m.material, 'index': index, 'values':[m.quantity]})
+        # Then, if we own the blueprint, the manufacture quantity.
+        if d['blueprint'] and name == 'Manufacturing':
+            perfect = materials['materials'][mat.material.id]['Manufacturing']
+            materials['materials'][mat.material.id]['Personal'] = d['blueprint'].mineral(perfect, max_pe)
+            
+    if d['blueprint']:
+        materials['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, d['blueprint'].me)
 
-    re_manufacture = re.compile(r'^PE\d/ME\d+$')
-    for i in range(len(materials['titles'])):
+    for key, value in materials['titles'].items():
         cost = Decimal(0)
-        for m in materials['materials']:
-            material = m['material']
-                
-            if material.group.name in ('Mineral',) and m['values'][i] and m['index']:
-                cost += Decimal(str(m['index'].value)) * m['values'][i]
+        for m in materials['materials'].values():
+            if m.has_key(key) and m['index']:
+                cost += Decimal(str(m['index'].value)) * m[key]
         cost = cost / item.portionsize
-        materials['isk'].append(cost)
-        materials['isk_by_name'][materials['titles'][i]] = cost
-        if re_manufacture.match(materials['titles'][i]):
-            materials['isk_by_name']['manufacture'] = cost
-
-    if len(materials['materials']):
-        materials['titles'].append('Index')
-        for m in materials['materials']:
-            if m['index']:
-                m['values'].append("%0.2f" % m['index'].value)
-            else:
-                m['values'].append("None")
-        materials['isk'].append(" ") # Avoids a 'N/a' cell.
-        materials['materials'].sort(lambda a,b: cmp(a['material'].name, b['material'].name))
-
-    if (materials['isk_by_name'].has_key('manufacture') and best_values.has_key('sell') 
+        materials['isk'][key] = cost
+        
+    if (materials['isk'].has_key('Perfect') and best_values.has_key('sell') 
         and best_values['sell'] and best_values['sell']['sell_price'] > 0
-        and materials['isk_by_name']['manufacture'] > 0):
+        and materials['isk']['manufacture'] > 0):
         best_values['manufacturing_profit_isk'] =  ( best_values['sell']['sell_price'] 
-                                                    - materials['isk_by_name']['manufacture'])
+                                                    - materials['isk']['manufacture'])
         best_values['manufacturing_profit_pct'] = (best_values['manufacturing_profit_isk'] 
-                                                    / materials['isk_by_name']['manufacture']) * 100   
+                                                    / materials['isk']['manufacture']) * 100   
+
+
+    # Display order, and filter out actions we cannot perform.
+    materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
+    materials['materials'].sort(lambda a,b: cmp(a['material'].name, b['material'].name))
+    materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
+                          'Research Time Production', 'Copying', 'Inventing', 'Refine']
+    materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
 
     # We don't want isk prices on where things refine -from-
     if item.group.name in ('Mineral','Ice Product'):
@@ -222,25 +194,19 @@ def item(request, item_id, days=14):
         temp.reverse()
         for m in temp:
             value = "%0.2f" % m.quantity_per_unit()
-            materials['materials'].append({'material': m.item,'values':[value]})
+            materials['materials'].append({'material': m.item,'quantity':[value]})
 
     d['materials'] = materials
 
-            
-    # FIXME: Make this return an order_by instead.
-    d['invention'] = item.materials(activity=8)
-    if d['invention']:
-        d['invention'].sort(lambda a, b: cmp(a[0].name, b[0].name))
 
     # Un-seeded items have no group.
     if item.marketgroup and item.marketgroup.name != 'Minerals':
-        d['makes'] = list(item.helps_make.filter(activity=1))
-        d['makes'].sort(lambda a, b: cmp(a.item.name, b.item.name))
+        #filter = QNot(Q(item__group__category__name='Blueprint')) & Q(item__published=True)
+        filter = Q(item__published=True) & QNot(Q(activity__name__contains='Not in game'))
+        d['makes'] = list(item.helps_make.filter(filter))
+        d['makes'].sort(lambda a, b: cmp(a.item.name,
+                                         b.item.name))
         # FIXME: Make this return an order_by instead.
-    
-    d['invents'] = list(item.helps_make.filter(activity=8))
-    d['invents'].sort(lambda a, b: cmp(a.item.name, b.item.name))
-    # FIXME: Make this return an order_by instead.
         
     d['attributes'] = list(item.attributes())
     if item.volume:
