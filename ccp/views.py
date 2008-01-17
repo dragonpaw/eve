@@ -108,7 +108,7 @@ def group(request, group_id):
     d['objects'] = list(MarketGroup.objects.filter(parent=group)) + list(group.item_set.all())
 
     d['objects'].sort(lambda a,b: cmp(a.name, b.name))
-    return render_to_response('generic_menu.html', d,
+    return render_to_response('item_list.html', d,
                               context_instance=RequestContext(request))
 
     
@@ -177,28 +177,24 @@ def item(request, item_id, days=14):
         best_values['manufacturing_profit_pct'] = (best_values['manufacturing_profit_isk'] 
                                                     / materials['isk']['manufacture']) * 100   
 
+    # We don't want isk prices on where things refine -from-
+    if item.group.name in ('Mineral','Ice Product'):
+        materials['titles']['Per Unit'] = "Per Unit"
+        for mat in item.helps_make.filter(activity=50):
+            value = "%0.2f" % mat.quantity_per_unit()
+            materials['materials'][mat.material.id] = {'material' : mat.item,
+                                                       'index'    : mat.item.index,
+                                                       'Per Unit' : value}
 
     # Display order, and filter out actions we cannot perform.
     materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
     materials['materials'].sort(lambda a,b: cmp(a['material'].name, b['material'].name))
     materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
-                          'Research Time Production', 'Copying', 'Inventing', 'Refine']
+                          'Research Time Production', 'Copying', 'Inventing', 'Refining', 'Per Unit']
     materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
 
-    # We don't want isk prices on where things refine -from-
-    if item.group.name in ('Mineral','Ice Product'):
-        assert(len(materials['materials']) == 0) # Nothing manufactured can be also refined as such.
-        materials['titles'].append('Per Unit')
-        temp = list(item.helps_make.filter(activity=50))
-        temp.sort(lambda a,b: cmp(a.quantity_per_unit(), b.quantity_per_unit()))
-        temp.reverse()
-        for m in temp:
-            value = "%0.2f" % m.quantity_per_unit()
-            materials['materials'].append({'material': m.item,'quantity':[value]})
-
     d['materials'] = materials
-
-
+    
     # Un-seeded items have no group.
     if item.marketgroup and item.marketgroup.name != 'Minerals':
         #filter = QNot(Q(item__group__category__name='Blueprint')) & Q(item__published=True)

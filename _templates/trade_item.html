@@ -74,6 +74,7 @@
     {% endif %}
     
 {% if materials %}
+    <!-- {{materials|pprint|safe }} -->
     <!-- 
     <h4>Materials{% ifnotequal item.portionsize 1 %} (per {{ item.portionsize }}){% endifnotequal %}</h4>
     <table class="materials">
@@ -120,7 +121,7 @@
 			<img src="{{ m.material.icon32 }}">
 			{{ m.material.name }}
 			<br>
-			<span class="quantity">x{{ quantity }}</span>
+			<span class="quantity">x{{ quantity|comma }}</span>
 			{% if m.material.is_skill %}
 			<span class="skill">Skill</span>
 			{% else %}
@@ -134,8 +135,10 @@
 		{% endif %}
 		{% endfor %}
 		</ul>
-		{% expr materials['isk'][x] as cost%}
-		<p>Total cost: {{ cost|floatformat:2|comma }} ISK</p>
+		{% expr materials['isk'].has_key(x) and materials['isk'][x] as cost%}
+		{% if cost %}
+		<p>Total cost/value: {{ cost|floatformat:2|comma }} ISK</p>
+		{% endif %}
 		
 	{% endfor %}
 {% endif %}
@@ -156,8 +159,8 @@
 			<span class="index">{{ m.index.value|isk }} ISK</span>
 			{% else %}
 			<span class="index">Unknown</span>
-			{% endif %} -->
 			{% endif %}
+			{% endif %} -->
 			</a></li>
 		{% endfor %}
 		</ul>

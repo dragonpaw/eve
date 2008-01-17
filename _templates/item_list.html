@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+<ul class="links" >
+{% for o in objects %}
+    <li class="item">
+        <a href="{{ o.get_absolute_url }}">
+            <img src="{{ o.icon32 }}">{{ o.name }}
+            {% if o.value %}<br>&nbsp;<span class="index">{{ o.value|isk }} ISK</span>{% endif %}
+        </a>
+    </li>
+{% endfor %}
+</ul>
+{% endblock %}
+
