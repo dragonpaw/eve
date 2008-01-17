@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+# $Id$
+import os
+os.environ['DJANGO_SETTINGS_MODULE'] = 'eve.settings'
+
 import pprint
 import httplib
 import urllib
