@@ -8,7 +8,8 @@ from eve.user.models import Character, Account
 from django.contrib.auth.decorators import login_required
 
 user_nav = make_nav("Characters", "/user/", '34_12')
-account_add_nav = make_nav("Add Account", "/user/account/add", None)
+account_add_nav = make_nav("Add Account", "/user/account/add/", None)
+user_create_nav = make_nav("Create Login", "/user/create/", '07_03')
 
 @login_required
 def main(request):
@@ -97,6 +98,7 @@ class UserCreationForm(forms.Form):
 def user_creation(request):
     d = {}
     d['errors'] = []
+    d['nav'] = [ user_create_nav ]  
     if request.method == 'GET':
         d['form'] = UserCreationForm()
         return render_to_response('user_account_detail.html', d,

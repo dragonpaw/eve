@@ -3,7 +3,7 @@ from django.template import RequestContext
 from eve.trade.views import blueprint_nav, index_nav, transaction_nav
 from eve.ccp.views import region_nav, item_nav, sov_nav
 from eve.pos.views import pos_nav
-from eve.user.views import user_nav
+from eve.user.views import user_nav, user_create_nav
 from eve.util.formatting import make_nav
 
 about_nav = make_nav("About", "/about/", '07_15')
@@ -31,7 +31,7 @@ def home(request):
                        pos_nav,
                        ])
     else:
-        objects.append(login_nav)
+        objects.extend([login_nav, user_create_nav])
     
     objects.sort(lambda a,b: cmp(a['name'], b['name']))
     
