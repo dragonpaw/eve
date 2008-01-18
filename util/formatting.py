@@ -60,7 +60,7 @@ def time(sec):
     #elif sec < (60**2 * 24 * 7):
     # Too lazy to do weeks.
     else:
-        return "%dd %dh %dm" % (sec / (60**2*24), sec % (60**2*24) / 60**2, sec % 60**2 / 60)
+        return "%dd %dh" % (sec / (60**2*24), sec % (60**2*24) / 60**2)
    
 def title(nav):
     temp = []
@@ -72,5 +72,8 @@ def title(nav):
     return " &laquo; ".join(temp)
         
 
-def make_nav(name, url, icon):        
-    return {'name':name, 'get_absolute_url':url,'icon32':icon32(icon)}
+def make_nav(name, url, icon):
+    if icon is not None:
+        return {'name':name, 'get_absolute_url':url,'icon32':icon32(icon)}
+    else:
+        return {'name':name, 'get_absolute_url':url,'icon32':None}

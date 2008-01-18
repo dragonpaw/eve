@@ -107,7 +107,7 @@ def group(request, group_id):
 
     d['objects'] = list(MarketGroup.objects.filter(parent=group)) + list(group.item_set.all())
 
-    d['objects'].sort(lambda a,b: cmp(a.name, b.name))
+    d['objects'].sort(key=lambda x:x.name)
     return render_to_response('item_list.html', d,
                               context_instance=RequestContext(request))
 
@@ -188,7 +188,7 @@ def item(request, item_id, days=14):
 
     # Display order, and filter out actions we cannot perform.
     materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
-    materials['materials'].sort(lambda a,b: cmp(a['material'].name, b['material'].name))
+    materials['materials'].sort(key=lambda x:x['material'].name)
     materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
                           'Research Time Production', 'Copying', 'Inventing', 'Refining', 'Refined From']
     materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
@@ -200,8 +200,7 @@ def item(request, item_id, days=14):
         #filter = QNot(Q(item__group__category__name='Blueprint')) & Q(item__published=True)
         filter = Q(item__published=True) & QNot(Q(activity__name__contains='Not in game'))
         d['makes'] = list(item.helps_make.filter(filter))
-        d['makes'].sort(lambda a, b: cmp(a.item.name,
-                                         b.item.name))
+        d['makes'].sort(key=lambda x:x.item.name)
         # FIXME: Make this return an order_by instead.
         
     d['attributes'] = list(item.attributes())

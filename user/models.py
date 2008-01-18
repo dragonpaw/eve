@@ -5,6 +5,7 @@ from django.db import models
 from eve.ccp.models import Item, Corporation
 from eve.util.formatting import comma
 
+
 class UserProfile(models.Model):
     #url = models.URLField() 
     #home_address = models.TextField() 
@@ -104,7 +105,7 @@ class UserProfile(models.Model):
         best['gross'] = total
 
         return avg, best
-    
+       
 class Account(models.Model):
     id = models.IntegerField(primary_key=True, core=True)
     user = models.ForeignKey(UserProfile, related_name='accounts',
@@ -122,6 +123,13 @@ class Account(models.Model):
     @property
     def api_key_short(self):
         return self.api_key[0:4] + "..." + self.api_key[-5:-1]
+    
+    def get_absolute_url(self):
+        return "/user/account/%d/" % self.id
+    
+    @property
+    def name(self):
+        return 'Account: %d' % self.id
         
 class Character(models.Model):
     id = models.IntegerField(primary_key=True, core=True)
@@ -155,8 +163,8 @@ class Character(models.Model):
         return self.icon(64)
     
     @property
-    def icon128(self):
-        return self.icon(128)
+    def icon256(self):
+        return self.icon(256)
         
     @property
     def skill_points(self):
@@ -194,6 +202,8 @@ class Character(models.Model):
         else:
             return None
         
+    def get_absolute_url(self):
+        return "/user/character/%d/" % self.id
         
 class SkillLevel(models.Model):
     character = models.ForeignKey(Character, related_name='skills')

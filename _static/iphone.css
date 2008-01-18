@@ -147,7 +147,7 @@ dt img {
 
 td.icon {
 	width: 20px;
-	max-width: 20px;
+	max-width: 20px; /* No idea if that works. */
 }
 
 .item .description img {
@@ -232,6 +232,56 @@ dd {
     border-width: 0 8px 0 14px;
 }
 
+li.character {
+    min-height: 90px;
+}
+
+li.character a {
+    display: block;
+    padding: 8px 32px 8px 80px;
+}
+
+.character .skill,
+.character .skill-completion {
+	font-weight: normal;
+	font-size: 12px;
+	color: grey;
+}
+
+.character .corporation {
+	font-weight: normal;
+	color: grey;
+	font-size: 11px;
+}
+
+.character .skill-completion,
+.character .skill-points {
+	text-align: right;
+	position: absolute;
+	right: 40px;
+}
+
+.character .skill-points {
+	color: red;
+}
+
+.character .portrait {
+	padding: 10px 32px 10px 27px;
+	position: relative;
+}
+
+.character .isk {
+	color: green;
+	font-size: 12px;
+}
+
+.account .api-key {
+	color: grey;
+	font-size: 12px;
+	font-weight: normal;
+	font-family: monospace;
+}
+
 .sov-changes .date {
 	text-align: right;
 	position: absolute;
@@ -254,24 +304,31 @@ dd {
 	font-weight: normal;
 }
 
-.transaction-quantity {
+.transaction .quantity {
 	font-weight: bold;
 	color: grey;
 }
 
-.transaction-bought {
+.transaction .bought {
 	color: red;
 }
 
-.transaction-sold {
+.transaction .sold {
 	color: green;
 }
 
-.transaction-value {
+.transaction .sold,
+.transaction .bought {
 	text-align: right;
 	position: absolute;
 	right: 40px;
-}	
+}
+
+.transaction .character {
+	font-weight: normal;
+	font-size: 9px;
+	color: grey;
+}
 
 .region .faction,
 .constellation .faction,
@@ -404,6 +461,10 @@ dd {
 	color: green;
 }
 	
+.pos-fuel .lowest {
+	font-weight: bold;
+	color: red;
+}
 
 .index .items {
 	color: grey;
@@ -424,13 +485,16 @@ dd {
 	display: block;
 }
 
-.pos-fuel .lowest {
-	font-weight: bold;
-	color: red;
-}
-
 .left {
 	text-align: left;
+}
+
+.messages .error {
+	color: red;
+}
+.messages li {
+	font-size: 15px;
+	font-weight: bold;
 }
 
 /************************************************************************************************/
