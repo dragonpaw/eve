@@ -98,3 +98,4 @@ else:
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/user/' 
+LOGIN_URL = '/login/'
