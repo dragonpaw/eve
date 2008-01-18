@@ -8,6 +8,7 @@ urlpatterns = patterns('',
     (r'^trade/', include('eve.trade.urls')),
     (r'^pos/', include('eve.pos.urls')),
     (r'^mining/', include('eve.mining.urls')),
+    (r'^user/', include('eve.user.urls')),
 
     (r'^$', 'eve.views.home'),
 
@@ -22,7 +23,7 @@ urlpatterns = patterns('',
     (r'^group/(?P<group_id>\d+)/$', 'eve.ccp.views.group'),
     (r'^sov/changes/$', 'eve.ccp.views.sov_changes'),
 
-    (r'^user/$', 'eve.user.views.main'),
+    
 
     (r'^login/$', 'django.contrib.auth.views.login',
         {'template_name': 'auth_login.html'}),

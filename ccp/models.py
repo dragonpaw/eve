@@ -1092,7 +1092,11 @@ class Item(models.Model):
             return self
         elif self.blueprint_madeby_qs.count() > 0:
             assert( self.blueprint_madeby_qs.count() == 1 )
-            return self.blueprint_madeby_qs.all()[0].id
+            blueprint = self.blueprint_madeby_qs.all()[0].id
+            if blueprint.published:
+                return blueprint
+            else:
+                return None
         else:
             return None
     
@@ -1105,16 +1109,16 @@ class Item(models.Model):
     
     def materials(self, activity=None):
         # If it can't be made, then it has no mats.
-        if self.blueprint:
-            item = self.blueprint
-        else:
-            item = self
-            
+        filter = Q(quantity__gt=0)
         if activity:
-            set = item.material_set.filter(activity__name=activity, quantity__gt=0)
+            filter = filter & Q(activity__name=activity)
+
+        if self.blueprint:
+            filter = filter & ( Q(item=self) | Q(item=self.blueprint) )
         else:
-            set = item.material_set.filter(quantity__gt=0)
-        return set
+            filter = filter & Q(item=self)
+            
+        return Material.objects.filter(filter)
     
     @property
     def value(self):

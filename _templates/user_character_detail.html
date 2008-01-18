@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+{% spaceless %}
+<div class="character">
+<h4>{{ c.name }}</h4>
+<img class="portrait" src="{{ c.icon256 }}">
+<table>
+	<tr><th>character ID</th><td>{{ c.id }}</td></tr>
+	<tr><th>Corporation</th><td>{{ c.corporation }}</td></tr>
+	<tr><th>ISK</th><td>{{ c.isk|comma }}</td></tr>
+	<tr><th>Skill Points</th><td>{{ c.skill_points|comma }}</td></tr>
+    {% if c.training_skill %} 
+	<tr><th>Training</th><td>{{ c.training_skill }} {{ c.training_level }}</td></tr>
+	<tr><th>Training Completion</th><td>{{ c.training_remaining|default:"Done"|time }}</td></tr>
+    {% else  %}
+	<tr><th>Training</th><td>None</td></tr>
+	<tr><th>Training Completion</th><td>N/A</td></tr>
+	{% endif %}
+	<tr><th>Market Transactions</th><td>{{ c.transactions.count }}</td></tr>
+	<tr><th>Last Refreshed</th><td>{{ c.account.last_refreshed }}</td></tr>
+</table>
+</div>
+{% endspaceless %}
+{% endblock %}

@@ -1,7 +1,8 @@
 from django import newforms as forms
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
+from django.contrib.auth.decorators import login_required
 from eve.trade.models import Transaction, BlueprintOwned, MarketIndex
 from eve.ccp.models import Item
 from eve.util.formatting import make_nav
@@ -25,7 +26,8 @@ def transactions(request):
 
 def transaction_detail(request, id=None):
     transaction = get_object_or_404(Transaction, transaction_id=id)
-    # FIXME: ADD SECURITY!!!!
+    if transaction.character.user != request.user.get_profile():
+        raise Http404
     
     d = {}
     d['nav'] = [ transaction_nav, transaction]
@@ -54,6 +56,7 @@ class BlueprintOwnedFormNew(forms.Form):
     pe = forms.IntegerField(label='Production Efficiency', initial=0)
     original = forms.BooleanField(label='Original?', initial=True)
 
+@login_required
 def blueprint_edit(request, item_id=None):
     d = {}
     item = None
@@ -89,13 +92,11 @@ def blueprint_edit(request, item_id=None):
         
     d['form'] = form
     d['item'] = item
-    d['title'] = "Add Blueprint"
     d['nav'] = [ blueprint_nav, {'name':'Add'} ]
     return render_to_response('trade_blueprint_edit.html', d)
 
-                                         
+@login_required
 def blueprint_add(request):
-    # FIXME: Require a login!
     i = get_object_or_404(Item, pk=request.POST['id'])
     bo = BlueprintOwned(user=request.user, blueprint = i, original=True)
     bo.save()

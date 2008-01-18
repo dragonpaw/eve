@@ -3,45 +3,42 @@
 
 {% block content %}
 {% spaceless %}
-<div class="user">
-<div class="user-detail">
-  <h4>Details</h4>
-  <dl>
-  <dt>User Name</dt><dd>{{ user.username }}</dd>
-  <dt>Email</dt><dd>{{ user.email }}</dd>
-  <dt>ID</dt><dd>{{ user.id }}</dd>
-  </dl>
-</div>
-<div class="user-characters">
-  <h4>Characters</h4>
-  {% for a in user.get_profile.accounts.all %}
-    {% for c in a.characters.all %}
-      <h5>{{ c.name }} ({{ c.id }})</h5>
-      <dl>
-      	<dt>Corporation</dt><dd>{{ c.corporation }}</dd>
-        <dt>ISK</dt><dd>{{ c.isk|comma }}</dd>
-        <dt>Skill Points</dt><dd>{{ c.skill_points|comma }}</dd>
-        {% if c.training_skill %} 
-        <dt>Training</dt><dd>{{ c.training_skill }} {{ c.training_level }}</dd>
-        <dt>Training Completion</dt><dd>{{ c.training_remaining|default:"Done"|time }}</dd>
-        {% else  %}
-        <dt>Training</dt><dd>None</dd>
-        <dt>Training Completion</dt><dd> N/A</dd>
-        {% endif %}
-        <dt>Market Transactions</dt><dd>{{ c.transactions.count }}</dd>
-        <dt>Last Refreshed</dt><dd>{{ a.last_refreshed }}</dd>
-      </dl>
-    {% endfor %}
+<h4>Details</h4>
+<table>
+  <tr><th>User Name</th><td>{{ user.username }}</td></tr>
+  <tr><th>Email</th><td>{{ user.email }}</td></tr>
+</table>
+<h4>Characters</h4>
+<ul class="links">
+  {% for c in characters %}
+    <li class="character"><a href="{{ c.get_absolute_url }}">
+    <img src="{{ c.icon64 }}">
+    {{ c.name }}
+    <span class="corporation"><br>{{ c.corporation }}<br></span>
+    <span class="isk">{{ c.isk|floatformat:0|comma }} ISK</span>
+    <span class="skill-points">{{ c.skill_points|isk }} SP</span>
+    <br>
+    {% if c.training_skill %} 
+    <span class="skill">{{ c.training_skill }} {{ c.training_level }}</span>
+    <span class="skill-completion">{{ c.training_remaining|default:"Done"|time }}</span>
+    {% else  %}
+    <span class="skill">No skill in training.</span>
+    {% endif %}
+    </a>
+    </li>
   {% endfor %}  
-</div>
-<div class="user-characters">
-  <h4>Accounts</h4>
-  {% for a in user.get_profile.accounts.all %}
-  <dl>
-    <dt>ID</dt><dd>{{ a.id }}</dd>
-    <dt>API Key</dt><dd><tt>{{ a.api_key_short }}</tt></dd>
-  </dl>
+</ul>
+<h4>Accounts</h4>
+<ul class="links">
+  {% for a in accounts %}
+  <li class="account">
+    <a href="{{ a.get_absolute_url }}">
+    {{ a.id }}<br>
+    <span class="api-key">{{ a.api_key_short }}</span>
+  </a>
+  </li>
   {% endfor %}
-</div>
+  <li><a href="/user/account/add/">Add new account API key.<br>Full key required.</a></li>
+</ul>
 {% endspaceless %}
 {% endblock %}
