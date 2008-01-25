@@ -109,12 +109,12 @@ def user_creation(request):
     d['form'] = form
     if form.is_valid() == False:
         d['errors'].append('Form validation errors.')
+    else:
+        if form.cleaned_data['password'] != form.cleaned_data['password2']:
+            d['errors'].append("The passwords did not match.")
     
-    if form.cleaned_data['password'] != form.cleaned_data['password2']:
-        d['errors'].append("The passwords did not match.")
-    
-    if Account.objects.filter(id=form.cleaned_data['eve_user_id']).count() > 0:
-        d['errors'].append("That EVE user ID is already registered to a different account.")
+        if Account.objects.filter(id=form.cleaned_data['eve_user_id']).count() > 0:
+            d['errors'].append("That EVE user ID is already registered to a different account.")
         
     if d['errors']:
         return render_to_response('user_account_detail.html', d,
