@@ -13,7 +13,7 @@
   {% for c in characters %}
     <li class="character"><a href="{{ c.get_absolute_url }}">
     <img src="{{ c.icon64 }}">
-    {{ c.name }}
+    <span class="name">{{ c.name }}</span>
     <span class="corporation"><br>{{ c.corporation }}<br></span>
     <span class="isk">{{ c.isk|floatformat:0|comma }} ISK</span>
     <span class="skill-points">{{ c.skill_points|isk }} SP</span>
@@ -33,7 +33,7 @@
   {% for a in accounts %}
   <li class="account">
     <a href="{{ a.get_absolute_url }}">
-    {{ a.id }}<br>
+    <span class="name">{{ a.id }}</span><br>
     <span class="api-key">{{ a.api_key_short }}</span>
   </a>
   </li>

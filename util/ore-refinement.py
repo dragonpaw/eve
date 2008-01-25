@@ -166,8 +166,8 @@ ores = {
     'Lucent Compound': { Pyerite: 174, Mexallon: 2, Isogen: 11, Nocxium: 5 },
     'Dark Compound': { Isogen: 23, Nocxium: 10 },
     'Motley Compound': { Isogen: 28, Nocxium: 13 },
-    'Lustering Alloy': { Mexallon: 88, Isogen: 32, Nocxium: 35, Zydrine: 2 },
-    'Plush Compound': { Pyerite: 120, Isogen: 20, Zydrine: 18 },
+    'Lustering Alloy': { Mexallon: 88, Isogen: 32, Nocxium: 35, Zydrine: 1 },
+    'Plush Compound': { Tritanium: 3200, Pyerite: 800, Isogen: 20, Zydrine: 9 },
     'Glossy Compound': { Nocxium: 4, Megacyte: 6 },
     'Opulent Compound': { Morphite: 2 },
     

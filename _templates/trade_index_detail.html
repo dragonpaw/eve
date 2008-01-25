@@ -12,7 +12,7 @@
 		<a href="{{ i.item.get_absolute_url }}">
 		<img src="{{ i.item.graphic.icon32 }}">
 		{{ i.item.name }}<br>
-		<span class="price">{{ i.value|floatformat:2|comma }}</span>
+		<span class="price right">{{ i.value|floatformat:2|comma }}</span>
 		</a>
 	</li>
 	{% endfor %}

@@ -7,14 +7,15 @@
         {% for t in transactions %}
             <li class="transaction"><a href="{{ t.get_absolute_url }}">
                 <img src="{{ t.item.icon32 }}">
-            	{{ t.item }}<br>
+            	<span class="name">{{ t.item }}</span><br>
             	<span class="quantity">x{{ t.quantity|comma }}</span>
             	{% if t.sold %}
-            	<span class="sold">+ {{ t.value|floatformat:2|comma }}</span>
+            	<span class="sold right">+ {{ t.value|floatformat:2|comma }}</span>
             	{% else %}
-            	<span class="bought">- {{ t.value|floatformat:2|comma }}</span>
+            	<span class="bought right">- {{ t.value|floatformat:2|comma }}</span>
             	{% endif %}
             	<br><span class="character">{{ t.character.name }}</span>
+            	<span class="system right">{{ t.station.solarsystem.name }}</span>
             </a></li>
         {% endfor %}
 </ul>

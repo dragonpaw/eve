@@ -5,7 +5,7 @@
 {% for o in objects %}
     <li>
         <a href="{{ o.get_absolute_url }}">
-            <img src="{{ o.icon32 }}">{{ o.name }}
+            <img src="{{ o.icon32 }}"><span class="name">{{ o.name }}</span>
         </a>
     </li>
 {% endfor %}
