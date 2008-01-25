@@ -9,8 +9,8 @@
 <ul class="links">
     {% for i in indexes %}
 	    <li class="index"><a href="{{ i.get_absolute_url }}">
-	    {{ i.name }}
-	    <span class="items">{{ i.items.count }} Items</span>
+	    <span class="name">{{ i.name }}</span>
+	    <span class="items right">{{ i.items.count }} Items</span>
 	    <br>
 	    <span class="url">{{ i.url }}</span>
 	    </a>

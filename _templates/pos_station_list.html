@@ -13,19 +13,19 @@
 		<li class="pos">{% spaceless %}
 			<a href="{{ pos.get_absolute_url }}">
 			<img src="{{ pos.tower.icon32 }}">
-			{{ pos.moon }}
+			<span class="moon">{{ pos.moon }}</span>
     		{% if pos.is_online %}
-	        	<span class="state online">Online</span>
+	        	<span class="state online right">Online</span>
     		{% else %}
-	        	<span class="state offline">{{ pos.state_name }}</span>
+	        	<span class="state offline right">{{ pos.state_name }}</span>
     		{% endif %}
     		<br>
     		<span class="type">{{ pos.tower }}</span>
     		{% expr pos.time_remaining.days >= 2 as runtime_good %}
     		{% if runtime_good %}
-    		<span class="runtime runtime-good">{{ pos.time_remaining|time }}</span>
+    		<span class="runtime runtime-good right">{{ pos.time_remaining|time }}</span>
     		{% else %}
-    		<span class="runtime runtime-bad">{{ pos.time_remaining|time }}</span>
+    		<span class="runtime runtime-bad right">{{ pos.time_remaining|time }}</span>
     		{% endif %}
     		</a>
     	</li>{% endspaceless %}

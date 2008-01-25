@@ -95,13 +95,6 @@ th {
 	color: grey;
 }
 
-.item .index,
-.item .skill {
-	text-align: right;
-	position: absolute;
-	right: 40px;
-}
-
 .item .skill {
 	color: grey;
 }
@@ -214,10 +207,10 @@ dd {
 }
 
 .trail {
-	background: #eee;
+	background: #aaa;
 	padding: 6px 10px;
     width: 300px;
-	color: #ccc;
+	color: #666;
 	font-weight: bold;
 	font-size: 14px;
     min-height: 1px;
@@ -225,11 +218,11 @@ dd {
 
 .trail a {
 	text-decoration: none;
-	color: #666;
+	color: blue;
 	left: 6px;
     right: auto;
-    -webkit-border-image: url(/static/iPhoneBackButton.png) 0 8 0 14;
-    border-width: 0 8px 0 14px;
+    /* -webkit-border-image: url(/static/iPhoneBackButton.png) 2 8 2 14; */
+    border-width: 2px 8px 2px 14px;
 }
 
 li.character {
@@ -304,6 +297,10 @@ li.character a {
 	font-weight: normal;
 }
 
+.transaction span {
+	font-size: 5px;
+}
+
 .transaction .quantity {
 	font-weight: bold;
 	color: grey;
@@ -317,14 +314,8 @@ li.character a {
 	color: green;
 }
 
-.transaction .sold,
-.transaction .bought {
-	text-align: right;
-	position: absolute;
-	right: 40px;
-}
-
-.transaction .character {
+.transaction .character,
+.transaction .system {
 	font-weight: normal;
 	font-size: 9px;
 	color: grey;
@@ -432,12 +423,6 @@ li.character a {
 	color: grey;
 }
 
-.pos .state {
-	text-align: right;
-	position: absolute;
-	right: 30px;
-}
-
 .pos .type {
 	color: grey;
 	font-weight: normal;
@@ -446,9 +431,6 @@ li.character a {
 
 .pos .runtime {
 	font-size: 10px;
-	text-align: right;
-	position: absolute;
-	right: 30px;
 }
 
 .pos .runtime-bad {
@@ -469,8 +451,6 @@ li.character a {
 .index .items {
 	color: grey;
 	font-size: 10px;
-	position: absolute;
-	right: 30px;
 }
 
 .index .url {
@@ -480,9 +460,6 @@ li.character a {
 
 .index .price {
 	color: green;
-	text-align: right;
-	right: 30px;
-	display: block;
 }
 
 .left {
@@ -546,11 +523,20 @@ ax {
     border-bottom: 1px solid #E0E0E0;
     padding: 0;
     background: url(iPhoneArrow.png) no-repeat right center;
-    font-size: 14px;
-    font-weight: bold;
     list-style: none;
     position: relative;
     min-height: 48px;
+}
+
+.links span {
+	font-size: 14px;
+    font-weight: bold;
+}
+
+.links .right {
+	text-align: right;
+	position: absolute;
+	right: 35px;
 }
 
 .links a {

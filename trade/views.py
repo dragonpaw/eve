@@ -11,6 +11,7 @@ index_nav = make_nav("Indexes", "/trade/indexes/", '25_08')
 blueprint_nav = make_nav("Blueprints Owned", "/trade/blueprints/", '09_15')
 transaction_nav = make_nav("Transactions", "/trade/transactions/", '64_14')
 
+@login_required
 def transactions(request):
     d = {}
     d['nav'] = [transaction_nav]
@@ -24,6 +25,7 @@ def transactions(request):
     
     return render_to_response('trade_transactions.html', d)
 
+@login_required
 def transaction_detail(request, id=None):
     transaction = get_object_or_404(Transaction, transaction_id=id)
     if transaction.character.user != request.user.get_profile():

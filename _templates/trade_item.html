@@ -119,16 +119,17 @@
 		{% if quantity %}
 			<li><a href="{{ m.material.get_absolute_url }}">
 			<img src="{{ m.material.icon32 }}">
-			{{ m.material.name }}
+			<span class="name">{{ m.material.name }}</span>
 			<br>
-			<span class="quantity">x{{ quantity|comma }}</span>
 			{% if m.material.is_skill %}
-			<span class="skill">Skill</span>
+			<span class="quantity">Required level: {{ quantity }}</span>
+			<span class="skill right">Skill</span>
 			{% else %}
+			<span class="quantity">x{{ quantity|comma }}</span>
 			{% if m.index.value %}
-			<span class="index">{{ m.index.value|floatformat:2|comma }} ISK</span>
+			<span class="index right">{{ m.index.value|floatformat:2|comma }} ISK</span>
 			{% else %}
-			<span class="index">Unknown</span>
+			<span class="index right">Unknown</span>
 			{% endif %}
 			{% endif %}
 			</a></li>
