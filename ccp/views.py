@@ -136,7 +136,7 @@ def item(request, item_id, days=14):
         max_pe = profile.max_skill_level('Production Efficiency')
             
     try:
-        d['blueprint'] = BlueprintOwned.objects.filter(blueprint=item.blueprint)[0]
+        d['blueprint'] = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=request.user)[0]
     except IndexError:
         d['blueprint'] = None
    
@@ -170,13 +170,13 @@ def item(request, item_id, days=14):
         cost = cost / item.portionsize
         materials['isk'][key] = cost
         
-    if (materials['isk'].has_key('Perfect') and best_values.has_key('sell') 
+    if (materials['isk'].has_key('Personal') and best_values.has_key('sell') 
         and best_values['sell'] and best_values['sell']['sell_price'] > 0
-        and materials['isk']['manufacture'] > 0):
+        and materials['isk']['Personal'] > 0):
         best_values['manufacturing_profit_isk'] =  ( best_values['sell']['sell_price'] 
-                                                    - materials['isk']['manufacture'])
+                                                    - materials['isk']['Personal'])
         best_values['manufacturing_profit_pct'] = (best_values['manufacturing_profit_isk'] 
-                                                    / materials['isk']['manufacture']) * 100   
+                                                    / materials['isk']['Personal']) * 100   
 
     # We don't want isk prices on where things refine -from-
     if item.group.name in ('Mineral','Ice Product'):
@@ -218,7 +218,7 @@ def item(request, item_id, days=14):
                                           b.attributecategory)
                          or cmp (a.id, b.id))
     
-    return render_to_response('trade_item.html', d,
+    return render_to_response('ccp_item.html', d,
                               context_instance=RequestContext(request))
     
                

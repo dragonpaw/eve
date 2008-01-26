@@ -7,11 +7,12 @@ from eve.ccp.models import *
 from eve.user.models import *
 from eve.trade.models import *
 from eve.pos.models import *
+from eve.settings import DEBUG
 import sys
 
 from cachehandler import MyCacheHandler
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import eveapi
 import time
 import pprint
@@ -19,11 +20,29 @@ import pprint
 import os
 os.environ['TZ'] = 'UTC'
 
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option('-m', '--map', action='store_true',  default=False,
+                   help='Load the soverignty map.')
+parser.add_option('-a', '--alliances', action='store_true', default=False,
+                   help='Load the list of alliances.')
+parser.add_option('-s', '--stations', action='store_true', default=False,
+                  help='Load the list of conquerable stations/outposts.')
+parser.add_option('-u', '--user', 
+                  help='Username to load accounts for.')
+(options, args) = parser.parse_args()
+
 sp = [0, 250, 1414, 8000, 45255, 256000]
 debug = False
 
 skills = Item.skill_objects.all()
-api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=False, throw=False)).context(version=2)
+api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)
+
+character_cache_time = timedelta(hours=1)
+
+# After this long, we purge a character giving a security error. (So people don't change key
+# before leaving a corp to still see data.)
+character_security_timeout = timedelta(hours=12) 
 
 def auth(d_account):
     """Login as a EVE account."""
@@ -128,9 +147,16 @@ def update_account(d_account):
     auth = api.auth(userID=d_account.id, apiKey=d_account.api_key)
     result = auth.account.Characters()
 
+    ids = []
     for c in result.characters:
+        ids.append(c.characterID)
         update_character(d_account, c)
-        
+    
+    # Look for deleted characters.
+    for character in Character.objects.filter(account__id=d_account.id).exclude(id__in=ids):
+        print "Lost character: %s will be purged." % character.name
+        character.delete()
+    
     d_account.last_refreshed = datetime.now()
     d_account.save()
     
@@ -148,9 +174,17 @@ def update_character(d_account, character):
         d_character = Character(id = character.characterID,
                                 name = character.name,
                                 account = d_account)
+        
+    if d_character.cached_until and d_character.cached_until > datetime.utcnow():
+        print "Cached still."
+        return
+        
     corp = update_corporation(character.corporationID, name=character.corporationName)
+    
     d_character.corporation = corp
     d_character.user = d_account.user
+    d_character.last_updated = datetime.utcnow()
+    d_character.cached_until = datetime.utcnow() + character_cache_time
     d_character.save()
     update_character_wallet(d_character)
     update_character_skills(d_character)
@@ -327,19 +361,26 @@ def update_pos(character, corp):
     auth = auth_corp(character)
     
     try:
+        ids = []
         for s in auth.StarbaseList().starbases:
-            detail = auth.StarbaseDetail(itemID=s.itemID)
-            update_pos_detail(s, detail, corp)
+            ids.append(s.itemID)
+            update_pos_detail(auth, s, corp)
         character.is_director = True
         character.save()
+        
+        # Look for POSes that got taken down.
+        for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
+            print "Removed POS: %s will be purged." % pos.moon
+            pos.delete()
+        
     except eveapi.Error, e:
         if e.message == 'Character must be a Director or CEO':
             character.is_director = False
             character.save()
             print "Not Director."
-            return;
+            return
         
-def update_pos_detail(api, detail, corp):
+def update_pos_detail(auth, api, corp):
     print "POS: %d=%d at %s[%s] Online:%s" % (api.itemID, api.typeID, api.locationID, 
                                               api.moonID, api.onlineTimestamp)
     try:
@@ -347,6 +388,12 @@ def update_pos_detail(api, detail, corp):
     except PlayerStation.DoesNotExist:
         station = PlayerStation(id=api.itemID)
         station.depot = ""
+
+    if station.cached_until and station.cached_until > datetime.utcnow():
+        print "Cached still."
+        return
+
+    detail = auth.StarbaseDetail(itemID=api.itemID)
 
     station.tower = Item.objects.get(pk=api.typeID)
     station.corporation = corp
@@ -372,6 +419,9 @@ def update_pos_detail(api, detail, corp):
     station.attack_standing_flag = detail.combatSettings.onStandingDrop.enabled == 1
     station.attack_standing_value = detail.combatSettings.onStandingDrop.standing / 100.0
 
+    station.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)
+    station.last_updated = datetime.utcnow()
+
     station.save()
     
     #print dir(api)
@@ -388,28 +438,45 @@ def update_pos_detail(api, detail, corp):
         fuel.save()
 
 exit = 0
-try:
-    update_alliances()
-except eveapi.Error, e:
-    print "Failed! [%s]" % e
-    exit = 1
+if options.alliances:
+    try:
+        update_alliances()
+    except eveapi.Error, e:
+        print "Failed! [%s]" % e
+        exit = 1
     
-try:
-    update_map()
-except eveapi.Error, e:
-    print "Failed! [%s]" % e
-    exit = 1
+if options.map:
+    try:
+        update_map()
+    except eveapi.Error, e:
+        print "Failed! [%s]" % e
+        exit = 1
 
-try:
-    update_stations()
-except eveapi.Error, e:
-    print "Failed! [%s]" % e
-    exit = 1
+if options.stations:
+    try:
+        update_stations()
+    except eveapi.Error, e:
+        print "Failed! [%s]" % e
+        exit = 1
 
-for d_account in Account.objects.all():
+if options.stations or options.map or options.alliances:
+    # We do not load users if we're loading other things.
+    accounts = ()
+elif options.user:
+    print "Only loading characters for: %s" % options.user
+    accounts = Account.objects.filter(user__user__username=options.user)
+else:
+    accounts = Account.objects.all()
+    
+for d_account in accounts:
     try:
         update_account(d_account)
     except eveapi.Error, e:
+        if (e.message == 'Authentication failure' 
+            and d_account.last_refreshed + character_security_timeout < datetime.utcnow() ):
+            print "This account has had an invalid API key for too long. Deleting..."
+            d_account.delete()
+             
         print "Failed! [%s]" % e
         exit = 1
         

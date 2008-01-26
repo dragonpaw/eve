@@ -375,14 +375,11 @@ li.character a {
 }
 
 .blueprint .name {
-	width: 170px;
+	font-size: 14px;
 }
 
 .blueprint .original {
 	color: green;
-	text-align: right;
-	position: absolute;
-	right: 30px;
 }
 
 .blueprint .pe {
@@ -402,7 +399,7 @@ li.character a {
 	color: grey;
 	font-weight: normal;
 	position: absolute;
-	left: 170px;
+	left: 160px;
 }
 
 .pos .online {
@@ -430,23 +427,35 @@ li.character a {
 }
 
 .pos .runtime {
-	font-size: 10px;
+	font-size: 12px;
+	color: green;
+	font-weight: normal;
 }
 
-.pos .runtime-bad {
-	font-weight: bold;
+.pos .runtime-0 {
 	text-decoration: blink;
 	color: red;
 }
 
-.pos .runtime-good {
-	color: green;
+.pos .runtime-1 {
+	color: orange;
 }
-	
-.pos-fuel .lowest {
+
+.pos-fuel .remaining-0 {
 	font-weight: bold;
 	color: red;
 }
+
+.pos-fuel .remaining-1,
+.pos-fuel .remaining-2 {
+	font-weight: bold;
+	color: orange;
+}
+
+.pos-fuel .remaining-3 {
+	color: orange;
+}
+
 
 .index .items {
 	color: grey;
@@ -537,6 +546,10 @@ ax {
 	text-align: right;
 	position: absolute;
 	right: 35px;
+}
+
+.links span.link {
+	color: blue;
 }
 
 .links a {

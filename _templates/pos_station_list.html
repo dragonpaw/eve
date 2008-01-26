@@ -21,18 +21,13 @@
     		{% endif %}
     		<br>
     		<span class="type">{{ pos.tower }}</span>
-    		{% expr pos.time_remaining.days >= 2 as runtime_good %}
-    		{% if runtime_good %}
-    		<span class="runtime runtime-good right">{{ pos.time_remaining|time }}</span>
-    		{% else %}
-    		<span class="runtime runtime-bad right">{{ pos.time_remaining|time }}</span>
-    		{% endif %}
+    		{% expr int(pos.time_remaining.days) as days %}
+    		<span class="runtime runtime-{{ days }} right">{{ pos.time_remaining|time }}</span>
     		</a>
     	</li>{% endspaceless %}
 	{% endfor %}
 	</ul>
 {% endfor %}
-<p>NOTE: At this time, sovergnity discounts are not being included in calculations. Please add 25% (sov 2) or 30% (sov 3) to the runtime.</p>
 {% else %}
 <p>You are not director in any corporation owning a station.</p>
 {% endif %}

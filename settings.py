@@ -1,15 +1,16 @@
 # Django settings for eve project.
 # $Id$
 
+from database_settings import (DATABASE_ENGINE, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD,
+                              DATABASE_HOST, DATABASE_PORT, SECRET_KEY, DEBUG)
+import sys
+
 ADMINS = (
+    ('Ash', 'ash@dragonpaw.org'),
     # ('Your Name', 'your_email@domain.com'),
 )
 
 MANAGERS = ADMINS
-
-from database_settings import (DATABASE_ENGINE, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD,
-                              DATABASE_HOST, DATABASE_PORT, SECRET_KEY, DEBUG)
-import sys
 
 TEMPLATE_DEBUG = DEBUG
 

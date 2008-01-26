@@ -95,7 +95,8 @@ class BlueprintOwned(models.Model):
     user = models.ForeignKey(UserProfile, related_name='blueprints')
     blueprint = models.ForeignKey(Item,
                                   raw_id_admin=True,
-                                  limit_choices_to = {'group__category__name__exact': 'Blueprint'})
+                                  limit_choices_to = {'group__category__name__exact': 'Blueprint',
+                                                      'published':True})
     pe = models.IntegerField('Production Efficiency', default=0)
     me = models.IntegerField('Material Efficiency', default=0)
     original = models.BooleanField(default=True)
