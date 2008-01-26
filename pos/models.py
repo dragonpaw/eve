@@ -1,8 +1,11 @@
 from django.db import models
 from django.db.models.query import Q, QNot
 from datetime import datetime, timedelta
+from decimal import Decimal
+import math
 
-from eve.ccp.models import MapDenormalize, Item, SolarSystem, Region, Constellation, Corporation, StationResource
+from eve.ccp.models import (MapDenormalize, Item, SolarSystem, Region, Constellation, Corporation,
+                            StationResource)
 
 class FuelDepot(models.Model):
     location = models.ForeignKey(SolarSystem)
@@ -35,7 +38,7 @@ class PlayerStation(models.Model):
     
     POS_STATES = (
                   (1, 'Anchored'),
-                  (2, 'Unknown?!'),
+                  (2, 'Newly Anchored(?)'),
                   (3, 'Reinforced'),
                   (4, 'Online'),
     )
@@ -54,6 +57,8 @@ class PlayerStation(models.Model):
     state = models.IntegerField(choices=POS_STATES)
     state_time = models.DateTimeField(blank=True)
     online_time = models.DateTimeField(blank=True)
+    cached_until = models.DateTimeField(blank=True)
+    last_updated = models.DateTimeField(blank=True)
     corporation = models.ForeignKey(Corporation, related_name='pos')
     #corp = models.ForeignKey(PlayerCorp)
     
@@ -99,6 +104,10 @@ class PlayerStation(models.Model):
         return "/pos/detail/%d/" % self.id
 
     @property
+    def cache_remaining(self):
+        return self.cached_until - datetime.utcnow()
+
+    @property
     def hours_of_fuel(self):
         return min([f.hours_of_fuel for f in self.fuel.exclude(type__name='Strontium Clathrates')])
 
@@ -115,6 +124,24 @@ class PlayerStation(models.Model):
         remaining += self.state_time
         remaining -= datetime.utcnow()
         return max(remaining, timedelta(0))
+    
+    @property
+    def sov_level(self):
+        if self.corporation.alliance_id == self.constellation.alliance_id:
+            return 'Constellation'
+        elif self.corporation.alliance_id == self.solarsystem.alliance_id:
+            return 'System'
+        else:
+            return 'None'
+
+    @property
+    def sov_fuel_rate(self):
+        if self.corporation.alliance_id == self.constellation.alliance_id:
+            return Decimal('0.70')
+        elif self.corporation.alliance_id == self.solarsystem.alliance_id:
+            return Decimal('0.75')
+        else:
+            return Decimal(1)
 
     #@property
     #def fuel(self):
@@ -156,8 +183,10 @@ class PlayerStationFuelSupply(models.Model):
         
     @property
     def max_consumption(self):
-        resource = self.station.tower.fuel.get(type=self.type)
-        return resource.quantity
+        burn_rate = self.station.tower.fuel.get(type=self.type).quantity
+        if self.type.name != 'Strontium Clathrates':
+            burn_rate = math.ceil(burn_rate * self.station.sov_fuel_rate)
+        return int(burn_rate)
     
     @property
     def hours_of_fuel(self):

@@ -6,36 +6,46 @@
 <!-- pos: {{ pos|pprint }} --> 
 <h4>{{ pos.moon }}</h4>
 <p>{{ pos.note }}</p>
-	<dl class="pos">
-	<dt>Owning corp</dt><dd>{{ pos.corporation }}</dd>
-	<dt>Depot</dt><dd>{{ pos.depot }}</dd>
-	<dt>Online time</dt><dd>{{ pos.online_time }}</dd>
-	<dt>State</dt>
-	{% if pos.is_online %}<dd class="online">{% else %}<dd class="offline">{% endif %}
-	{{ pos.state_name }}</dd>
-	<dt>State time</dt><dd>{{ pos.state_time }}</dd>
-	<dt>Solar System</dt><dd><a href="{{ pos.solarsystem.get_absolute_url }}">{{ pos.solarsystem }}</a></dd>
-	<dt>Constellation</dt><dd><a href="{{ pos.constellation.get_absolute_url }}">{{ pos.constellation }}</a></dd>
-	<dt>Region</dt><dd><a href="{{ pos.region.get_absolute_url }}">{{ pos.region }}</a></dd>
-	<dt>Tower Type</dt><dd><a href="{{ pos.tower.get_absolute_url }}">{{ pos.tower }}</a></dd>
-	<dt>Corporation use</dt>
-		{% if pos.corporation_use %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
-	<dt>Alliance use</dt>
-		{% if pos.alliance_use %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
-	<dt>Claiming Sovereignty</dt>
-		{% if pos.claim %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
-	<dt>Attack standing below</dt>
-		{% if pos.attack_standing_value %}<dd class="enabled">{{ pos.attack_standing_value }}{% else %}<dd class="disabled">Disabled{% endif %}</dd>
-	<dt>Attack sec status below</dt>
-		{% if pos.attack_secstatus_value %}<dd class="enabled">{{ pos.attack_secstatus_value }}{% else %}<dd class="disabled">Disabled{% endif %}</dd>
-	<dt>Attack at war</dt>
-		{% if pos.attack_atwar %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
-	<dt>Attack on aggression</dt>
-		{% if pos.attack_aggression %}<dd class="enabled">Enabled{% else %}<dd class="disabled">Disabled{% endif %}</dd>
-	<dt>Deployment flag</dt><dd>{{ pos.deploy_flags }}</dd>
-	<dt>Usage flag</dt><dd>{{ pos.usage_flags }}</dd>
-	</dl>
+	<table class="pos">
+	<tr><th>Owning corp</th><td>{{ pos.corporation }}</td></tr>
+	<tr><th>Depot</th><td>{{ pos.depot }}</td></tr>
+	<tr><th>Online time</th><td>{{ pos.online_time }}</td></tr>
+	<tr><th>Sov level</th><td>{{ pos.sov_level }}</td></tr>
+	<tr><th>State</th>
+	{% if pos.is_online %}<td class="online">{% else %}<td class="offline">{% endif %}
+	{{ pos.state_name }}</td></tr>
+	<tr><th>State time</th><td>{{ pos.state_time }}</td></tr>
+	<tr><th>Cached until</th><td>{{ pos.cached_until }}</td></tr>
+	</table>
+	
+	<h4>Location</h4>
+	<ul class="links">
+	
+	<li class="pos"><a href="{{ pos.solarsystem.get_absolute_url }}">
+	<img src="{{ pos.solarsystem.icon32 }}">
+	<span class="name">{{ pos.solarsystem }}</span><br>
+	<span class="type">Solar System</span></a></li>
+	
+	<li class="pos"><a href="{{ pos.constellation.get_absolute_url }}">
+	<img src="{{ pos.constellation.icon32 }}">
+	<span class="name">{{ pos.constellation }}</span><br>
+	<span class="type">Constellation</span></a></li>
+	
+	<li class="pos"><a href="{{ pos.region.get_absolute_url }}">
+	<img src="{{ pos.region.icon32 }}">
+	<span class="name">{{ pos.region }}</span><br>
+	<span class="type">Region</span></a></li>
+	
+	</ul>
+	
+	<h4>Type</h4>
+	<ul class="links">
+	<li><a href="{{ pos.tower.get_absolute_url }}"><img src="{{ pos.tower.icon32 }}">
+	<span class="name">{{ pos.tower }}</span></a></li>
+	</ul>
+
 <h4>Fuel Loaded</h4>
+  <p>Data here cannot be refreshed for another {{ pos.cache_remaining|time }}.</p>
   <table class="pos-fuel">
     <tr><th>Fuel</th><th>Qty</th><th>Burn</th><th>Remaining</th></tr>
 	{% for fuel in pos.fuel.all %}
@@ -43,13 +53,44 @@
 	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
 	  <td class="quantity">{{ fuel.quantity|comma }}</td>
 	  <td class="rate">{{ fuel.max_consumption|comma }}</td>
-	  {% expr fuel.type in pos.fuel_needed as lowest %}
-	  <td class="remaining{% if lowest %} lowest{% endif %}">{{ fuel.time_remaining|time }}</td>
+	  {% expr fuel.time_remaining as remaining %}
+	  {% expr remaining.days as days %}
+	  <td class="remaining remaining-{{days}}">{{ remaining|time }}</td>
 	</tr>  
 	{% endfor %}
   <tr><th class="runtime" colspan=3>Remaining runtime</th>
   <td class="runtime remaining">{{ pos.time_remaining|time }}</td></tr>
   </table>
-  <p>NOTE: At this time, sovergnity discounts are not being included in calculations. Please add 25% (sov 2) or 30% (sov 3) to the runtime.</p>
+  
+  {% ifequal pos.sov_level 'Constellation' %}
+  <p class="warning">NOTE: This tower is anchored in a system where your
+alliance holds constellation sovereignty. There is a known bug where the
+manage screen for a tower will not include the constellation discount in
+the display, even though it does actually include the discount in
+consumption rates. As such, the numbers in-game will appear higher than
+what is listed here. However, these are the correct numbers.</p>
+  {% endifequal %}
+	
+	<H4>Settings</H4>
+	<table class="pos">
+	<tr><th>Corporation use</th>
+		{% if pos.corporation_use %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+	<tr><th>Alliance use</th>
+		{% if pos.alliance_use %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+	<tr><th>Claiming Sovereignty</th>
+		{% if pos.claim %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+	<tr><th>Attack standing below</th>
+		{% if pos.attack_standing_value %}<td class="enabled">{{ pos.attack_standing_value }}{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+	<tr><th>Attack sec status below</th>
+		{% if pos.attack_secstatus_value %}<td class="enabled">{{ pos.attack_secstatus_value }}{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+	<tr><th>Attack at war</th>
+		{% if pos.attack_atwar %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+	<tr><th>Attack on aggression</th>
+		{% if pos.attack_aggression %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+	<tr><th>Deployment flag</th><td>{{ pos.deploy_flags }}</td></tr>
+	<tr><th>Usage flag</th><td>{{ pos.usage_flags }}</td></tr>
+	</table>
+	  
+  
 {% endspaceless %}
 {% endblock %}

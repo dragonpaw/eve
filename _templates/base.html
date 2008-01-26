@@ -7,8 +7,8 @@
 <link rel="stylesheet" href="/static/iphone.css">
 {% block head %}{% endblock %}
 </head>
-<body orient="landscape">
-    {% spaceless %}<div><h1>EVE Magic Widget for iPhone
+<body orient="landscape"><div>
+    {% spaceless %}<h1>EVE Magic Widget</h1>
     <!--  {% if user %}:
     <span id="user">
     {% if user.is_authenticated %}
@@ -23,19 +23,25 @@
     {% endif %}
     </span>
     -->
-    </h1>
-    </div>
     <!--
     <a class="showPage button" href="#loginForm">Login</a>
     <a class="showPage settings" href="#settingsForm">Topics</a>
     -->
     
 <!-- {{ nav|pprint }} -->    
-<div class="trail"><a href="/">Top</a>
+<div class="trail">{% if nav %}<a href="/">Menu</a>
     {% for n in nav %} &raquo; {% if not forloop.last %}<a href="{{ n.get_absolute_url }}">{{ n.name }}</a>{% else %}{{ n.name }}{% endif %}{% endfor %}
+    {% else %}
+    {% if flatpage %}
+    <a href="/">Menu</a> &raquo; {{ flatpage.title }}
+    {% else %}
+    Menu
+    {% endif %}
+    {% endif %}
 </div>{% endspaceless %}
 <div class="content">
 {% block content %}{% endblock %}
+</div>
 </div>
 <script type="text/javascript">
 var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
@@ -45,5 +51,6 @@ document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.
 var pageTracker = _gat._getTracker("UA-3183901-2");
 pageTracker._initData();
 pageTracker._trackPageview();
+{% if user %}pageTracker._setVar("{{ user }}"); {% endif %}
 </script>
 </body></html>

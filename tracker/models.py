@@ -24,7 +24,7 @@ class Ticket(models.Model):
     submitted_date = models.DateField(auto_now_add=True)
     modified_date = models.DateField(auto_now=True)
     submitter = models.ForeignKey(User, related_name="submitter")
-    assigned_to = models.ForeignKey(User)
+    assigned_to = models.ForeignKey(User, limit_choices_to = {'is_staff': True})
     description = models.TextField(blank=True)
     status = models.IntegerField(default=1, choices=STATUS_CODES)
     priority = models.IntegerField(default=1, choices=PRIORITY_CODES)

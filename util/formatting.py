@@ -57,8 +57,6 @@ def time(sec):
         return "%dm %ds" % (sec / 60, sec % 60)
     elif sec < (60**2 * 24):
         return "%dh %dm" % (sec / 60**2, sec % 60**2 / 60)
-    #elif sec < (60**2 * 24 * 7):
-    # Too lazy to do weeks.
     else:
         return "%dd %dh" % (sec / (60**2*24), sec % (60**2*24) / 60**2)
    

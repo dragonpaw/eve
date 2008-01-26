@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from eve.ccp.models import Item, Corporation
 from eve.util.formatting import comma
-
+from django.db.models import signals
+from django.dispatch import dispatcher
 
 class UserProfile(models.Model):
     #url = models.URLField() 
@@ -33,7 +34,7 @@ class UserProfile(models.Model):
         if q.count():
             return q[0].level
         else:
-            return None
+            return 0
 
     def trade_transactions(self, item=None, days=None):
         from eve.trade.models import Transaction
@@ -106,6 +107,11 @@ class UserProfile(models.Model):
 
         return avg, best
        
+def create_profile_for_user(sender, instance, signal, *args, **kwargs):
+    UserProfile.objects.get_or_create(user=instance)
+
+dispatcher.connect(create_profile_for_user, signal=signals.post_save, sender=User)
+       
 class Account(models.Model):
     id = models.IntegerField(primary_key=True, core=True)
     user = models.ForeignKey(UserProfile, related_name='accounts',
@@ -140,10 +146,12 @@ class Character(models.Model):
     training_completion = models.DateTimeField(null=True, blank=True)
     training_level = models.IntegerField(null=True, blank=True)
     training_skill = models.ForeignKey(Item, null=True, blank=True,
-                     limit_choices_to = {'group__category__name__exact': 'Skill'})
+                     limit_choices_to = {'group__category__name': 'Skill'})
     is_director = models.BooleanField(default=False)
     corporation = models.ForeignKey(Corporation)
     user = models.ForeignKey(UserProfile, related_name='characters')
+    last_updated = models.DateTimeField(blank=True)
+    cached_until = models.DateTimeField(blank=True)
     
     class Admin:
         list_display = ('name', 'user', 'get_isk_formatted', 
@@ -180,7 +188,7 @@ class Character(models.Model):
     get_isk_formatted.short_description = "ISK"
         
     def get_sp_formatted(self):
-        return comma( self.get_skill_points() )
+        return comma( self.skill_points )
     skill_points_formatted = property(get_sp_formatted)
     get_sp_formatted.short_description = "Skill Points"
     

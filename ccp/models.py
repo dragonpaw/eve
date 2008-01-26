@@ -1725,12 +1725,17 @@ class StationResourcePurpose(models.Model):
      
     class Admin:
         pass
+    
+    def __str__(self):
+        return self.purposetext
      
 class StationResource(models.Model):
     q = Q(group__name='Control Tower') & Q(published=True)
     
-    tower = models.ForeignKey(Item, limit_choices_to = q, db_column = 'controlTowerTypeID', related_name='fuel')
-    type = models.ForeignKey(Item, db_column='resourcetypeid', raw_id_admin=True, related_name='fuel_for')
+    tower = models.ForeignKey(Item, limit_choices_to = q, db_column = 'controlTowerTypeID',
+                              related_name='fuel')
+    type = models.ForeignKey(Item, db_column='resourcetypeid', raw_id_admin=True, 
+                             related_name='fuel_for')
     purpose = models.ForeignKey(StationResourcePurpose, db_column='purpose')
     quantity = models.IntegerField()
     minsecuritylevel = models.FloatField(null=True, blank=True)

@@ -37,5 +37,4 @@ def home(request):
     
     d['objects'] = objects
     d['title'] = "EVE Tool"
-    d['nav'] = [ {'name':'EVE Magic Widget', 'get_absolute_url':'/'} ]
     return render_to_response('generic_menu.html', d, context_instance=RequestContext(request))    

@@ -20,7 +20,12 @@
         {% endif %}
         <img src="{{ item.icon64 }}" class="icon">
     </div>
+    
     <h4>Details</h4>
+    {% if not item.published %}
+    <p>This item is marked as an unpublished item and will not actually be available in-game.
+     Have fun looking at it anyways.</p>
+    {% endif %}
     <table class="item-details">
     {% if item.is_blueprint %}
         <tr><th>Batch Size:</th><td>{{ item.blueprint_makes.portionsize }}</td></tr>
@@ -45,32 +50,40 @@
     {% if item.blueprint %}
     <div class="blueprint">
     <h4>Blueprint</h4>
+    <ul class="links">
     {% if not item.is_blueprint %}
-    <p><a href="{{ item.blueprint.get_absolute_url }}">
-    <img src="{{ item.blueprint.icon32 }}">The blueprint for this is: 
-    {{ item.blueprint.name }}</a></p>
+    <li><a href="{{ item.blueprint.get_absolute_url }}">
+    <img src="{{ item.blueprint.icon32 }}">
+    <span class="name">{{ item.blueprint.name }}</span>
+    </a></li>
     {% else %}
-    <p><img src="{{ item.blueprint_makes.icon32 }}">
-    <A href="{{ item.blueprint_makes.get_absolute_url }}">This blueprint makes the
-    {{ item.blueprint_makes.name }}</A></p>
+    <li>
+    <a href="{{ item.blueprint_makes.get_absolute_url }}">
+    <img src="{{ item.blueprint_makes.icon32 }}">
+    <span class="name">{{ item.blueprint_makes.name }}</span></a>
+    </li>
     {% endif %}
     {% if blueprint %}
-    <p><a href="/blueprints/edit/{{ item.blueprint.id }}/">Edit owned blueprint.</a></p>
-    <table>
-        <tr><th>Material Efficiency:</th>
-            <td>{{ blueprint.me }}</td></tr>
-        <tr><th>Production Efficiency:</th>
-            <td>{{ blueprint.pe }}</td></tr>
-        <tr><th>Calculated Waste:</th>
-            <td>{{ blueprint.waste_display }}</td></tr>
-        <tr><th>Original:</th>
-            <td>{% expr blueprint.original and "Yes" or "no" %}</td></tr>
-    </table>
+    <li class="blueprint"><a href="/trade/blueprints/edit/{{ blueprint.blueprint.id }}/">
+		<img src="{{ blueprint.blueprint.icon32 }}">
+    	<span class="name">{{ blueprint.blueprint.blueprint_makes.name }}</span>
+    	<br>
+    	<span class="me">ME:{{ blueprint.me }}</span>
+    	<span class="pe">PE:{{ blueprint.pe }}</span>
+    	<span class="waste">W: {{ blueprint.waste_display }}</span>
+    	{% if blueprint.original %}
+        	<span class="right is_original original">BPO</span>
+    	{% else %}
+        	<span class="right is_original copy">Copy</span>
+    	{% endif %}
+    	</a>
+    </li>
     {% else %}
-    <p>You do not own this blueprint. 
-    <a href="/trade/blueprints/edit/{{ item.blueprint.id }}/">Actually, I do.</a></p>
+    <li><a href="/trade/blueprints/edit/{{ item.blueprint.id }}/">
+    <span class="name">You do not own this blueprint.</span><br> 
+    <span class="link">Actually, I do. (Add to collection)</span></a></li>
     {% endif %}
-    </div>
+    </ul>
     {% endif %}
     
 {% if materials %}
@@ -224,6 +237,12 @@
     <p>If you are to manufacture the item instead, your best per-unit profit is
      {{ best_values.manufacturing_profit_isk|isk }} ISK
     ({{ best_values.manufacturing_profit_pct|floatformat:2 }}%)</p>
+    {% else %}
+    {% if item.blueprint %}
+    <p>The widget is capable of calculating manufacturing profit for you
+on this item, but you need to log in, add the blueprint to your
+collection, and sell some of the item.</p>
+    {% endif %}
     {% endif %}
     {% else %}<!-- if user.is_authenticated -->
       <p>You have to log in if you want to see your transaction data.</p>

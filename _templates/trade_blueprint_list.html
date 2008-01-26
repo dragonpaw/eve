@@ -4,21 +4,23 @@
 
 {% block content %}
 <!-- {{ blueprints|pprint }} -->
-<p><a href="/trade/blueprints/edit/">Add a blueprint to your owned list.</a></p>
 <ul class="links">
+    <li><a href="/trade/blueprints/edit/">
+    <span class="nav">Add a blueprint to your owned list.</span>
+    </a></li>
 {% for b in blueprints %}
 	<li class="blueprint"><a href="/trade/blueprints/edit/{{ b.blueprint.id }}/">
 		<img src="{{ b.blueprint.icon32 }}">
     	<span class="name">{{ b.blueprint.blueprint_makes.name }}</span>
-    	{% if b.original %}
-        	<span class="original">Original</span>
-    	{% else %}
-        	<span class="copy">Copy</span>
-    	{% endif %}
     	<br>
     	<span class="me">ME:{{ b.me }}</span>
     	<span class="pe">PE:{{ b.pe }}</span>
-    	<span class="waste">Waste: {{ b.waste_display }}</span>
+    	<span class="waste">W: {{ b.waste_display }}</span>
+    	{% if b.original %}
+        	<span class="right is_original original">BPO</span>
+    	{% else %}
+        	<span class="right is_original copy">Copy</span>
+    	{% endif %}
     	</a>
     </li>
 {% endfor %}

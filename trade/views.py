@@ -51,7 +51,7 @@ class BlueprintOwnedFormEdit(forms.Form):
     original = forms.BooleanField(label='Original?', initial=True)
 
 class BlueprintOwnedFormNew(forms.Form):
-    set = Item.objects.filter(group__category__name__exact='Blueprint')
+    set = Item.objects.filter(group__category__name__exact='Blueprint', published=True)
     set = set.order_by('name',)
     item = forms.ModelChoiceField(queryset=set)
     me = forms.IntegerField(label='Material Efficiency', initial=0)
@@ -86,7 +86,7 @@ def blueprint_edit(request, item_id=None):
         else:
             try:
                 bpo = BlueprintOwned.objects.get(blueprint=item_id, user=request.user)
-                form = BlueprintOwnedFormEdit(initial={'me': bpo.me, 'pe': bpo.pe})
+                form = BlueprintOwnedFormEdit(initial={'me': bpo.me, 'pe': bpo.pe, 'original':bpo.original})
                 item = bpo.blueprint
             except BlueprintOwned.DoesNotExist:
                 form = BlueprintOwnedFormEdit(initial={'item': item_id})
