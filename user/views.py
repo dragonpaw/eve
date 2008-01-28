@@ -77,8 +77,8 @@ def account(request, id=None):
         d['form'] = form
         return render_to_response('user_account_detail.html', d,
                                    context_instance=RequestContext(request))
-        
-    id = form.cleaned_data['id']
+    if not id:
+        id = form.cleaned_data['id']
     api_key = form.cleaned_data['api_key']
     user = request.user
     profile = user.get_profile()
