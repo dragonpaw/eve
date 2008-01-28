@@ -160,13 +160,15 @@ def update_account(d_account):
     ids = []
     for c in result.characters:
         ids.append(c.characterID)
-        Character.objects.get_or_create(id = c.characterID,
+        character, created = Character.objects.get_or_create(id = c.characterID,
                                         defaults={'name':c.name,
                                                   'account':d_account,
                                                   'user':d_account.user,
                                                   'last_updated':datetime.utcnow(),
                                                   'cached_until':datetime.utcnow(),
                                                   'corporation_id':c.corporationID})
+        character.account = d_account
+        character.save()
     
     # Look for deleted characters.
     for character in Character.objects.filter(account__id=d_account.id).exclude(id__in=ids):
@@ -196,9 +198,11 @@ def update_character(character):
             character.is_director = False
             print "Not Director."
 
-    character.name = api_data.name    
+    character.name = api_data.name
     character.corporation = corp
-    character.user = account.user
+    # We set the account earlier in update_account. Now just make sure it matches.
+    # USernames can change, or a character might move between accounts.
+    character.user = character.account.user
     character.last_updated = datetime.utcnow()
     character.cached_until = datetime.utcnow() + character_cache_time
     character.save()
