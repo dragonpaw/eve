@@ -45,7 +45,11 @@
 	</ul>
 
 <h4>Fuel Loaded</h4>
+  {% if pos.cache_remaining %}
   <p>Data here cannot be refreshed for another {{ pos.cache_remaining|time }}.</p>
+  {% else %}
+  <p>Data here has expired from the cache and will be refresh shortly.</p>
+  {% endif %}
   <table class="pos-fuel">
     <tr><th>Fuel</th><th>Qty</th><th>Burn</th><th>Remaining</th></tr>
 	{% for fuel in pos.fuel.all %}

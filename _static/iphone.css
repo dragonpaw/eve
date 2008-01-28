@@ -247,20 +247,14 @@ li.character a {
 	font-size: 11px;
 }
 
-.character .skill-completion,
-.character .skill-points {
-	text-align: right;
-	position: absolute;
-	right: 40px;
+.character .portrait {
+	padding: 10px 32px 10px 27px;
+	position: relative;
 }
 
 .character .skill-points {
 	color: red;
-}
-
-.character .portrait {
-	padding: 10px 32px 10px 27px;
-	position: relative;
+	font-size: 12px;
 }
 
 .character .isk {
@@ -270,7 +264,7 @@ li.character a {
 
 .account .api-key {
 	color: grey;
-	font-size: 12px;
+	font-size: 13px;
 	font-weight: normal;
 	font-family: monospace;
 }

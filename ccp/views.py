@@ -161,13 +161,18 @@ def item(request, item_id, days=14):
             
     if d['blueprint']:
         materials['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, d['blueprint'].me)
+        del materials['titles']['Manufacturing']
 
     for key, value in materials['titles'].items():
         cost = Decimal(0)
         for m in materials['materials'].values():
             if m.has_key(key) and m['index']:
                 cost += Decimal(str(m['index'].value)) * m[key]
-        cost = cost / item.portionsize
+        if item.is_blueprint:
+            portion = item.blueprint_makes.portionsize
+        else:
+            portion = item.portionsize
+        cost = cost / portion
         materials['isk'][key] = cost
         
     if (materials['isk'].has_key('Personal') and best_values.has_key('sell') 

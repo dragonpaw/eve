@@ -30,19 +30,29 @@ parser.add_option('-s', '--stations', action='store_true', default=False,
                   help='Load the list of conquerable stations/outposts.')
 parser.add_option('-u', '--user', 
                   help='Username to load accounts for.')
+parser.add_option('-f', '--force', action='store_true', default=False,
+                  help='Force reload of cached data.')
+parser.add_option('-d', '--debug', action='store_true', default=False,
+                  help='Be really chatty.')
+
 (options, args) = parser.parse_args()
 
 sp = [0, 250, 1414, 8000, 45255, 256000]
-debug = False
 
 skills = Item.skill_objects.all()
-api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)
+api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=options.debug, throw=False)).context(version=2)
 
 character_cache_time = timedelta(hours=1)
 
 # After this long, we purge a character giving a security error. (So people don't change key
 # before leaving a corp to still see data.)
 character_security_timeout = timedelta(hours=12) 
+
+exit_code = 0
+
+def exit():
+    print "Runtime: %s" % (datetime.utcnow() - start_time)
+    sys.exit(exit_code)
 
 def auth(d_account):
     """Login as a EVE account."""
@@ -142,7 +152,7 @@ def update_map():
     
 def update_account(d_account):
     assert( isinstance(d_account, Account) )
-    print "Starting Account: %s (%d)" % (d_account.user.username, d_account.id)
+    print "Account: %s (%d)" % (d_account.user.username, d_account.id)
     
     auth = api.auth(userID=d_account.id, apiKey=d_account.api_key)
     result = auth.account.Characters()
@@ -150,7 +160,13 @@ def update_account(d_account):
     ids = []
     for c in result.characters:
         ids.append(c.characterID)
-        update_character(d_account, c)
+        Character.objects.get_or_create(id = c.characterID,
+                                        defaults={'name':c.name,
+                                                  'account':d_account,
+                                                  'user':d_account.user,
+                                                  'last_updated':datetime.utcnow(),
+                                                  'cached_until':datetime.utcnow(),
+                                                  'corporation_id':c.corporationID})
     
     # Look for deleted characters.
     for character in Character.objects.filter(account__id=d_account.id).exclude(id__in=ids):
@@ -160,36 +176,36 @@ def update_account(d_account):
     d_account.last_refreshed = datetime.now()
     d_account.save()
     
-def update_character(d_account, character):
-    assert( isinstance(d_account, Account) )
-    assert( isinstance(character, eveapi.Row) )
-    print "Starting Character: %s (%d)" % (character.name, character.characterID)
+def update_character(character):
+    assert( isinstance(character, Character) )
+
     
-    # Django create/lookup.
-    try:
-        d_character = Character.objects.get(id = character.characterID)
-        d_character.account = d_account
-        d_character.name = character.name
-    except Character.DoesNotExist:
-        d_character = Character(id = character.characterID,
-                                name = character.name,
-                                account = d_account)
-        
-    if d_character.cached_until and d_character.cached_until > datetime.utcnow():
-        print "Cached still."
+    if not options.force and character.cached_until and character.cached_until > datetime.utcnow():
+        print "Character: %s (%d): Still cached." % (character.name, character.id)
         return
         
-    corp = update_corporation(character.corporationID, name=character.corporationName)
+    print "Starting Character: %s (%d)" % (character.name, character.id)
+    api_data = auth_character(character).CharacterSheet()
+    corp = update_corporation(api_data.corporationID, name=api_data.corporationName)
+    try:
+        auth = auth_corp(character)
+        auth.StarbaseList()
+        character.is_director = True
+    except eveapi.Error, e:
+        if e.message == 'Character must be a Director or CEO':
+            character.is_director = False
+            print "Not Director."
+
+    character.name = api_data.name    
+    character.corporation = corp
+    character.user = account.user
+    character.last_updated = datetime.utcnow()
+    character.cached_until = datetime.utcnow() + character_cache_time
+    character.save()
     
-    d_character.corporation = corp
-    d_character.user = d_account.user
-    d_character.last_updated = datetime.utcnow()
-    d_character.cached_until = datetime.utcnow() + character_cache_time
-    d_character.save()
-    update_character_wallet(d_character)
-    update_character_skills(d_character)
-    update_character_transactions(d_character)
-    update_pos(d_character, corp)
+    update_character_wallet(character)
+    update_character_skills(character)
+    update_character_transactions(character)
 
 def update_character_wallet(d_character):
     assert( isinstance(d_character, Character) )
@@ -207,8 +223,6 @@ def update_character_skills(d_character):
     
     training = me.SkillInTraining()
     if training.skillInTraining:
-        print "Training: %s, End Time: %s" % (training.skillInTraining,
-                                              training.trainingEndTime)
         t = datetime.fromtimestamp(training.trainingEndTime) 
         skill = Item.objects.get(pk=training.trainingTypeID)
         
@@ -225,10 +239,10 @@ def update_character_skills(d_character):
     for d_skill in skills:
         trained = sheet.skills.Get(d_skill.id, False)
         if trained:
-            if debug:
-                print "- %s Rank(%d) - SP: %d/%d - Level: %d" %\
-                (d_skill.name, d_skill.skill_rank, trained.skillpoints, (d_skill.skill_rank * sp[trained.level]), trained.level)
-                
+#            if DEBUG:
+#                print "- %s Rank(%d) - SP: %d/%d - Level: %d" %\
+#                (d_skill.name, d_skill.skill_rank, trained.skillpoints, (d_skill.skill_rank * sp[trained.level]), trained.level)
+#                
             try:
                 obj = SkillLevel.objects.get(character = d_character, skill = d_skill)
                 obj.points = trained.skillpoints
@@ -243,57 +257,57 @@ def update_character_transactions(d_character):
     
     me = auth_character(d_character)
     
-    wallet = me.WalletTransactions()
     last_id = 0
     stopping_time = time.time() - (60*60*24*7)
-    for t in wallet.transactions:
-        update_character_transactions_single(d_character, t)
-        last_id = t.transactionID
-        last_time = t.transactionDateTime
-    qty = len(wallet.transactions)
-    try:
-        while len(wallet.transactions) == 1000 and last_time > stopping_time:
+    qty = 0
+    while qty==0 or (len(wallet.transactions) == 1000 and last_time > stopping_time):
+        if last_id == 0:
+            print "Loading first wallet."
+            wallet = me.WalletTransactions()
+        else:
+            print "Loading wallet before %d" % last_id
             wallet = me.WalletTransactions(beforeTransID=last_id)
-            qty = qty + len(wallet.transactions)
-            for t in wallet.transactions:
-                update_character_transactions_single(d_character, t)
-                last_id = t.transactionID
-                last_time = t.transactionDateTime
-    except eveapi.Error, e:
-        print "Oops! eveapi returned the following error:"
-        print "code:", e.code
-        print "message:", e.message
-    print "last ID: %s, qty: %d" % (last_id, qty)    
+        for t in wallet.transactions:
+            try:
+                Transaction.objects.get(character = d_character, transaction_id = t.transactionID)
+                print "Loaded %d new transactions." % qty
+                return
+            except Transaction.DoesNotExist:
+                pass
+        
+            update_character_transactions_single(d_character, t)
+            last_id = t.transactionID
+            last_time = t.transactionDateTime
+            qty+=1
+        if last_id == 0:
+            print "No transactions to load."
+            return
 
 def update_character_transactions_single(d_character, t):
-    try:
-        obj = Transaction.objects.get(character = d_character,
-                                      transaction_id = t.transactionID)
-    except Transaction.DoesNotExist:
-        if t.transactionType == 'buy':
-            sold = False
-        else:
-            sold = True
+    if t.transactionType == 'buy':
+        sold = False
+    else:
+        sold = True
 
-        if debug:
-            print "%s sales yielded %.2f ISK since %s" %\
-            (t.typeName, t.quantity, time.asctime(time.gmtime(t.transactionDateTime)))
+#    if DEBUG:
+#        print "%s sales yielded %.2f ISK since %s" %\
+#        (t.typeName, t.quantity, time.asctime(time.gmtime(t.transactionDateTime)))
                     
-        item = Item.objects.get(pk=t.typeID)
-        station = Station.objects.get(id=t.stationID)
+    item = Item.objects.get(pk=t.typeID)
+    station = Station.objects.get(id=t.stationID)
             
-        obj = Transaction(character = d_character,
-                          transaction_id = t.transactionID,
-                          sold = sold,
-                          item = item,
-                          price = t.price,
-                          quantity = t.quantity,
-                          station =  station,
-                          region = station.region,
-                          time = datetime(*time.gmtime(t.transactionDateTime)[0:5]),
-                          client = t.clientName,
-                          )
-        obj.save()
+    obj = Transaction(character = d_character,
+                      transaction_id = t.transactionID,
+                      sold = sold,
+                      item = item,
+                      price = t.price,
+                      quantity = t.quantity,
+                      station =  station,
+                      region = station.region,
+                      time = datetime(*time.gmtime(t.transactionDateTime)[0:5]),
+                      client = t.clientName,
+                      )
+    obj.save()
 
 def update_corporation(id, name=None):
     # http://api.eve-online.com/eve/AllianceList.xml.aspx
@@ -355,49 +369,47 @@ def update_stations():
         station.corporation = corporation
         station.save()
 
-def update_pos(character, corp):
+def update_poses(character):
     assert( isinstance(character, Character) )
     
     auth = auth_corp(character)
+    corp = character.corporation
     
-    try:
-        ids = []
-        for s in auth.StarbaseList().starbases:
-            ids.append(s.itemID)
-            update_pos_detail(auth, s, corp)
-        character.is_director = True
-        character.save()
-        
-        # Look for POSes that got taken down.
-        for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
-            print "Removed POS: %s will be purged." % pos.moon
-            pos.delete()
-        
-    except eveapi.Error, e:
-        if e.message == 'Character must be a Director or CEO':
-            character.is_director = False
-            character.save()
-            print "Not Director."
-            return
+    ids = []
+    for s in auth.StarbaseList().starbases:
+        ids.append(s.itemID)
+        update_pos_detail(auth, s, corp)
+    character.is_director = True
+    character.save()
+    
+    # Look for POSes that got taken down.
+    for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
+        print "Removed POS: %s will be purged." % pos.moon
+        pos.delete()
+
         
 def update_pos_detail(auth, api, corp):
-    print "POS: %d=%d at %s[%s] Online:%s" % (api.itemID, api.typeID, api.locationID, 
-                                              api.moonID, api.onlineTimestamp)
     try:
         station = PlayerStation.objects.get(pk=api.itemID)
     except PlayerStation.DoesNotExist:
         station = PlayerStation(id=api.itemID)
         station.depot = ""
 
-    if station.cached_until and station.cached_until > datetime.utcnow():
-        print "Cached still."
+    moon = MapDenormalize.objects.get(id=api.moonID)
+    tower = Item.objects.get(pk=api.typeID)
+
+    if not options.force and station.cached_until and station.cached_until > datetime.utcnow():
+        print "POS: %s at %s: Still cached." % (tower, moon)
         return
+
+    
+    print "POS: %s at %s" % (tower, moon)
 
     detail = auth.StarbaseDetail(itemID=api.itemID)
 
-    station.tower = Item.objects.get(pk=api.typeID)
+    station.tower = tower
     station.corporation = corp
-    station.moon = MapDenormalize.objects.get(id=api.moonID)
+    station.moon = moon
     station.solarsystem = SolarSystem.objects.get(id=api.locationID)
     station.constellation = station.moon.constellation        
     station.region = station.moon.region
@@ -423,61 +435,86 @@ def update_pos_detail(auth, api, corp):
     station.last_updated = datetime.utcnow()
 
     station.save()
-    
-    #print dir(api)
+    station.setup_fuel_supply()
     
     # Now, the fuel.
-    PlayerStationFuelSupply.objects.filter(station=station).delete()
-    for fuel in detail.fuel:
-        type = Item.objects.get(id=fuel.typeID)
-        fuel = PlayerStationFuelSupply(type=type, station=station, quantity=fuel.quantity)
-        fuel.solarsystem = SolarSystem.objects.get(id=api.locationID)
-        fuel.constellation = station.moon.constellation        
-        fuel.region = station.moon.region
-        fuel.corporation = corp
+    for fuel_type in detail.fuel:
+        type = Item.objects.get(id=fuel_type.typeID)
+        fuel = PlayerStationFuelSupply.objects.get(type=type, station=station)
+        fuel.quantity=fuel_type.quantity
         fuel.save()
 
-exit = 0
+start_time = datetime.utcnow()
 if options.alliances:
     try:
         update_alliances()
     except eveapi.Error, e:
         print "Failed! [%s]" % e
-        exit = 1
+        exit_code = 1
     
 if options.map:
     try:
         update_map()
     except eveapi.Error, e:
         print "Failed! [%s]" % e
-        exit = 1
+        exit_code = 1
 
 if options.stations:
     try:
         update_stations()
     except eveapi.Error, e:
         print "Failed! [%s]" % e
-        exit = 1
+        exit_code = 1
 
 if options.stations or options.map or options.alliances:
     # We do not load users if we're loading other things.
-    accounts = ()
-elif options.user:
+    exit()
+
+
+if options.user:
     print "Only loading characters for: %s" % options.user
     accounts = Account.objects.filter(user__user__username=options.user)
 else:
     accounts = Account.objects.all()
     
-for d_account in accounts:
+for account in accounts:
     try:
-        update_account(d_account)
+        update_account(account)
     except eveapi.Error, e:
         if (e.message == 'Authentication failure' 
-            and d_account.last_refreshed + character_security_timeout < datetime.utcnow() ):
+            and account.last_refreshed + character_security_timeout < datetime.utcnow() ):
             print "This account has had an invalid API key for too long. Deleting..."
-            d_account.delete()
+            account.delete()
              
         print "Failed! [%s]" % e
-        exit = 1
+        exit_code = 1
+
+# Now, the characters.
+if options.user:
+    characters = Character.objects.filter(user__user__username=options.user)
+else:
+    characters = Character.objects.all()
+    
+for character in characters:
+    try:
+        update_character(character)
+    except eveapi.Error, e:
+        print "Failed! [%s]" % e
+        exit_code = 1
+
+if options.user:
+    directors = []
+    for c in Character.objects.filter(user__user__username=options.user):
+        if c.is_director:
+            directors.append(c)
+else:
+    directors = Character.objects.filter(is_director=True)
+
+for character in directors:
+    try:
+        update_poses(character)
+    except eveapi.Error, e:
+        print "Failed! [%s]" % e
+        exit_code = 1
         
-sys.exit(exit)
+exit()

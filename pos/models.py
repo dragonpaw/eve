@@ -105,7 +105,7 @@ class PlayerStation(models.Model):
 
     @property
     def cache_remaining(self):
-        return self.cached_until - datetime.utcnow()
+        return max(self.cached_until - datetime.utcnow(), 0)
 
     @property
     def hours_of_fuel(self):
@@ -143,6 +143,22 @@ class PlayerStation(models.Model):
         else:
             return Decimal(1)
 
+    def setup_fuel_supply(self):
+        for fuel in self.tower.fuel.all():
+            if fuel.faction:
+                if fuel.faction != self.solarsystem.faction:
+                    continue
+                elif self.solarsystem.security < fuel.minsecuritylevel:
+                    continue
+            PlayerStationFuelSupply.objects.get_or_create(station=self,
+                                                          type=fuel.type,
+                                                          defaults={'quantity':0,
+                                                                    'solarsystem':self.solarsystem,
+                                                                    'constellation':self.moon.constellation,        
+                                                                    'region':self.moon.region,
+                                                                    'corporation':self.corporation,})
+                
+        
     #@property
     #def fuel(self):
     #    return StationResource.objects.filter(tower=self.tower)
