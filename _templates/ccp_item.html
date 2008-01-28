@@ -47,6 +47,21 @@
     {% endif %}
     </table>
     
+    {% if item.fuel.count %}
+    <h4>Fuel Consumption (Hourly)</h4>
+    <p>Charters only apply if in low-sec for that faction.</p>
+    <table>
+    {% for fuel in item.fuel.all %}
+    <tr>
+    <td class="icon"><img src="{{ fuel.type.icon16 }}"></td>
+    <th>{{ fuel.type }}</th>
+    <td>{{ fuel.quantity }}</td>
+    </tr>
+    {% endfor %}
+    </table>
+    {% endif %}
+    
+    
     {% if item.blueprint %}
     <div class="blueprint">
     <h4>Blueprint</h4>

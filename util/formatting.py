@@ -1,7 +1,6 @@
 import datetime
 import re
 from decimal import Decimal, InvalidOperation
-from eve.ccp.models import icon32
 import math
 
 comma_regex = re.compile(r'^(-?\d+)(\d{3})')
@@ -54,9 +53,15 @@ def time(sec):
     if sec < 60:
         return "%0.2f s" % sec
     elif sec < (60**2):
-        return "%dm %ds" % (sec / 60, sec % 60)
+        if sec % 60 == 0:
+            return "%dm" % (sec / 60)
+        else:
+            return "%dm %ds" % (sec / 60, sec % 60)
     elif sec < (60**2 * 24):
-        return "%dh %dm" % (sec / 60**2, sec % 60**2 / 60)
+        if sec % 60**2 == 0:
+            return "%dh" % (sec / 60**2)
+        else:
+            return "%dh %dm" % (sec / 60**2, sec % 60**2 / 60)
     else:
         return "%dd %dh" % (sec / (60**2*24), sec % (60**2*24) / 60**2)
    
@@ -71,6 +76,8 @@ def title(nav):
         
 
 def make_nav(name, url, icon):
+    from eve.ccp.models import icon32
+
     if icon is not None:
         return {'name':name, 'get_absolute_url':url,'icon32':icon32(icon)}
     else:

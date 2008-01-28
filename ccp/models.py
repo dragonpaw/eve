@@ -11,6 +11,7 @@ from django.db import models
 from decimal import Decimal
 from django.db.models.query import Q, QNot
 from eve.util.alliance_graphics import id
+from eve.util.formatting import comma, time
 
 TRUE_FALSE = (
     ('true', 'Yes'),
@@ -559,7 +560,7 @@ class Attribute(models.Model):
         elif name == 'groupID':
             value = Group.objects.get(pk=value)
         elif name == 'Milliseconds' and value > 1000:
-            value = "%s s" % (Decimal(value) / 1000)
+            value = time(value/1000)
         elif name == 'typeID':
             value = Item.objects.get(pk=value)
         elif name == 'attributeID':
@@ -567,7 +568,7 @@ class Attribute(models.Model):
         elif name == 'Inverse Absolute Percent':
             value = "%d %%" % int((1 - value) * 100)
         else:
-            value = str(value) + " " + self.unit.displayname
+            value = str(comma(value)) + " " + self.unit.displayname
         return value
         
     

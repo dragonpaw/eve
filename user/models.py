@@ -123,6 +123,9 @@ class Account(models.Model):
         list_display = ('user', 'id')
         list_display_links = ('id', )
         
+    class Meta:
+        ordering = ('user',)
+        
     def __str__(self):
         return "%s: %s" % (self.user.username, self.id)
        

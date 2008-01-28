@@ -16,11 +16,11 @@
     <span class="name">{{ c.name }}</span>
     <span class="corporation"><br>{{ c.corporation }}<br></span>
     <span class="isk">{{ c.isk|floatformat:0|comma }} ISK</span>
-    <span class="skill-points">{{ c.skill_points|isk }} SP</span>
+    <span class="right skill-points">{{ c.skill_points|isk }} SP</span>
     <br>
     {% if c.training_skill %} 
     <span class="skill">{{ c.training_skill }} {{ c.training_level }}</span>
-    <span class="skill-completion">{{ c.training_remaining|default:"Done"|time }}</span>
+    <span class="right skill-completion">{{ c.training_remaining|default:"Done"|time }}</span>
     {% else  %}
     <span class="skill">No skill in training.</span>
     {% endif %}
@@ -38,7 +38,7 @@
   </a>
   </li>
   {% endfor %}
-  <li><a href="/user/account/add/">Add new account API key.<br>Full key required.</a></li>
+  <li><a href="/user/account/add/"><span class="link">Add new account API key.<br>Full key required.</span></a></li>
 </ul>
 {% endspaceless %}
 {% endblock %}
