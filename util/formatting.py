@@ -75,10 +75,10 @@ def title(nav):
     return " &laquo; ".join(temp)
         
 
-def make_nav(name, url, icon):
+def make_nav(name, url, icon, note=None):
     from eve.ccp.models import icon32
 
     if icon is not None:
-        return {'name':name, 'get_absolute_url':url,'icon32':icon32(icon)}
+        return {'name':name, 'get_absolute_url':url,'icon32':icon32(icon), 'note':note}
     else:
-        return {'name':name, 'get_absolute_url':url,'icon32':None}
+        return {'name':name, 'get_absolute_url':url,'icon32':None, 'note':note}
