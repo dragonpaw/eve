@@ -1,8 +1,10 @@
 #from django.contrib.auth.models import User 
 from django.db import models
-from eve.ccp.models import *
+from eve.ccp.models import Item, Region, Station
 from eve.util.formatting import comma
 from eve.user.models import Character, UserProfile
+from datetime import date
+from decimal import Decimal
 
 # Create your models here.
 class Transaction(models.Model):
@@ -62,34 +64,58 @@ class Transaction(models.Model):
     
 class MarketIndex(models.Model):
     name = models.CharField(max_length=200)
-    url = models.CharField(max_length=200)
+    url = models.CharField(max_length=200, blank=True)
+    note = models.CharField(max_length=200, blank=True)
+    user = models.ForeignKey(UserProfile, blank=True, null=True)
 
     class Meta:
         verbose_name_plural = "Market Indexes"
         ordering = ['name']
     
     class Admin:
-        list_display = ('id', 'name', 'url')
+        list_display = ('id', 'user', 'name', 'url')
     
     def __str__(self):
-        return self.name
+        if self.user:
+            return "%s: %s" % (self.name, self.user)
+        else:
+            return self.name
         
     def get_absolute_url(self):
         return "/trade/index/%d/" % (self.id)
+        
+    def set_value(self, item, buy=0, sell=0, buy_qty=0, sell_qty=0):
+        assert(isinstance(item, Item))
+        #print "self: %s, item: %s, b: %s/%s s: %s/%s" % (self, item, buy, buy_qty, sell, sell_qty)
+        try:
+            index = self.items.get(item=item)
+        except MarketIndexValue.DoesNotExist:
+            index = MarketIndexValue(index=self, item=item)
+        index.buy = buy
+        index.sell = sell
+        index.date = date.today()
+        index.buy_qty = buy_qty
+        index.sell_qty = sell_qty
+        index.save()
+        return index
         
 class MarketIndexValue(models.Model):
     item = models.ForeignKey(Item, raw_id_admin=True, related_name='index_values')
     index = models.ForeignKey(MarketIndex, related_name='items')
     date = models.DateField()
-    value = models.FloatField()
+    buy = models.FloatField()
+    sell = models.FloatField()
+    buy_qty = models.IntegerField(blank=True)
+    sell_qty = models.IntegerField(blank=True)
+    
     class Meta:
         ordering = ['item']
     
     class Admin:
-        list_display = ('item', 'index', 'value')
+        list_display = ('item', 'index', 'buy', 'sell')
     
     def __str__(self):
-        return "%s: %f" % (self.item, self.value)
+        return "%s: %f/%f" % (self.item, self.buy, self.sell)
         
 class BlueprintOwned(models.Model):
     user = models.ForeignKey(UserProfile, related_name='blueprints')

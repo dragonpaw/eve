@@ -1120,22 +1120,7 @@ class Item(models.Model):
             filter = filter & Q(item=self)
             
         return Material.objects.filter(filter)
-    
-    @property
-    def value(self):
-        index = self.index
-        if index:
-            return index.value
-        else:
-            return None
-        
-    @property
-    def index(self):
-        if self.index_values.order_by('-date').count():
-            return self.index_values.all()[0]
-        else:
-            return None
-        
+       
     def refines(self):
         return self.materials(activity='Refining') 
 

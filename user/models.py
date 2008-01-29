@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from django.contrib.auth.models import User 
 from django.db import models
-from eve.ccp.models import Item, Corporation
-from eve.util.formatting import comma
 from django.db.models import signals
 from django.dispatch import dispatcher
+from eve.ccp.models import Item, Corporation
+from eve.util.formatting import comma
 
 class UserProfile(models.Model):
     #url = models.URLField() 
@@ -45,7 +45,50 @@ class UserProfile(models.Model):
             target = datetime.now() - timedelta(days)
             transactions = transactions.filter(time__gte=target)
         return transactions
+    
+    def get_index(self, type):
+        from eve.trade.models import MarketIndex, MarketIndexValue
+        personal = MarketIndex.objects.get(user=self)
+        public = MarketIndex.objects.get(user__isnull=True)
+        try:
+            index = personal.items.get(item=type)
+            return index
+        except MarketIndexValue.DoesNotExist:
+            pass
+        try:
+            index = public.items.get(item=type)
+            return index
+        except MarketIndexValue.DoesNotExist:
+            pass
+        return None
         
+    
+    def update_personal_index(self):
+        from eve.trade.models import Transaction, MarketIndex
+        index, _ = MarketIndex.objects.get_or_create(name="Personal Trade History", 
+                                                     user=self)
+        items = {}
+        for t in Transaction.objects.filter(character__account__user__exact=self):
+            id = t.item_id
+            quantity = Decimal(t.quantity)
+            price = Decimal("%0.2f" % t.price)
+            if not items.has_key(id):
+                items[id] = {'type':t.item, 'buy':0, 'sell':0, 'buy_qty':0, 'sell_qty':0}
+            if t.sold:
+                items[id]['sell'] += quantity * price
+                items[id]['sell_qty'] += quantity
+            else:
+                items[id]['buy'] += quantity * price
+                items[id]['buy_qty'] += quantity
+        for v in items.values():
+            if v['sell_qty']:
+                v['sell'] /= v['sell_qty']
+            if v['buy_qty']:
+                v['buy'] /= v['buy_qty']
+            index.set_value(v['type'], buy=v['buy'], sell=v['sell'],
+                            buy_qty=v['buy_qty'], sell_qty=v['sell_qty'])
+        index.items.exclude( item__id__in=items.keys() ).delete()
+    
     #-------------------------------------------------------------------------
     # Market transactions. (Need to add user-specific code.)
     def trade_history(self, item=None, days=None):

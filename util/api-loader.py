@@ -43,6 +43,7 @@ skills = Item.skill_objects.all()
 api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=options.debug, throw=False)).context(version=2)
 
 character_cache_time = timedelta(hours=1)
+transaction_cutoff = datetime.utcnow() - timedelta(days=30)
 
 # After this long, we purge a character giving a security error. (So people don't change key
 # before leaving a corp to still see data.)
@@ -505,6 +506,17 @@ for character in characters:
     except eveapi.Error, e:
         print "Failed! [%s]" % e
         exit_code = 1
+
+
+Transaction.objects.filter(time__lt=transaction_cutoff).delete()
+if options.user:
+    profiles = [ UserProfile.objects.get(name=options.user) ]
+else:
+    profiles = UserProfile.objects.all()
+    
+for profile in profiles:
+    profile.update_personal_index()    
+
 
 if options.user:
     directors = []

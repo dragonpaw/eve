@@ -5,14 +5,18 @@
 {% block content %}
 {% spaceless %}
 <h4>{{ index.name }}</h4>
+{% if index.url %}
 <p>Taken from: <a href="{{ index.url }}">{{ index.url }}</a></p>
+{% endif %}
+<p>Red value is buy price, green value is sell price.</p>
 <ul class="links">
 	{% for i in values %}
 	<li class="index">
 		<a href="{{ i.item.get_absolute_url }}">
 		<img src="{{ i.item.graphic.icon32 }}">
-		{{ i.item.name }}<br>
-		<span class="price right">{{ i.value|floatformat:2|comma }}</span>
+		<span class="name">{{ i.item.name }}</span><br>&nbsp;
+		{% if i.buy %}<span class="index-buy">{{ i.buy|floatformat:2|comma }} ISK</span>{% endif %}
+		{% if i.sell %}<span class="index-sell right">{{ i.sell|floatformat:2|comma }} ISK</span>{% endif %}
 		</a>
 	</li>
 	{% endfor %}

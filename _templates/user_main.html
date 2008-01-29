@@ -9,6 +9,7 @@
   <tr><th>Email</th><td>{{ user.email }}</td></tr>
 </table>
 <h4>Characters</h4>
+{% if characters.count %}
 <ul class="links">
   {% for c in characters %}
     <li class="character"><a href="{{ c.get_absolute_url }}">
@@ -28,6 +29,12 @@
     </li>
   {% endfor %}  
 </ul>
+{% else %}
+<p>There are no characters on file for your accounts. This probably
+means that you just added your API key. If so, data on your characters
+will become available usually within 15 minutes, once the backend loader
+has finished querying EVE-Online for your information.</p>
+{% endif %} 
 <h4>Accounts</h4>
 <ul class="links">
   {% for a in accounts %}
