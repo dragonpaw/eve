@@ -10,9 +10,9 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from django.db.models.query import Q, QNot
 
-item_nav = make_nav("Items", "/group/", '24_05')
-region_nav = make_nav("Regions", "/regions/", '17_03')
-sov_nav = make_nav('Sovereignty Changes', '/sov/changes/', '70_11')
+item_nav = make_nav("Items", "/group/", '24_05', note='All items in the game.')
+region_nav = make_nav("Regions", "/regions/", '17_03', note='The universe, and everything in it.')
+sov_nav = make_nav('Sovereignty Changes', '/sov/changes/', '70_11', note='Who lost and gained systems.')
 
 def generate_navigation(object):
     """Build up a heiracy of objects"""
@@ -92,11 +92,11 @@ def region_list(request):
 def group_index(request):
     root_objects = MarketGroup.objects.filter(parent__isnull=True)
     #output = ', '.join([m.name for m in root_objects])
-    return render_to_response('generic_menu.html', {
-                              'objects': root_objects,
-                              'title': "Market Groups",
-                              'nav': [ item_nav ],
-                              },
+    d = {}
+    d['nav'] = [ item_nav ]
+    d['objects'] = [{'item':x} for x in root_objects]
+    
+    return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
 def group(request, group_id):

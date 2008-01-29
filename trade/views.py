@@ -8,9 +8,12 @@ from eve.ccp.models import Item
 from eve.util.formatting import make_nav
 from django.db.models.query import Q, QNot
 
-index_nav = make_nav("Indexes", "/trade/indexes/", '25_08')
-blueprint_nav = make_nav("Blueprints Owned", "/trade/blueprints/", '09_15')
-transaction_nav = make_nav("Transactions", "/trade/transactions/", '64_14')
+index_nav = make_nav("Indexes", "/trade/indexes/", '25_08',
+                      note="Where the prices come from.")
+blueprint_nav = make_nav("Blueprints Owned", "/trade/blueprints/", '09_15',
+                          note="The blueprints you can make things with.")
+transaction_nav = make_nav("Transactions", "/trade/transactions/", '64_14',
+                            note="Everything you've bought and sold.")
 
 @login_required
 def transactions(request):

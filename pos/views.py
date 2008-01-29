@@ -5,7 +5,8 @@ from django.template import RequestContext
 from eve.pos.models import PlayerStation
 from eve.util.formatting import make_nav
 
-pos_nav = make_nav("Player-owned Stations", "/pos/", '40_14')
+pos_nav = make_nav("Player-owned Stations", "/pos/", '40_14', 
+                   note='Fuel status for all of your POSes.')
 
 def list(request):
     d = {}

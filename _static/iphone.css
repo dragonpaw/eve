@@ -285,11 +285,13 @@ li.character a {
 .sov-changes .old {
 	color: red;
 	font-weight: normal;
+	font-size: 12px;
 }
 
 .sov-changes .new {
 	color: blue;
 	font-weight: normal;
+	font-size: 12px;
 }
 
 .stations .solarsystem {
@@ -551,6 +553,12 @@ ax {
 
 .links span.link {
 	color: blue;
+}
+
+.links span.note {
+	color: grey;
+	font-weight: normal;
+	font-size: 12px;
 }
 
 .links a {

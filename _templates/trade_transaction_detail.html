@@ -13,22 +13,42 @@
 	<tr><th>Time</th><td>{{ transaction.time }}</td></tr>
 </table>
 <h4>What</h4>
+<ul class="links">
+	<li><a href="{{ transaction.item.get_absolute_url }}">
+	<img src="{{ transaction.item.icon32 }}">
+	<span class="name">{{ transaction.item }}</span>
+	</a></li>
+</ul>
+
 <table class="transaction">
-	<tr><th>Item</th><td><a href="{{ transaction.item.get_absolute_url }}">{{ transaction.item }}</a></td></tr>
 	<tr><th>Sold?</th><td>{% if transaction.sold %} Yes {% else %} No {% endif %}</td></tr>
 	<tr><th>Quantity</th><td>{{ transaction.quantity|comma }}</td></tr>
 	<tr><th>Price</th><td>{{ transaction.price|floatformat:"-2"|comma }} ISK</td></tr>
 	<tr><th>Total</th><td>{{ transaction.total|floatformat:"-2"|comma }} ISK</td></tr>
 </table>
 <h4>Where</h4>
-<table class="transaction">
-	<tr><th>Station</th><td><a href="{{ transaction.station.get_absolute_url }}">{{ transaction.station }}</a></td></tr>
-	<tr><th>Solar System</th><td><a href="{{ transaction.station.solarsystem.get_absolute_url }}">
-	                          {{ transaction.station.solarsystem }}</a></td></tr>
-	<tr><th>Constellation</th><td><a href="{{ transaction.station.constellation.get_absolute_url }}">
-	                           {{ transaction.station.constellation }}</a></td></tr>
-	<tr><th>Region</th><td><a href="{{ transaction.region.get_absolute_url }}">
-	                           {{ transaction.region }}</a></td></tr>
-</table>
+	<ul class="links">
+	
+	<li><a href="{{ transaction.station.get_absolute_url }}">
+	<span class="name">{{ transaction.station }}</span><br>
+	<span class="note">Station</span>
+	</a></li>
+	
+	<li><a href="{{ transaction.station.solarsystem.get_absolute_url }}">
+	<img src="{{ transaction.station.solarsystem.icon32 }}">
+	<span class="name">{{ transaction.station.solarsystem }}</span><br>
+	<span class="note">Solar System</span></a></li>
+	
+	<li><a href="{{ transaction.station.constellation.get_absolute_url }}">
+	<img src="{{ transaction.station.constellation.icon32 }}">
+	<span class="name">{{ transaction.station.constellation }}</span><br>
+	<span class="note">Constellation</span></a></li>
+	
+	<li><a href="{{ transaction.station.region.get_absolute_url }}">
+	<img src="{{ transaction.station.region.icon32 }}">
+	<span class="name">{{ transaction.station.region }}</span><br>
+	<span class="note">Region</span></a></li>
+	
+	</ul>
 {% endspaceless %}
 {% endblock %}

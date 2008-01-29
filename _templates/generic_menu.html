@@ -6,6 +6,7 @@
     <li>
         <a href="{{ o.get_absolute_url }}">
             <img src="{{ o.icon32 }}"><span class="name">{{ o.name }}</span>
+            {% if o.note %}<br><span class="note">{{ o.note }}</span>{% endif %}
         </a>
     </li>
 {% endfor %}

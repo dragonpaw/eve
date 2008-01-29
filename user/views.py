@@ -7,9 +7,8 @@ from eve.util.formatting import make_nav
 from eve.user.models import Character, Account
 from django.contrib.auth.decorators import login_required
 
-user_nav = make_nav("Characters", "/user/", '34_12')
-account_add_nav = make_nav("Add Account", "/user/account/add/", None)
-user_create_nav = make_nav("Create Login", "/user/create/", '07_03')
+user_nav = make_nav("Characters", "/user/", '34_12', note='Your characters and accounts.')
+user_create_nav = make_nav("Create Login", "/user/create/", '07_03', note='Register with the widget.')
 
 @login_required
 def main(request):

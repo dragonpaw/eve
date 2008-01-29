@@ -7,8 +7,12 @@
     <li class="item">
         <a href="{{ o.item.get_absolute_url }}">
             <img src="{{ o.item.icon32 }}"><span class="name">{{ o.item.name }}</span><br>
+            {% if o.item.marketgroup %}
             {% if o.index.buy %}<span class="index-buy">{{ o.index.buy|floatformat:2|comma }} ISK</span>{% endif %}
             {% if o.index.sell %}<span class="index-sell right">{{ o.index.sell|floatformat:2|comma }} ISK</span>{% endif %}
+            {% else %}
+            <span class="note">{{ o.item.description }}</span>
+            {% endif %}
         </a>
     </li>
 {% endspaceless %}
