@@ -105,7 +105,7 @@ class PlayerStation(models.Model):
 
     @property
     def cache_remaining(self):
-        return max(self.cached_until - datetime.utcnow(), 0)
+        return max(self.cached_until - datetime.utcnow(), timedelta(0))
 
     @property
     def hours_of_fuel(self):

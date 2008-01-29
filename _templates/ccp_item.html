@@ -141,6 +141,7 @@
 	-->
 	{% for x in materials.order %}
 		<h4>{% expr materials['titles'][x] %}</h4>
+		<p>Red value is buy price, green value is sell price.</p>
 		<ul class="links materials">
 		{% for m in materials.materials %}
 		{% expr m.has_key(x) and m[x] as quantity %}
@@ -154,11 +155,8 @@
 			<span class="skill right">Skill</span>
 			{% else %}
 			<span class="quantity">x{{ quantity|comma }}</span>
-			{% if m.index.value %}
-			<span class="index right">{{ m.index.value|floatformat:2|comma }} ISK</span>
-			{% else %}
-			<span class="index right">Unknown</span>
-			{% endif %}
+			{% if m.index.buy %}<span class="right index-buy">{{ m.index.buy|floatformat:2|comma }} ISK</span>{% endif %}
+			<!--  {% if m.index.sell %}<span class="right index-sell">{{ m.index.sell|default:"Unknown"|floatformat:2|comma }} ISK</span>{% endif %} -->
 			{% endif %}
 			</a></li>
 		{% endif %}
@@ -166,7 +164,7 @@
 		</ul>
 		{% expr materials['isk'].has_key(x) and materials['isk'][x] as cost%}
 		{% if cost %}
-		<p>Total cost/value: {{ cost|floatformat:2|comma }} ISK</p>
+		<p>Total cost (at buy prices): {{ cost|floatformat:2|comma }} ISK</p>
 		{% endif %}
 		
 	{% endfor %}
@@ -180,26 +178,25 @@
 			<img src="{{ m.item.icon32 }}">
 			{{ m.item.name }}
 			<br>
-			<span class="quantity">{{ m.activity }}</span><!-- 
-			{% if m.material.is_skill %}
-			<span class="skill">Skill</span>
-			{% else %}
-			{% if m.index.value %}
-			<span class="index">{{ m.index.value|isk }} ISK</span>
-			{% else %}
-			<span class="index">Unknown</span>
-			{% endif %}
-			{% endif %} -->
+			<span class="quantity">{{ m.activity }}</span>
 			</a></li>
 		{% endfor %}
 		</ul>
 	{% endif %}
     
     <h4>Market Indexes</h4>
-    {% if item.index_values.count %}
-    {% for i in item.index_values.all %}
-    <p>{{ i.index }} lists this item as {{ i.value|isk }} ISK. (As of {{ i.date }}.)
+    {% if indexes %}
+    <p>Red value is buy price, green value is sell price.</p>
+    <ul class="links">
+    {% for i in indexes %}
+    <li><a href="{{ i.index.get_absolute_url }}">
+    <span class="name">{{ i.index.name }}</span>
+    <br>
+    {% if i.buy %}<span class="index-buy">{{ i.buy|default:"Unknown"|floatformat:2|comma }} ISK</span>{% endif %}
+	{% if i.sell %}<span class="right index-sell">{{ i.sell|floatformat:2|comma }} ISK</span>{% endif %}
+    </a></li>
     {% endfor %}
+    </ul>
     {% else %}
     <p>This item is not listed on any known indexes.</p>
     {% endif %}

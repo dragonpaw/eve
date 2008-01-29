@@ -40,7 +40,7 @@ def solarsystem(request, name):
     d['title'] = "Solar System: %s" % item.name
     d['item'] = item
     
-    return render_to_response('solarsystem.html', d,
+    return render_to_response('ccp_solarsystem.html', d,
                               context_instance=RequestContext(request))
 
     
@@ -59,7 +59,7 @@ def constellation(request, name):
     d['item'] = item
 
     
-    return render_to_response('constellation.html', d,
+    return render_to_response('ccp_constellation.html', d,
                               context_instance=RequestContext(request))
     
 def region(request, name):
@@ -76,7 +76,7 @@ def region(request, name):
     d['item'] = item
 
     
-    return render_to_response('region.html', d,
+    return render_to_response('ccp_region.html', d,
                               context_instance=RequestContext(request))
     
 def region_list(request):
@@ -86,7 +86,7 @@ def region_list(request):
     d['title'] = "Region List"
     d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
     
-    return render_to_response('regions.html', d,
+    return render_to_response('ccp_regions.html', d,
                               context_instance=RequestContext(request))
     
 def group_index(request):
@@ -101,20 +101,39 @@ def group_index(request):
 
 def group(request, group_id):
     group = get_object_or_404(MarketGroup, id=group_id)
+    profile = request.user.get_profile()
+    
     d = {}
     
     d['nav'] = generate_navigation(group)
     d['title'] = "Market Group: %s" % group.name
 
-    d['objects'] = list(MarketGroup.objects.filter(parent=group)) + list(group.item_set.all())
+    objects = list(MarketGroup.objects.filter(parent=group)) + list(group.item_set.all())
+    d['objects'] = [{'item':x, 'index':get_index(profile, x)} for x in objects]
 
-    d['objects'].sort(key=lambda x:x.name)
-    return render_to_response('item_list.html', d,
+    d['objects'].sort(key=lambda x:x['item'].name)
+    return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
     
+def get_index(profile, item):
+    from eve.trade.models import MarketIndexValue
     
-def item(request, item_id, days=14):
+    # I'm lazy in group above, and call this for market groups as well as items.
+    if not isinstance(item, Item):
+        return None
+     
+    if profile is not None:
+        return profile.get_index(item)
+    else:
+        try:
+            return MarketIndexValue.objects.get(user__isnull=True, item=item)
+        except MarketIndexValue.DoesNotExist:
+            return None
+        
+
+
+def item(request, item_id, days=30):
     item = get_object_or_404(Item, id=item_id)
     d = {}
     d['time_span'] = '%d days' % days
@@ -150,8 +169,9 @@ def item(request, item_id, days=14):
         name = mat.activity.name
         materials['titles'][name] = name
         if not materials['materials'].has_key(mat.material.id):
+            index = get_index(profile, mat.material)
             materials['materials'][mat.material.id] = {'material': mat.material,
-                                                       'index': mat.material.index}
+                                                       'index': index}
         materials['materials'][mat.material.id][name] = mat.quantity
         
         # Then, if we own the blueprint, the manufacture quantity.
@@ -167,7 +187,7 @@ def item(request, item_id, days=14):
         cost = Decimal(0)
         for m in materials['materials'].values():
             if m.has_key(key) and m['index']:
-                cost += Decimal(str(m['index'].value)) * m[key]
+                cost += Decimal(str(m['index'].buy)) * m[key]
         if item.is_blueprint:
             portion = item.blueprint_makes.portionsize
         else:
@@ -188,8 +208,9 @@ def item(request, item_id, days=14):
         materials['titles']['Refined From'] = "Refined From"
         for mat in item.helps_make.filter(activity=50):
             value = "%0.2f" % mat.quantity_per_unit()
+            index = get_index(profile, mat.item)
             materials['materials'][mat.item.id] = {'material' : mat.item,
-                                                       'index'    : mat.item.index,
+                                                       'index'    : index,
                                                        'Refined From' : value}
 
     # Display order, and filter out actions we cannot perform.
@@ -222,6 +243,8 @@ def item(request, item_id, days=14):
     d['attributes'].sort(lambda a, b: cmp(a.attributecategory,
                                           b.attributecategory)
                          or cmp (a.id, b.id))
+    q = Q(index__user__isnull=True) | Q(index__user=profile)
+    d['indexes'] = item.index_values.filter(q)
     
     return render_to_response('ccp_item.html', d,
                               context_instance=RequestContext(request))

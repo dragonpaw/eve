@@ -99,8 +99,14 @@ th {
 	color: grey;
 }
 
-.item .index {
+ul.links span.index-buy {
+	color: red;
+	font-size: 12px;
+}
+
+ul.links span.index-sell {
 	color: green;
+	font-size: 12px;
 }
 
 .item .description {
@@ -519,6 +525,7 @@ ax {
     /* min-height: 418px; */
     margin: 0;
     padding: 0;
+    border-top: 1px solid #E0E0E0;
 }
 
 .links li {

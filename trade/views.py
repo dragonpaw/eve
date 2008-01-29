@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from eve.trade.models import Transaction, BlueprintOwned, MarketIndex
 from eve.ccp.models import Item
 from eve.util.formatting import make_nav
+from django.db.models.query import Q, QNot
 
 index_nav = make_nav("Indexes", "/trade/indexes/", '25_08')
 blueprint_nav = make_nav("Blueprints Owned", "/trade/blueprints/", '09_15')
@@ -27,9 +28,12 @@ def transactions(request):
 
 @login_required
 def transaction_detail(request, id=None):
-    transaction = get_object_or_404(Transaction, transaction_id=id)
-    if transaction.character.user != request.user.get_profile():
+    profile = request.user.get_profile()
+    transaction = Transaction.objects.filter(transaction_id=id, character__user=profile)
+    if transaction.count() == 0:
         raise Http404
+    else:
+        transaction = transaction[0]
     
     d = {}
     d['nav'] = [ transaction_nav, transaction]
@@ -105,14 +109,19 @@ def blueprint_add(request):
     return HttpResponseRedirect( reverse('eve.trade.views.blueprints_owned') )
 
 def market_index_list(request):
+    q = Q(user__isnull=True) | Q(user=request.user.get_profile())
     d = {}
     d['nav'] = [ index_nav ]
-    d['indexes'] = MarketIndex.objects.all()
+    
+    d['indexes'] = MarketIndex.objects.filter(q)
+    
     
     return render_to_response('trade_indexes.html', d, context_instance=RequestContext(request))
 
 def market_index_detail(request, id):
     index = get_object_or_404(MarketIndex, pk=id)
+    if index.user and index.user != request.user.get_profile():
+        raise Http404
     
     d = {}
     d['nav'] = [ index_nav, index ]

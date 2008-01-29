@@ -12,7 +12,11 @@
 	    <span class="name">{{ i.name }}</span>
 	    <span class="items right">{{ i.items.count }} Items</span>
 	    <br>
+	    {% if i.url %}
 	    <span class="url">{{ i.url }}</span>
+	    {% else %}
+	    <span class="type">{{ i.type }}</span>
+	    {% endif %}
 	    </a>
 	    </li>
     {% endfor %}
