@@ -45,7 +45,12 @@ has finished querying EVE-Online for your information.</p>
   </a>
   </li>
   {% endfor %}
-  <li><a href="/user/account/add/"><span class="link">Add new account API key.<br>Full key required.</span></a></li>
+  {% for nav in inline_nav %}
+  <li><a href="{{ nav.get_absolute_url }}">
+  <span class="name">{{ nav.name }}</span><br>
+  <span class="note">{{ nav.note }}</span>
+  </a></li>
+  {% endfor %}
 </ul>
 {% endspaceless %}
 {% endblock %}

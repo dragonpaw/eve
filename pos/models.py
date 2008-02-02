@@ -170,6 +170,10 @@ class PlayerStation(models.Model):
                                                                     'corporation':self.corporation,})
                 
         
+    @property
+    def icon32(self):
+        return self.tower.icon32
+    
     #@property
     #def fuel(self):
     #    return StationResource.objects.filter(tower=self.tower)

@@ -6,11 +6,13 @@
 <!-- poses: {{ poses|pprint }} --> 
 {% if poses %}
 <ul class="links">
-<li><a href="{{ pos_consumption_nav.get_absolute_url }}">
-<img src="{{ pos_consumption_nav.icon32 }}">
-<span class="link">{{ pos_consumption_nav.name }}</span><br>
-<span class="note">{{ pos_consumption_nav.note }}</span>
+{% for nav in inline_nav %}
+<li><a href="{{ nav.get_absolute_url }}">
+<img src="{{ nav.icon32 }}">
+<span class="link">{{ nav.name }}</span><br>
+<span class="note">{{ nav.note }}</span>
 </a></li>
+{% endfor %}
 </ul>
 
 {% for corp in poses %}

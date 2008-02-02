@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}
+<!-- fuels: {{ fuels|pprint|safe }} --> 
+{% for corp in fuels %}
+<h3>{{ corp.name }}</h3>
+
+<h4>Tower profit and loss</h4>
+<p>Red number is fuel cost. Green number is POS reaction value.</p>
+<ul class="links">
+	{% for pos in corp.poses %}
+	<li class="pos-cost">
+	<a href="{{ pos.pos.get_absolute_url }}">
+	<img src="{{ pos.pos.icon32 }}">
+	<span class="name">{{ pos.pos.moon }}</span><br>
+	<span class="cost">- {{ pos.cost|floatformat:0|comma }}</span>
+	<span class="right profit">+ {{ pos.profit|default:0|floatformat:0|comma }}</span>
+	</a></li>
+	{% endfor %}
+</ul>
+	<p class="cost total">Total cost: {{ corp.cost_weekly|floatformat:0|comma }}</p>
+	<p class="cost total">Total income: {{ corp.income_weekly|floatformat:0|comma }}</p>
+	<p class="profit total">Net profit: {{ corp.profit_weekly|floatformat:0|comma }}</p>
+</table>
+<p>All numbers are weekly.</p>
+{% endfor %}
+
+{% endblock %}

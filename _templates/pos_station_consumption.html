@@ -7,41 +7,7 @@
 {% for corp in fuels %}
 <h3>{{ corp.name }}</h3>
 
-<h4>Total fuel needed for {{ days }} days</h4>
-<table class="pos-fuel">
-    <tr>
-    	<th>Fuel</th>
-    	<th class="number">Loaded</th>
-    	<th class="number">Burn</th>
-    	<th class="number">Ideal</th>
-    	<th class="number">Week</th>
-    </tr>
-	{% for fuel in corp.fuel %}{% spaceless %}
-	<tr>
-	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
-	  <td>{{ fuel.quantity|comma }}</td>
-	  <td>{{ fuel.consumption|comma }}</td>
-	  <td>{{ fuel.ideal_quantity|comma }}</td>
-	  <td>{{ fuel.weekly|comma }}</td>
-	</tr>
-	{% endspaceless %}
-	{% endfor %}
-	<tr><th>Weekly cost:</th><td colspan="4">{{ corp.cost_weekly|floatformat:0|comma }} ISK</td></tr>
-</table>
-	
 <h4>Shopping list for next {{ days }} days</h4>
-
-<p>This table only takes into account those fuels within the control
-towers. Remember to subtract any fuel you may have in a hangar or fuel
-depo before you go on a shopping spree.</p>
-
-<p>It is possible to have a 'need' even when you appear to have a
-surplus of a fuel. This is because the values shown here do not take
-into account any surplus that you may have in various towers. So if one
-tower has 300 days of robotics, and the others all have 2 days worth,
-you will show a large need for robotics that you would not have if you
-balanced the fuel supplies. Please make sure your towers have a
-well-balanced fuel supply.</p>
 
 <table class="pos-fuel">
     <tr>
@@ -66,5 +32,40 @@ well-balanced fuel supply.</p>
 	
 <p>At the moment, Strontium is not included, as it is not yet possible to determine the 'ideal' quantity
 to keep on hand.</p>
+
+<p>This table only takes into account those fuels within the control
+towers. Remember to subtract any fuel you may have in a hangar or fuel
+depo before you go on a shopping spree.</p>
+
+<p>It is possible to have a 'need' even when you appear to have a
+surplus of a fuel. This is because the values shown here do not take
+into account any surplus that you may have in various towers. So if one
+tower has 300 days of robotics, and the others all have 2 days worth,
+you will show a large need for robotics that you would not have if you
+balanced the fuel supplies. Please make sure your towers have a
+well-balanced fuel supply.</p>
+
+
+<h4>Weekly fuel use</h4>
+<table class="pos-fuel">
+    <tr>
+    	<th>Fuel</th>
+    	<th class="number">Loaded</th>
+    	<th class="number">Burn</th>
+    	<th class="number">Week</th>
+    </tr>
+	{% for fuel in corp.fuel %}{% spaceless %}
+	<tr>
+	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
+	  <td>{{ fuel.quantity|comma }}</td>
+	  <td>{{ fuel.consumption|comma }}</td>
+	  <td>{{ fuel.weekly|comma }}</td>
+	</tr>
+	{% endspaceless %}
+	{% endfor %}
+	<tr><th>Weekly cost:</th><td colspan="4">{{ corp.cost_weekly|floatformat:0|comma }} ISK</td></tr>
+</table>
+	
 {% endfor %}
+
 {% endblock %}

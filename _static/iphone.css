@@ -463,6 +463,21 @@ li.character a {
 	color: orange;
 }
 
+.pos-cost .moon {
+	text-align: left;
+}
+
+.pos-cost .cost {
+	color: red;
+}
+
+.pos-cost .profit {
+	color: green;
+}
+
+.pos-cost .total {
+	font-weight: bold;
+}
 
 .index .items {
 	color: grey;
