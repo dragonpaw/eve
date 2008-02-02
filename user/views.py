@@ -9,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 
 user_nav = make_nav("Characters", "/user/", '34_12', note='Your characters and accounts.')
 user_create_nav = make_nav("Create Login", "/user/create/", '07_03', note='Register with the widget.')
+account_add_nav = make_nav('Add API Key', '/user/add/', None, 'Add a new account/API key.')
 
 @login_required
 def main(request):
@@ -16,6 +17,7 @@ def main(request):
     d['nav'] = [ user_nav ]  
     d['characters'] = request.user.get_profile().characters.all()
     d['accounts'] = request.user.get_profile().accounts.all()
+    d['inline_nav'] = [ account_add_nav ]
     
     return render_to_response('user_main.html', d, context_instance=RequestContext(request))
 

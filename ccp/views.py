@@ -229,11 +229,39 @@ def item(request, item_id, days=30):
                                                    'buy_price'    : price,
                                                    'Refined From' : value}
 
+    if item.reacts.count():
+        materials['titles']['Reaction'] = 'POS Reaction'
+        for mat in item.reacts.all():
+            price = get_buy_price(profile, mat.reaction)
+            if mat.input:
+                input = "Input to"
+            else:
+                input = "Output of"
+            materials['materials'][mat.reaction.id] = {'material' : mat.reaction,
+                                                       'buy_price': price,
+                                                       'input'    : input,
+                                                       'Reaction' : mat.quantity}
+    if item.reactions.count():
+        materials['titles']['Reaction'] = 'POS Reaction'
+        for mat in item.reactions.all():
+            buy_price = sell_price = 0
+            if mat.input == True:
+                input = "Input"
+                buy_price = get_buy_price(profile, mat.item)
+            else:
+                input = "Output"
+                sell_price = get_sell_price(profile, mat.item)
+            materials['materials'][mat.item.id] = {'material' : mat.item,
+                                                   'buy_price': buy_price,
+                                                   'input': input,
+                                                   'sell_price': sell_price,
+                                                   'Reaction' : mat.quantity}
     # Display order, and filter out actions we cannot perform.
     materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
     materials['materials'].sort(key=lambda x:x['material'].name)
     materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
-                          'Research Time Production', 'Copying', 'Inventing', 'Refining', 'Refined From']
+                          'Research Time Production', 'Copying', 'Inventing', 'Refining',
+                          'Refined From', 'Reaction']
     materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
 
     d['materials'] = materials

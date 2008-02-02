@@ -941,7 +941,7 @@ class Item(models.Model):
     marketgroup = models.ForeignKey('MarketGroup', null=True, blank=True,
                                     db_column='marketgroupid')
     name = models.CharField(max_length=300)
-    description = models.TextField()
+    real_description = models.TextField(db_column='description')
     radius = models.FloatField()
     mass = models.FloatField()
     volume = models.FloatField()
@@ -989,7 +989,13 @@ class Item(models.Model):
     def get_parent(self):
         return self.marketgroup
     parent = property(get_parent)
-        
+
+    @property
+    def description(self):
+        if self.is_blueprint:
+            return self.blueprint_makes.real_description
+        else:
+            return self.real_description
 
     #-------------------------------------------------------------------------
     # All things iconic.
@@ -1231,15 +1237,28 @@ class InventoryMetaType(models.Model):
         list_display = ('item', 'metagroup', 'parent')
         list_select_related = True
         
-# class Inventorytypereactions(models.Model):
-#     reactiontypeid = models.IntegerField(null=True, blank=True)
-#     input = models.CharField(blank=True, max_length=15)
-#     typeid = models.IntegerField(null=True, blank=True)
-#     quantity = models.IntegerField(null=True, blank=True)
-#     class Meta:
-#         db_table = u'invtypereactions'
+class Reaction(models.Model):
+    reaction = models.ForeignKey(Item, db_column='reactiontypeid', related_name='reactions')
+    input = models.BooleanField()
+    item = models.ForeignKey(Item, db_column='typeid', related_name='reacts')
+    raw_quantity = models.IntegerField(db_column='quantity')
+    
+    class Admin:
+        pass
+    
+    class Meta:
+        ordering = ['reaction', 'input']
 
-#
+    def __str__(self):
+        arrow = '=>'
+        if self.input == 1:
+            arrow = '<-'
+        return "%s %s %s[%d]" % (self.reaction, arrow, self.item, self.quantity)
+
+    @property
+    def quantity(self):
+        return self.raw_quantity * 100
+
 #class MapcClestialStatistics(models.Model):
 #    id = models.IntegerField(primary_key=True, db_column='celestialid')
 #    temperature = models.FloatField()

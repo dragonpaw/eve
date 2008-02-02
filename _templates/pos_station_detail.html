@@ -59,24 +59,24 @@ impatient. :)</p>
     	<th>Fuel</th>
     	<th class="number">Qty</th>
     	<th class="number">Burn</th>
-    	<th class="number">Time</th>
     	<th class="number">Need</th>
+    	<th class="number">Time</th>
     </tr>
-	{% for fuel in pos.fuel.all %}
+	{% for f in fuels %}
 	{% spaceless %}<tr>
-	<th><a href="{{ fuel.type.get_absolute_url }}">
-	  <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
-	  <td>{{ fuel.quantity|comma }}</td>
-	  <td>{{ fuel.consumption|comma }}</td>
-	  {% expr fuel.time_remaining as remaining %}
+	<th><a href="{{ f.type.get_absolute_url }}">
+	  <img src="{{ f.type.icon16 }}"> {{ f.type }}</a></th>
+	  <td>{{ f.fuel.quantity|comma }}</td>
+	  <td>{{ f.fuel.consumption|comma }}</td>
+	  {% expr f['fuel'].need(days=days) as need %}
+	  <td>{{ need|comma }}</td>
+	  {% expr f['fuel'].time_remaining as remaining %}
 	  {% expr remaining.days as days_remaining %}
 	  <td class="remaining remaining-{{days_remaining}}">{{ remaining|time }}</td>
-	  {% expr fuel.need(days=days) as need %}
-	  <td>{{ need|comma }}</td>
 	</tr>
 	{% endspaceless %}{% endfor %}
-  <tr><th class="runtime" colspan=3>Remaining runtime</th>
-  <td class="runtime remaining">{{ pos.time_remaining|time }}</td></tr>
+  <tr><th class="runtime" colspan=2>Remaining runtime</th>
+  <td class="runtime remaining" colspan="3">{{ pos.time_remaining|time }}</td></tr>
   </table>
   <ul class="links">
   <li><a href="{{ refuel_nav.get_absolute_url }}">
@@ -95,6 +95,29 @@ consumption rates. As such, the numbers in-game will appear higher than
 what is listed here. However, these are the correct numbers.</p>
   {% endifequal %}
 	
+<H4>Fuel costs</H4>
+<table class="pos-fuel">
+	<tr>
+   		<th>Fuel</th>
+    	<th class="number">Weekly</th>
+    	<th class="number">Price</th>
+    	<th class="number">Cost</th>
+    </tr>
+	{% for fuel in fuels %}
+	{% spaceless %}<tr>
+	<th><a href="{{ fuel.type.get_absolute_url }}">
+	  <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
+	  <td>{{ fuel.weekly|comma }}</td>
+	  <td>{{ fuel.price|floatformat:2|comma }}</td>
+	  <td>{{ fuel.weekly_cost|isk }}</td>
+	</tr>
+	{% endspaceless %}{% endfor %}
+  <tr><th class="runtime" colspan=2>Weekly cost</th>
+  <td class="runtime remaining" colspan="3">{{ weekly_cost|floatformat:2|comma }} ISK</td></tr>
+  </table>
+  
+  
+
 	<H4>Settings</H4>
 	<table class="pos">
 	<tr><th>Corporation use</th>

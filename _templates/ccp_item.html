@@ -8,15 +8,7 @@
 <div class="item">
     <div class="description">
         <h3>{{ item.name }}</h3>
-        {% if item.is_blueprint %}
-        <p>{{ item.blueprint_makes.description }}</p>
-        {% else %}
-        {% if item.description %}
-        <p>{{ item.description|markdown }}</p>
-        {% else %}
-        <p>No description</p>
-        {% endif %}
-        {% endif %}
+        {{ item.description|default:"No Description"|markdown }}
         <img src="{{ item.icon64 }}" class="icon">
     </div>
     
@@ -35,14 +27,11 @@
         <tr><th>Research, copy:</th><td>{{ item.blueprint_details.researchcopytime|time }}</td></tr>
         <tr><th>Base Waste Factor:</th><td>{{ item.blueprint_details.wastefactor }} %</td></tr>
     {% else %}
-        {% for a in attributes %}
-        {% if a.value and a.displayname %}
-            <tr>
-            <td class="icon"><img src="{{ a.icon16 }}"></td>
+        {% for a in attributes %}{% if a.value and a.displayname %}
+            <tr><td class="icon"><img src="{{ a.icon16 }}"></td>
             <th>{{ a.name }}</th>
             <td>{{ a.display_value }}</td></tr>
-        {% endif %}
-        {% endfor %}
+        {% endif %}{% endfor %}
     {% endif %}
     </table>
     
@@ -153,9 +142,9 @@
 			<span class="quantity">Required level: {{ quantity }}</span>
 			<span class="skill right">Skill</span>
 			{% else %}
-			<span class="quantity">x{{ quantity|comma }}</span>
+			<span class="quantity">x{{ quantity|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
 			{% if m.buy_price %}<span class="right index-buy">{{ m.buy_price|floatformat:2|comma }} ISK</span>{% endif %}
-			<!--  {% if m.index.sell %}<span class="right index-sell">{{ m.index.sell|default:"Unknown"|floatformat:2|comma }} ISK</span>{% endif %} -->
+			{% if m.sell_price%}<span class="right index-sell">{{ m.sell_price|floatformat:2|comma }} ISK</span>{% endif %}
 			{% endif %}
 			</a></li>
 		{% endif %}
