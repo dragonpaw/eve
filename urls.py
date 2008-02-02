@@ -1,5 +1,5 @@
 # $Id$
-from django.conf.urls.defaults import include, patterns
+from django.conf.urls.defaults import include, patterns, handler404, handler500
 from eve.settings import STATIC_DIR, DEBUG
 
 urlpatterns = patterns('',
