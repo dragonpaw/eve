@@ -423,8 +423,10 @@ def update_pos_detail(auth, api, corp):
     
     state_time = datetime(*time.gmtime(api.stateTimestamp)[0:5])
     online_time = datetime(*time.gmtime(api.onlineTimestamp)[0:5])
-    hours_since_update = state_time - station.state_time
-    hours_since_update = hours_since_update.seconds / 60**2
+    hours_since_update = 0
+    if station.state_time:
+        hours_since_update = state_time - station.state_time
+        hours_since_update = hours_since_update.seconds / 60**2
     
     station.state = api.state
     station.online_time = online_time
