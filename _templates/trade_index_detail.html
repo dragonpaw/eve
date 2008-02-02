@@ -8,11 +8,16 @@
 {% if index.url %}
 <p>Taken from: <a href="{{ index.url }}">{{ index.url }}</a></p>
 {% endif %}
+
+<p>If you do not like the price for an item, find the page for that
+item and look under 'Indexes' for the link to set a custom buy or sell
+price.</p>
+
 <p>Red value is buy price, green value is sell price.</p>
 <ul class="links">
 	{% for i in values %}
 	<li class="index">
-		<a href="{{ i.item.get_absolute_url }}">
+		<a href="/trade/index/customize/{{ i.item.id }}/">
 		<img src="{{ i.item.icon32 }}">
 		<span class="name">{{ i.item.name }}</span><br>
 		{% if i.buy %}<span class="index-buy">{{ i.buy|floatformat:2|comma }} ISK</span>{% endif %}

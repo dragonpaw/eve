@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from decimal import Decimal
-from django.contrib.auth.models import User 
+from django.contrib.auth.models import User
+from django.db.models.query import Q, QNot
 from django.db import models
 from django.db.models import signals
 from django.dispatch import dispatcher
@@ -46,27 +47,37 @@ class UserProfile(models.Model):
             transactions = transactions.filter(time__gte=target)
         return transactions
     
-    def get_index(self, type):
-        from eve.trade.models import MarketIndex, MarketIndexValue
-        personal = MarketIndex.objects.get(user=self)
-        public = MarketIndex.objects.get(user__isnull=True)
-        try:
-            index = personal.items.get(item=type)
-            return index
-        except MarketIndexValue.DoesNotExist:
-            pass
-        try:
-            index = public.items.get(item=type)
-            return index
-        except MarketIndexValue.DoesNotExist:
-            pass
-        return None
+    def get_indexes(self, type):
+        from eve.trade.models import MarketIndexValue
         
+        q = (Q(index__user__isnull=True) | Q(index__user=self)) & Q(item=type)
+        indexes = MarketIndexValue.objects.filter(q).select_related()
+        indexes = indexes.order_by('-trade_marketindex.priority')
+        return indexes
     
+    def get_buy_price(self, type):
+        indexes = self.get_indexes(type).filter(buy__gt=0)
+        
+        if indexes.count() > 0:
+            return indexes[0].buy
+        else:
+            return None
+    
+    def get_sell_price(self, type):
+        indexes = self.get_indexes(type).filter(sell__gt=0)
+        
+        if indexes.count() > 0:
+            return indexes[0].sell
+        else:
+            return None
+        
     def update_personal_index(self):
         from eve.trade.models import Transaction, MarketIndex
         index, _ = MarketIndex.objects.get_or_create(name="Personal Trade History", 
                                                      user=self)
+        index.priority = 400
+        index.note = 'Prices based on transactions from all of your characters.'
+        index.save()
         items = {}
         for t in Transaction.objects.filter(character__account__user__exact=self):
             id = t.item_id
@@ -88,6 +99,11 @@ class UserProfile(models.Model):
             index.set_value(v['type'], buy=v['buy'], sell=v['sell'],
                             buy_qty=v['buy_qty'], sell_qty=v['sell_qty'])
         index.items.exclude( item__id__in=items.keys() ).delete()
+        
+        custom, _ = MarketIndex.objects.get_or_create(name='Custom Prices', user=self)
+        custom.priority = 500
+        custom.note = 'Prices that you explicitly set.'
+        custom.save()
     
     #-------------------------------------------------------------------------
     # Market transactions. (Need to add user-specific code.)

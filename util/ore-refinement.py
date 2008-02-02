@@ -183,7 +183,19 @@ ores = {
     'Krystallos':            { Heavy_Water: 100, Liquid_Ozone: 250, Strontium_Clathrates: 100 },
     'Gelidus':               { Heavy_Water: 250, Liquid_Ozone: 500, Strontium_Clathrates: 75 },
     'Glare crust':           { Heavy_Water: 1000, Liquid_Ozone: 500, Strontium_Clathrates: 25 },
-    'Dark glitter':          { Heavy_Water: 500, Liquid_Ozone: 1000, Strontium_Clathrates: 50 }, 
+    'Dark glitter':          { Heavy_Water: 500, Liquid_Ozone: 1000, Strontium_Clathrates: 50 },
+    'Compressed Blue Ice':              { Heavy_Water: 50, Liquid_Ozone: 25, Strontium_Clathrates: 1, Oxygen_Isotopes: 300 },
+    'Compressed Glacial Mass':          { Heavy_Water: 50, Liquid_Ozone: 25, Strontium_Clathrates: 1, Hydrogen_Isotopes: 300 },
+    'Compressed White Glaze':           { Heavy_Water: 50, Liquid_Ozone: 25, Strontium_Clathrates: 1, Nitrogen_Isotopes: 300 },
+    'Compressed Clear Icicle':          { Heavy_Water: 50, Liquid_Ozone: 25, Strontium_Clathrates: 1, Helium_Isotopes: 300 },
+    'Compressed Pristine White Glaze':  { Heavy_Water: 75, Liquid_Ozone: 40, Strontium_Clathrates: 1, Nitrogen_Isotopes: 350 },
+    'Compressed Thick Blue Ice':        { Heavy_Water: 75, Liquid_Ozone: 40, Strontium_Clathrates: 1, Oxygen_Isotopes: 350 },
+    'Compressed Smooth Glacial Mass':   { Heavy_Water: 75, Liquid_Ozone: 40, Strontium_Clathrates: 1, Hydrogen_Isotopes: 350 },
+    'Compressed Enriched Clear Icicle': { Heavy_Water: 75, Liquid_Ozone: 40, Strontium_Clathrates: 1, Helium_Isotopes: 350 },
+    'Compressed Krystallos':            { Heavy_Water: 100, Liquid_Ozone: 250, Strontium_Clathrates: 100 },
+    'Compressed Gelidus':               { Heavy_Water: 250, Liquid_Ozone: 500, Strontium_Clathrates: 75 },
+    'Compressed Glare crust':           { Heavy_Water: 1000, Liquid_Ozone: 500, Strontium_Clathrates: 25 },
+    'Compressed Dark glitter':          { Heavy_Water: 500, Liquid_Ozone: 1000, Strontium_Clathrates: 50 },  
 }
 
 for orename in ores.keys():

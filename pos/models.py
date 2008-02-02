@@ -75,6 +75,9 @@ class PlayerStation(models.Model):
     attack_secstatus_flag = models.BooleanField()
     attack_secstatus_value = models.FloatField()
     
+    cpu_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
+    power_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
+    
     class Meta:
         ordering = ['moon']
     
@@ -83,6 +86,14 @@ class PlayerStation(models.Model):
 
     def __str__(self):
         return "%s (%s)" % (self.moon, self.corporation)
+    
+    @property
+    def cpu_percent(self):
+        return int(self.cpu_utilization * 100)
+    
+    @property
+    def power_percent(self):
+        return int(self.power_utilization * 100)
     
     @property
     def is_reinforced(self):
@@ -101,7 +112,7 @@ class PlayerStation(models.Model):
         return [s for s in self.POS_STATES if s[0] == self.state][0][1]
     
     def get_absolute_url(self):
-        return "/pos/detail/%d/" % self.id
+        return "/pos/%d/detail/" % self.id
 
     @property
     def cache_remaining(self):
@@ -120,7 +131,7 @@ class PlayerStation(models.Model):
     @property
     def time_remaining(self):
         remaining = timedelta(hours=self.hours_of_fuel) 
-        remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
+        #remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
         remaining += self.state_time
         remaining -= datetime.utcnow()
         return max(remaining, timedelta(0))
@@ -196,17 +207,49 @@ class PlayerStationFuelSupply(models.Model):
         
     class Meta:
         ordering = ['type']
+    
+    @property
+    def fuel_info(self):
+        fuel_info = self.station.tower.fuel.get(type=self.type)
+        return fuel_info
+
+    @property
+    def purpose(self):
+        fuel_info = self.station.tower.fuel.get(type=self.type)
+        return fuel_info.purpose
         
     @property
     def max_consumption(self):
-        burn_rate = self.station.tower.fuel.get(type=self.type).quantity
-        if self.type.name != 'Strontium Clathrates':
+        fuel_info = self.fuel_info
+        burn_rate = int(fuel_info.quantity)
+        if fuel_info.purpose != 'Reinforce':
             burn_rate = math.ceil(burn_rate * self.station.sov_fuel_rate)
+            
         return int(burn_rate)
-    
+        
+    @property
+    def consumption(self):
+        fuel_info = self.fuel_info
+        burn_rate = self.max_consumption
+            
+        if fuel_info.purpose == 'Power':
+            burn_rate = math.ceil(burn_rate * self.station.power_utilization)
+        elif fuel_info.purpose == 'CPU':
+            burn_rate = math.ceil(burn_rate * self.station.cpu_utilization)
+            
+        return int(burn_rate)
+
+    def need(self, days=14):
+        if self.fuel_info.purpose == 'Reinforce':
+            return None
+        
+        hours = days*24
+        need = (self.consumption * hours) - self.quantity
+        return max(need, 0)
+
     @property
     def hours_of_fuel(self):
-        return int(self.quantity / self.max_consumption)
+        return int(self.quantity / self.consumption)
     
     @property
     def time_remaining(self):
@@ -221,7 +264,7 @@ class PlayerStationFuelSupply(models.Model):
             else:
                 return remaining
         else:
-            remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
+            #remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
             remaining += self.station.state_time
             remaining -= now
             return max(remaining, timedelta(0))

@@ -3,10 +3,14 @@ from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from eve.trade.models import Transaction, BlueprintOwned, MarketIndex
+from django.db.models.query import Q, QNot
+
+from decimal import Decimal
+from datetime import date
+
+from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue
 from eve.ccp.models import Item
 from eve.util.formatting import make_nav
-from django.db.models.query import Q, QNot
 
 index_nav = make_nav("Indexes", "/trade/indexes/", '25_08',
                       note="Where the prices come from.")
@@ -109,22 +113,22 @@ def blueprint_add(request):
     i = get_object_or_404(Item, pk=request.POST['id'])
     bo = BlueprintOwned(user=request.user, blueprint = i, original=True)
     bo.save()
-    return HttpResponseRedirect( reverse('eve.trade.views.blueprints_owned') )
+    return HttpResponseRedirect('/trade/blueprints/')
 
 def market_index_list(request):
     q = Q(user__isnull=True) | Q(user=request.user.get_profile())
     d = {}
     d['nav'] = [ index_nav ]
     
-    d['indexes'] = MarketIndex.objects.filter(q)
+    d['indexes'] = MarketIndex.objects.filter(q).select_related().order_by('-trade_marketindex.priority')
     
     
     return render_to_response('trade_indexes.html', d, context_instance=RequestContext(request))
 
-def market_index_detail(request, id):
-    index = get_object_or_404(MarketIndex, pk=id)
-    if index.user and index.user != request.user.get_profile():
-        raise Http404
+def market_index_detail(request, name):
+    profile = request.user.get_profile()
+    q = (Q(user__isnull=True) | Q(user=profile)) & Q(name=name)
+    index = get_object_or_404(MarketIndex, q)
     
     d = {}
     d['nav'] = [ index_nav, index ]
@@ -132,4 +136,42 @@ def market_index_detail(request, id):
     d['values'] = index.items.select_related().order_by('ccp_item.name')
     
     return render_to_response('trade_index_detail.html', d, context_instance=RequestContext(request))
+
+class FixedPriceForm(forms.Form):
+    buy_price = forms.DecimalField(label='Buy Price', initial=0)
+    sell_price = forms.DecimalField(label='Sell Price', initial=0)
+
+@login_required
+def fixed_price_update(request, id):
+    profile = request.user.get_profile()
+    item = get_object_or_404(Item, pk=id)
+    index = MarketIndex.objects.get(name='Custom Prices', user=profile)
+
+    d = {}
+    d['nav'] = [index_nav, item,  {'name':'Set Fixed'}]
+    d['item'] = item
+    d['buy'] = profile.get_buy_price(item)
+    d['sell'] = profile.get_sell_price(item)
     
+    if request.method == 'POST':
+        form = FixedPriceForm(request.POST)
+        if form.is_valid():
+            buy_price = Decimal(form.cleaned_data['buy_price'])
+            sell_price = Decimal(form.cleaned_data['sell_price'])
+            index.set_value(item, buy=buy_price, sell=sell_price)
+            return HttpResponseRedirect( index.get_absolute_url() )
+        else:
+            d['form'] = form
+    else:
+        buy_price = 0
+        sell_price = 0
+        try:
+            item_index = index.items.get(item=item)
+            buy_price = item_index.buy
+            sell_price = item_index.sell
+        except MarketIndexValue.DoesNotExist:
+            pass
+    
+        d['form'] = FixedPriceForm(initial={'buy_price':buy_price,'sell_price':sell_price})
+    
+    return render_to_response('trade_index_update.html', d, context_instance=RequestContext(request))

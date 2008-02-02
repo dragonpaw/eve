@@ -5,7 +5,6 @@
 {% block title %} Item: {{ item.name }} {% endblock %}
 
 {% block content %}
-{% spaceless %}
 <div class="item">
     <div class="description">
         <h3>{{ item.name }}</h3>
@@ -155,7 +154,7 @@
 			<span class="skill right">Skill</span>
 			{% else %}
 			<span class="quantity">x{{ quantity|comma }}</span>
-			{% if m.index.buy %}<span class="right index-buy">{{ m.index.buy|floatformat:2|comma }} ISK</span>{% endif %}
+			{% if m.buy_price %}<span class="right index-buy">{{ m.buy_price|floatformat:2|comma }} ISK</span>{% endif %}
 			<!--  {% if m.index.sell %}<span class="right index-sell">{{ m.index.sell|default:"Unknown"|floatformat:2|comma }} ISK</span>{% endif %} -->
 			{% endif %}
 			</a></li>
@@ -187,21 +186,26 @@
     <h4>Market Indexes</h4>
     {% if indexes %}
     <p>Red value is buy price, green value is sell price.</p>
+    {% else %}
+    <p>This item is not listed on any known indexes.</p>
+    {% endif %}
     <ul class="links">
-    {% for i in indexes %}
+    {% for i in indexes %}{% spaceless %}
     <li><a href="{{ i.index.get_absolute_url }}">
     <span class="name">{{ i.index.name }}</span>
     <br>
     {% if i.buy %}<span class="index-buy">{{ i.buy|default:"Unknown"|floatformat:2|comma }} ISK</span>{% endif %}
 	{% if i.sell %}<span class="right index-sell">{{ i.sell|floatformat:2|comma }} ISK</span>{% endif %}
     </a></li>
-    {% endfor %}
+    {% endspaceless %}{% endfor %}
+    <li><a href="/trade/index/customize/{{ item.id }}/">
+    <span class="Link">Update price for this item</span><br>
+    <span class="note">Set a custom price for this item to be used in all calculations.</span>
+    </a></li>
     </ul>
-    {% else %}
-    <p>This item is not listed on any known indexes.</p>
-    {% endif %}
     
     <!-- Trade values: {{ values|pprint }} Best: {{ best_values|pprint }}-->
+    {% spaceless %}
     <div class="item-trade">
     <h4>Trade values (for the last {{ time_span }})</h4>
     {% if user.is_authenticated %}
@@ -259,7 +263,6 @@ collection, and sell some of the item.</p>
     {% else %}<!-- if user.is_authenticated -->
       <p>You have to log in if you want to see your transaction data.</p>
     {% endif %}
-    </div>
+    </div>{% endspaceless %}
 </div>
-{% endspaceless %}
 {% endblock %}

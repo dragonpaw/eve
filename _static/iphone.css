@@ -81,6 +81,11 @@ th {
     padding: 2;
 }
 
+td.number,
+th.number {
+	text-align: right;
+}
+
 .item .materials .name {
 	border-bottom: none;
 	text-align: left;

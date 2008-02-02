@@ -184,7 +184,8 @@ def update_character(character):
 
     
     if not options.force and character.cached_until and character.cached_until > datetime.utcnow():
-        print "Character: %s (%d): Still cached." % (character.name, character.id)
+        if options.debug:
+            print "Character: %s (%d): Still cached." % (character.name, character.id)
         return
         
     print "Starting Character: %s (%d)" % (character.name, character.id)
@@ -404,7 +405,8 @@ def update_pos_detail(auth, api, corp):
     tower = Item.objects.get(pk=api.typeID)
 
     if not options.force and station.cached_until and station.cached_until > datetime.utcnow():
-        print "POS: %s at %s: Still cached." % (tower, moon)
+        if options.debug:
+            print "POS: %s at %s: Still cached." % (tower, moon)
         return
 
     
@@ -419,9 +421,14 @@ def update_pos_detail(auth, api, corp):
     station.constellation = station.moon.constellation        
     station.region = station.moon.region
     
+    state_time = datetime(*time.gmtime(api.stateTimestamp)[0:5])
+    online_time = datetime(*time.gmtime(api.onlineTimestamp)[0:5])
+    hours_since_update = state_time - station.state_time
+    hours_since_update = hours_since_update.seconds / 60**2
+    
     station.state = api.state
-    station.online_time = datetime(*time.gmtime(api.onlineTimestamp)[0:5])
-    station.state_time = datetime(*time.gmtime(api.stateTimestamp)[0:5])
+    station.online_time = online_time
+    station.state_time = state_time
     
     station.corporation_use = detail.generalSettings.allowCorporationMembers == 1
     station.alliance_use = detail.generalSettings.allowAllianceMembers == 1
@@ -446,6 +453,24 @@ def update_pos_detail(auth, api, corp):
     for fuel_type in detail.fuel:
         type = Item.objects.get(id=fuel_type.typeID)
         fuel = PlayerStationFuelSupply.objects.get(type=type, station=station)
+        
+        purpose = fuel.purpose
+        consumed = (fuel.quantity - fuel_type.quantity)
+        max = Decimal(fuel.max_consumption)
+        if options.debug:
+            print "P: '%s'; H: %s; C: %s, Max: %s/hr" % (purpose, hours_since_update, consumed, max) 
+        if (purpose == 'CPU' or purpose == 'Power') and hours_since_update > 0:
+            consumed /= hours_since_update
+            if consumed > 0 and consumed < max:
+                if purpose == 'CPU':
+                    station.cpu_utilization = consumed / max
+                    print "CPU Utilization: %s" % station.cpu_utilization
+                else:
+                    station.power_utilization = consumed / max
+                    print "Power Utilization: %s" % station.power_utilization
+                station.save()
+        
+        
         fuel.quantity=fuel_type.quantity
         fuel.save()
 
@@ -507,14 +532,17 @@ for character in characters:
         print "Failed! [%s]" % e
         exit_code = 1
 
+old = Transaction.objects.filter(time__lt=transaction_cutoff)
+print "Purging %d old transactions..." % old.count()
+old.delete()
 
-Transaction.objects.filter(time__lt=transaction_cutoff).delete()
 if options.user:
     profiles = [ UserProfile.objects.get(name=options.user) ]
 else:
     profiles = UserProfile.objects.all()
     
 for profile in profiles:
+    print "Updating personal index: %s" % profile
     profile.update_personal_index()    
 
 

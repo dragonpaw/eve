@@ -109,14 +109,16 @@ def group(request, group_id):
     d['title'] = "Market Group: %s" % group.name
 
     objects = list(MarketGroup.objects.filter(parent=group)) + list(group.item_set.all())
-    d['objects'] = [{'item':x, 'index':get_index(profile, x)} for x in objects]
+    d['objects'] = [{'item':x, 
+                     'buy':get_buy_price(profile, x),
+                     'sell':get_sell_price(profile, x)} for x in objects]
 
     d['objects'].sort(key=lambda x:x['item'].name)
     return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
     
-def get_index(profile, item):
+def get_buy_price(profile, item):
     from eve.trade.models import MarketIndexValue
     
     # I'm lazy in group above, and call this for market groups as well as items.
@@ -124,14 +126,28 @@ def get_index(profile, item):
         return None
      
     if profile is not None:
-        return profile.get_index(item)
+        return profile.get_buy_price(item)
     else:
         try:
-            return MarketIndexValue.objects.get(user__isnull=True, item=item)
+            return MarketIndexValue.objects.get(user__isnull=True, item=item).buy
         except MarketIndexValue.DoesNotExist:
             return None
         
-
+def get_sell_price(profile, item):
+    from eve.trade.models import MarketIndexValue
+    
+    # I'm lazy in group above, and call this for market groups as well as items.
+    if not isinstance(item, Item):
+        return None
+     
+    if profile is not None:
+        return profile.get_sell_price(item)
+    else:
+        try:
+            return MarketIndexValue.objects.get(user__isnull=True, item=item).sell
+        except MarketIndexValue.DoesNotExist:
+            return None
+    
 
 def item(request, item_id, days=30):
     item = get_object_or_404(Item, id=item_id)
@@ -169,9 +185,9 @@ def item(request, item_id, days=30):
         name = mat.activity.name
         materials['titles'][name] = name
         if not materials['materials'].has_key(mat.material.id):
-            index = get_index(profile, mat.material)
+            price = get_buy_price(profile, mat.material)
             materials['materials'][mat.material.id] = {'material': mat.material,
-                                                       'index': index}
+                                                       'buy_price': price}
         materials['materials'][mat.material.id][name] = mat.quantity
         
         # Then, if we own the blueprint, the manufacture quantity.
@@ -186,8 +202,8 @@ def item(request, item_id, days=30):
     for key, value in materials['titles'].items():
         cost = Decimal(0)
         for m in materials['materials'].values():
-            if m.has_key(key) and m['index']:
-                cost += Decimal(str(m['index'].buy)) * m[key]
+            if m.has_key(key) and m['buy_price']:
+                cost += Decimal(str(m['buy_price'])) * m[key]
         if item.is_blueprint:
             portion = item.blueprint_makes.portionsize
         else:
@@ -208,10 +224,10 @@ def item(request, item_id, days=30):
         materials['titles']['Refined From'] = "Refined From"
         for mat in item.helps_make.filter(activity=50):
             value = "%0.2f" % mat.quantity_per_unit()
-            index = get_index(profile, mat.item)
+            price = get_buy_price(profile, mat.item)
             materials['materials'][mat.item.id] = {'material' : mat.item,
-                                                       'index'    : index,
-                                                       'Refined From' : value}
+                                                   'buy_price'    : price,
+                                                   'Refined From' : value}
 
     # Display order, and filter out actions we cannot perform.
     materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]

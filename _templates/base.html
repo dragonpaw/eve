@@ -36,7 +36,7 @@
     <a class="showPage settings" href="#settingsForm">Topics</a>
     -->
     
-<!-- {{ nav|pprint }} -->    
+<!-- {{ nav|pprint|safe }} -->    
 <div class="trail">{% if nav %}<a href="/">Menu</a>
     {% for n in nav %} &raquo; {% if not forloop.last %}<a href="{{ n.get_absolute_url }}">{{ n.name }}</a>{% else %}{{ n.name }}{% endif %}{% endfor %}
     {% else %}
