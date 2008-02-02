@@ -5,18 +5,22 @@
 {% block title %} Market Indexes {% endblock %}
 
 {% block content %}
-{% spaceless %}
 <ul class="links">
-    {% for i in indexes %}
+    {% for i in indexes %}{% spaceless %}
 	    <li class="index"><a href="{{ i.get_absolute_url }}">
 	    <span class="name">{{ i.name }}</span>
 	    <span class="items right">{{ i.items.count }} Items</span>
-	    <br>
-	    {% expr i.url or i.note as note %}
-	    <span class="note">{{ note }}</span>
+	    {% if i.url %}<br><span class="note">{{ i.url }}</span>{% endif %}
+	    {% if i.note %}<br><span class="note">{{ i.note }}</span>{% endif %}
 	    </a>
 	    </li>
-    {% endfor %}
+    {% endspaceless %} {% endfor %}
 </ul>
-{% endspaceless %}
+<p>Indexes are listed in order from most important, to least important.
+Prices for items will always come from the most important index that has
+an entry for that item.</p>
+
+<p>If you do not like the price for an item, find the page for that
+item and look under 'Indexes' for the link to set a custom buy or sell
+price.</p>
 {% endblock %}

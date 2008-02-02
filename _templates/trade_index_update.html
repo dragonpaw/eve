@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block title %} {{ item.name }}) {% endblock %}
+
+{% block content %}
+<h4>Item</h4>
+<ul class="links">
+<li><a href="{{ item.get_absolute_url }}">
+<img src="{{ item.icon32 }}">
+<span class="name">{{ item.name }}</span>
+<br>
+{% if buy %}<span class="index-buy">{{ buy|floatformat:2|comma }} ISK</span>{% endif %}
+&nbsp;
+{% if sell %}<span class="index-sell right">{{ sell|floatformat:2|comma }} ISK</span>{% endif %}
+</a></li>
+</ul>
+
+<h4>Set a Fixed Price</h4>
+
+<p>Whatever price you set here will be the most-preferred price used
+by The Widget for all calculations. If you wish, you may set just a buy
+price, or just a sell price, in which case, the field that you do not
+set will fall to the next most preferred price available.</p>
+
+<p>If you wish to remove this fixed value completely, set both the buy
+and sell price to 0. It will then be deleted.</p>
+
+<form method="post">
+<table>
+{{ form }}
+</table>
+<input type="submit" value="Update prices"/>
+</form>
+{% endblock %}

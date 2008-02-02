@@ -1,7 +1,7 @@
 QtcIndustries = {
     'feed': "http://www.starvingpoet.net/feeds/mmi.xml",
     'url': "http://www.starvingpoet.net/",
-    'description': "MMI 30 day average",
+    'description': "MMI 7 day average",
     'name': "QTC Industries",
     'item_map': {
         'AlloyedTritaniumBar': 25595,

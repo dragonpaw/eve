@@ -66,14 +66,15 @@ class MarketIndex(models.Model):
     name = models.CharField(max_length=200)
     url = models.CharField(max_length=200, blank=True)
     note = models.CharField(max_length=200, blank=True)
-    user = models.ForeignKey(UserProfile, blank=True, null=True)
+    user = models.ForeignKey(UserProfile, blank=True, null=True, related_name='indexes')
+    priority = models.IntegerField(default=0)
 
     class Meta:
         verbose_name_plural = "Market Indexes"
         ordering = ['name']
     
     class Admin:
-        list_display = ('id', 'user', 'name', 'url')
+        list_display = ('id', 'user', 'priority', 'name', 'url', 'note')
     
     def __str__(self):
         if self.user:
@@ -82,11 +83,14 @@ class MarketIndex(models.Model):
             return self.name
         
     def get_absolute_url(self):
-        return "/trade/index/%d/" % (self.id)
+        return "/trade/index/%s/" % (self.name)
         
     def set_value(self, item, buy=0, sell=0, buy_qty=0, sell_qty=0):
         assert(isinstance(item, Item))
         #print "self: %s, item: %s, b: %s/%s s: %s/%s" % (self, item, buy, buy_qty, sell, sell_qty)
+        if buy==0 and sell==0:
+            return self.items.filter(item=item).delete()
+        
         try:
             index = self.items.get(item=item)
         except MarketIndexValue.DoesNotExist:
@@ -100,11 +104,11 @@ class MarketIndex(models.Model):
         return index
         
 class MarketIndexValue(models.Model):
-    item = models.ForeignKey(Item, raw_id_admin=True, related_name='index_values')
-    index = models.ForeignKey(MarketIndex, related_name='items')
+    item = models.ForeignKey(Item, raw_id_admin=True, related_name='index_values', core=True)
+    index = models.ForeignKey(MarketIndex, related_name='items', edit_inline = models.TABULAR)
     date = models.DateField()
-    buy = models.FloatField()
-    sell = models.FloatField()
+    buy = models.FloatField(core=True)
+    sell = models.FloatField(core=True)
     buy_qty = models.IntegerField(blank=True)
     sell_qty = models.IntegerField(blank=True)
     
@@ -113,6 +117,7 @@ class MarketIndexValue(models.Model):
     
     class Admin:
         list_display = ('item', 'index', 'buy', 'sell')
+        search_fields = ['item__name']
     
     def __str__(self):
         return "%s: %f/%f" % (self.item, self.buy, self.sell)

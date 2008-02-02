@@ -5,6 +5,14 @@
 {% block content %}
 <!-- poses: {{ poses|pprint }} --> 
 {% if poses %}
+<ul class="links">
+<li><a href="{{ pos_consumption_nav.get_absolute_url }}">
+<img src="{{ pos_consumption_nav.icon32 }}">
+<span class="link">{{ pos_consumption_nav.name }}</span><br>
+<span class="note">{{ pos_consumption_nav.note }}</span>
+</a></li>
+</ul>
+
 {% for corp in poses %}
 <!-- corp: {{ corp|pprint }} -->
 <h4>{{ corp.name }}</h4>

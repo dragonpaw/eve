@@ -1706,14 +1706,14 @@ class Station(models.Model):
         
     
 class StationResourcePurpose(models.Model):
-    purpose = models.IntegerField(primary_key=True)
-    purposetext = models.CharField(max_length=300)
+    id = models.IntegerField(primary_key=True, db_column='purpose')
+    text = models.CharField(max_length=300, db_column='purposetext')
      
     class Admin:
         pass
     
     def __str__(self):
-        return self.purposetext
+        return self.text
      
 class StationResource(models.Model):
     q = Q(group__name='Control Tower') & Q(published=True)
@@ -1722,7 +1722,7 @@ class StationResource(models.Model):
                               related_name='fuel')
     type = models.ForeignKey(Item, db_column='resourcetypeid', raw_id_admin=True, 
                              related_name='fuel_for')
-    purpose = models.ForeignKey(StationResourcePurpose, db_column='purpose')
+    purpose_id = models.ForeignKey(StationResourcePurpose, db_column='purpose')
     quantity = models.IntegerField()
     minsecuritylevel = models.FloatField(null=True, blank=True)
     faction = models.ForeignKey(Faction, null=True, blank=True, db_column='factionID')
@@ -1732,6 +1732,10 @@ class StationResource(models.Model):
     
     def __str__(self):
         return "%s (%d)" % (self.type, self.quantity)
+        
+    @property
+    def purpose(self):
+        return self.purpose_id.text
         
 #class StationType(models.Model):
 #    id = models.IntegerField(primary_key=True, db_column='stationtypeid')

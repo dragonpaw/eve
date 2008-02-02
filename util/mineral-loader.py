@@ -27,7 +27,8 @@ else:
 name = QtcIndustries['name']     
 qtc, created = MarketIndex.objects.get_or_create(name=name)
 qtc.url = QtcIndustries['url']
-qtc.description = QtcIndustries['description']
+qtc.note = QtcIndustries['description']
+qtc.priority = 200
 qtc.save()
     
 http = httplib.HTTPConnection(url)
@@ -84,7 +85,7 @@ def derrived_value(item, index):
 minerals = {}
 for node in doc.getElementsByTagName("index"):
     days = node.getAttribute("timeperiod")
-    if int(days) == 30:
+    if int(days) == 7:
         for m in node.childNodes:
             if m.localName:
                 mineral_name = m.localName
