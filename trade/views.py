@@ -116,7 +116,10 @@ def blueprint_add(request):
     return HttpResponseRedirect('/trade/blueprints/')
 
 def market_index_list(request):
-    q = Q(user__isnull=True) | Q(user=request.user.get_profile())
+    if request.user.is_anonymous():
+        q = Q(user__isnull=True)
+    else:
+        q = Q(user__isnull=True) | Q(user=request.user.get_profile())
     d = {}
     d['nav'] = [ index_nav ]
     
@@ -126,8 +129,12 @@ def market_index_list(request):
     return render_to_response('trade_indexes.html', d, context_instance=RequestContext(request))
 
 def market_index_detail(request, name):
-    profile = request.user.get_profile()
-    q = (Q(user__isnull=True) | Q(user=profile)) & Q(name=name)
+    if request.user.is_anonymous() == False:
+        profile = request.user.get_profile()
+        q = (Q(user__isnull=True) | Q(user=profile)) & Q(name=name)
+    else:
+        q = Q(user__isnull=True) & Q(name=name)
+        
     index = get_object_or_404(MarketIndex, q)
     
     d = {}

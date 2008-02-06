@@ -48,9 +48,9 @@ class PlayerStation(models.Model):
               )
     
     moon = models.ForeignKey(MapDenormalize, raw_id_admin=True)
-    solarsystem = models.ForeignKey(SolarSystem)
-    constellation = models.ForeignKey(Constellation)
-    region = models.ForeignKey(Region)
+    solarsystem = models.ForeignKey(SolarSystem, raw_id_admin=True, )
+    constellation = models.ForeignKey(Constellation, raw_id_admin=True, )
+    region = models.ForeignKey(Region, raw_id_admin=True, )
     tower = models.ForeignKey(Item, limit_choices_to = q)
     note = models.CharField(max_length=500, blank=True)
     depot = models.ForeignKey(FuelDepot, blank=True, null=True)
@@ -59,7 +59,7 @@ class PlayerStation(models.Model):
     online_time = models.DateTimeField(blank=True)
     cached_until = models.DateTimeField(blank=True)
     last_updated = models.DateTimeField(blank=True)
-    corporation = models.ForeignKey(Corporation, related_name='pos')
+    corporation = models.ForeignKey(Corporation, related_name='pos', raw_id_admin=True, )
     #corp = models.ForeignKey(PlayerCorp)
     
     corporation_use = models.BooleanField()
@@ -83,6 +83,20 @@ class PlayerStation(models.Model):
     
     class Admin:
         list_display = ('moon', 'corporation', 'depot', 'state')
+        fields = (
+                  (None, {'fields': ('corporation','moon','tower','depot','state')}),
+                  ('Times', {'fields': ('state_time','online_time','cached_until','last_updated'),
+                             'classes': 'collapse'}),
+                  ('Location', {'fields': ('solarsystem','constellation','region'),
+                                'classes': 'collapse'}),
+                  ('General Settings', {'fields': ('corporation_use','alliance_use',
+                                           'deploy_flags','usage_flags',
+                                           'claim'), 'classes': 'collapse'}),
+                  ('Combat Settings', {'fields': ('attack_standing_flag','attack_standing_value',
+                                                  'attack_aggression', 'attack_atwar',
+                                                  'attack_secstatus_flag', 'attack_secstatus_value'),
+                                       'classes': 'collapse'}),
+                  )
 
     def __str__(self):
         return "%s (%s)" % (self.moon, self.corporation)
@@ -193,13 +207,12 @@ class PlayerStationModule(models.Model):
         list_display_links = ['item']
         
 class PlayerStationFuelSupply(models.Model):
-    station = models.ForeignKey(PlayerStation, related_name='fuel')
-    type = models.ForeignKey(Item, raw_id_admin=True, related_name='active_stations_using')
-    #                              limit_choices_to = {'is_pos_fuel': True})
-    solarsystem = models.ForeignKey(SolarSystem)
-    constellation = models.ForeignKey(Constellation)
-    region = models.ForeignKey(Region)
-    corporation = models.ForeignKey(Corporation, related_name='pos_fuels')
+    station = models.ForeignKey(PlayerStation, related_name='fuel', edit_inline=models.TABULAR)
+    type = models.ForeignKey(Item, raw_id_admin=True, related_name='active_stations_using', core=True)
+    solarsystem = models.ForeignKey(SolarSystem, raw_id_admin=True, )
+    constellation = models.ForeignKey(Constellation, raw_id_admin=True, )
+    region = models.ForeignKey(Region, raw_id_admin=True, )
+    corporation = models.ForeignKey(Corporation, related_name='pos_fuels', raw_id_admin=True, )
 
     quantity = models.IntegerField()
     
