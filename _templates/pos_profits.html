@@ -7,7 +7,7 @@
 {% for corp in fuels %}
 <h3>{{ corp.name }}</h3>
 
-<h4>Tower profit and loss</h4>
+<h4>Weekly tower profit and loss</h4>
 <p>Red number is fuel cost. Green number is POS reaction value.</p>
 <ul class="links">
 	{% for pos in corp.poses %}
@@ -24,7 +24,6 @@
 	<p class="cost total">Total income: {{ corp.income_weekly|floatformat:0|comma }}</p>
 	<p class="profit total">Net profit: {{ corp.profit_weekly|floatformat:0|comma }}</p>
 </table>
-<p>All numbers are weekly.</p>
 {% endfor %}
 
 {% endblock %}

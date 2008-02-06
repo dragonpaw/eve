@@ -45,7 +45,7 @@ def list(request):
     d['poses'] = get_poses(request) 
     d['inline_nav'] = [ pos_consumption_nav, pos_profit_nav ]
     
-    return render_to_response('pos_station_list.html', d, context_instance=RequestContext(request))
+    return render_to_response('pos_list.html', d, context_instance=RequestContext(request))
 
 
 @login_required
@@ -76,7 +76,7 @@ def detail(request, station_id, days=14):
     d['weekly_cost'] = cost
     d['fuels'] = fuels
     
-    return render_to_response('pos_station_detail.html', d, context_instance=RequestContext(request))
+    return render_to_response('pos_detail.html', d, context_instance=RequestContext(request))
 
 @login_required
 def consumption(request, days=14):
@@ -95,7 +95,6 @@ def consumption(request, days=14):
         cost_total = 0
         pos_costs = []
         for pos in pos_list['pos']:
-            pos_weekly_cost = 0
             for fuel in pos.fuel.all():
                 if fuel.purpose == 'Reinforce':
                     continue
@@ -137,7 +136,7 @@ def consumption(request, days=14):
         
     d['fuels'] = corps
     d['days'] = days
-    return render_to_response('pos_station_consumption.html', d, context_instance=RequestContext(request))
+    return render_to_response('pos_consumption.html', d, context_instance=RequestContext(request))
 
 @login_required
 def profit(request):
@@ -152,7 +151,6 @@ def profit(request):
         corp_name = pos_list['name']
         prices = {}
         cost_weekly = 0
-        cost_total = 0
         pos_costs = []
         for pos in pos_list['pos']:
             pos_weekly_cost = 0
@@ -173,7 +171,7 @@ def profit(request):
                       })
         
     d['fuels'] = corps
-    return render_to_response('pos_station_profits.html', d, context_instance=RequestContext(request))
+    return render_to_response('pos_profits.html', d, context_instance=RequestContext(request))
 
 
 def refuel(request, station_id, days=14):
@@ -195,6 +193,6 @@ def refuel(request, station_id, days=14):
         d['nav'] = [pos_nav, pos, {'name':'Manual Refueling'}]
         d['pos'] = pos
         d['days'] = days
-        return render_to_response('pos_station_refuel.html', d,
+        return render_to_response('pos_refuel.html', d,
                                   context_instance=RequestContext(request))    
     

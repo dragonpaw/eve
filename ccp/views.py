@@ -101,7 +101,9 @@ def group_index(request):
 
 def group(request, group_id):
     group = get_object_or_404(MarketGroup, id=group_id)
-    profile = request.user.get_profile()
+    profile = None
+    if request.user.is_anonymous() == False:
+        profile = request.user.get_profile()
     
     d = {}
     
@@ -129,7 +131,7 @@ def get_buy_price(profile, item):
         return profile.get_buy_price(item)
     else:
         try:
-            return MarketIndexValue.objects.get(user__isnull=True, item=item).buy
+            return MarketIndexValue.objects.get(index__user__isnull=True, item=item).buy
         except MarketIndexValue.DoesNotExist:
             return None
         
@@ -144,7 +146,7 @@ def get_sell_price(profile, item):
         return profile.get_sell_price(item)
     else:
         try:
-            return MarketIndexValue.objects.get(user__isnull=True, item=item).sell
+            return MarketIndexValue.objects.get(index__user__isnull=True, item=item).sell
         except MarketIndexValue.DoesNotExist:
             return None
     
@@ -169,11 +171,14 @@ def item(request, item_id, days=30):
     max_pe = None
     if request.user.is_authenticated():
         max_pe = profile.max_skill_level('Production Efficiency')
-            
-    try:
-        d['blueprint'] = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=request.user)[0]
-    except IndexError:
-        d['blueprint'] = None
+        
+    d['blueprint'] = None    
+    if profile:
+        try:
+            d['blueprint'] = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=profile)[0]
+        except IndexError:
+            pass
+        
    
    
     materials = {'titles':{},

@@ -18,7 +18,7 @@ ship_fit_nav = make_nav('Ship Fitting', '/fitting/', '09_05',
 
 Graphic.objects.get_or_create(icon='06_07', defaults={'id':10004, 'obsolete':False})
 features_nav = make_nav('Features', '/features/', '06_07',
-                        note='Reasons why you want to use this widget.')
+                        note='Reasons why you want to use the Widget.')
 
 def home(request):
     d = {}
