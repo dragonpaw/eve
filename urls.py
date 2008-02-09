@@ -29,6 +29,10 @@ urlpatterns = patterns('',
         {'template_name': 'auth_login.html'}),
     (r'^logout/$', 'django.contrib.auth.views.logout',
         {'template_name': 'auth_logout.html'}),
+    (r'^test404/$', handler404),
+    (r'^test500/$', handler500),
+        
+    
 )
 
 if DEBUG:
