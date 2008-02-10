@@ -80,9 +80,12 @@ def region(request, name):
                               context_instance=RequestContext(request))
     
 def region_list(request):
+    q1 = Q(faction__isnull=True)
+    q2 = QNot(Q(faction__name='Jove Empire'))
     
     d = {}
-    d['objects'] = Region.objects.all()
+    d['objects'] = list(Region.objects.filter(q1)) + list(Region.objects.filter(q2))
+    d['objects'].sort(key=lambda x:x.name)
     d['title'] = "Region List"
     d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
     

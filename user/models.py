@@ -216,7 +216,7 @@ class Character(models.Model):
     cached_until = models.DateTimeField(blank=True)
     
     class Admin:
-        list_display = ('name', 'user', 'get_isk_formatted', 
+        list_display = ('name', 'user', 'corporation', 'get_isk_formatted', 
                         'get_sp_formatted', 'training_skill', 'training_level')
 
     class Meta:
