@@ -4,32 +4,26 @@
 
 {% block content %}
 {% spaceless %}
-<div class="item">
-    <div class="item-description">
-        <h3>{{ item.name }}</h3>
-        {% if item.alliance %}
-        <img src="{{ item.icon64 }}" class="icon">
-        {% endif %}
-    </div>
-    <div class="item-details">
-    <h4>Details</h4>
-    <dl>
-        <dt>Region:</dt><dd><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></dd>
-        <dt>Soverignity:</dt><dd>{% if item.alliance %}{{ item.alliance }}{% else %}Unclaimed{% endif %}</dd>
-        <dt>Systems:</dt><dd>{{ item.solarsystems.count }}</dd>
-    </dl>
-    </div>
+<h3>{{ item.name }}</h3>
+{% if item.icon64 %}<img src="{{ item.icon64 }}" class="icon">{% endif %}
+
+<h4>Details</h4>
+<table>
+	<tr><th>Region:</th><td><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></td></tr>
+	{% if item.faction %}<tr><th>Faction</th><td>{{ item.faction }}</td></tr>
+	{% else %}<tr><th>Soverignity:</th><td>{{ item.alliance|default:"Unclaimed" }}</td></tr>
+	{% endif %}
+    <tr><th>Systems:</th><td>{{ item.solarsystems.count }}</td></tr>
+</table>
     
-    <div class="item-materials">
-    <h4>Systems</h4>
+<h4>Systems</h4>
 	<ul class="links" >
 	{% for o in item.solarsystems.all %}
     	<li class="constellation">
         	<a href="{{ o.get_absolute_url }}">
             {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
             {% expr o.security < 0.5 as lowsec %}
-            <span class="name">
-            {{ o.name }}
+            <span class="name">{{ o.name }}</span>
             <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">({{ o.security|floatformat:3 }})</span>
             </span>
             <br>

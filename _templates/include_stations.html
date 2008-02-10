@@ -10,8 +10,7 @@
         	<a href="{{ o.solarsystem.get_absolute_url }}">
             {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
             {% expr o.solarsystem.security < 0.5 as lowsec %}
-            <span class="name">
-            {{ o.name }}
+            <span class="name">{{ o.name }}</span>
             <br>
             <span class="solarsystem">{{ o.solarsystem }}</span>
             <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">

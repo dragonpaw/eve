@@ -371,12 +371,6 @@ li.character a {
 	color: grey;
 }
 
-.region .faction,
-.constellation .faction,
-.solarsystem .faction {
-	color: grey;
-}
-
 .stations .security,
 .constellation .security {
 	position: absolute;

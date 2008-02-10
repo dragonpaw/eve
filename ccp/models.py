@@ -287,7 +287,31 @@ class Faction(models.Model):
         
     def __str__(self):
         return self.name
+    
+    def iconid(self):
+        ids = {
+               'Caldari State':'19_01',
+               'Minmatar Republic':'19_02',
+               'Gallente Federation':'19_03',
+               'Amarr Empire':'19_04',
+               'Khanid Kingdom':'59_03',
+        }
+        
+        if ids.has_key(self.name):
+            return ids[self.name]
+        else:
+            return None
 
+    def icon(self, size):
+        id = self.iconid()
+        if id is None:
+            return None
+        else:
+            return "/static/ccp-icons/white/%d_%d/icon%s.png" % (size, size, id)
+        
+    @property
+    def icon32(self):
+        return self.icon(32)
 
 class Race(models.Model):
     """Table contains the basic races in the game:
@@ -1324,6 +1348,38 @@ class Region(models.Model):
         
     def get_absolute_url(self):
         return "/region/%s/" % self.name
+    
+    def owner(self):
+        if self.faction:
+            return self.faction
+        else:
+            alliance = self.alliance()
+            if alliance:
+                return alliance
+            else:
+                return None
+    
+    def alliance(self):
+        alliances= {}
+        for x in self.constellations.all():
+            if x.alliance:
+                alliances[x.alliance_id] = x.alliance
+        if len(alliances) == 1:
+            return alliances.values()[0]
+        else:
+            return None
+        
+    def icon(self, size):
+        owner = self.owner()
+        
+        if owner is None:
+            return None
+        else:
+            return owner.icon(32)
+    
+    @property
+    def icon32(self):
+        return self.icon(32)
 
 class Constellation(models.Model):
     id = models.IntegerField(primary_key=True, db_column='constellationid')
@@ -1373,21 +1429,27 @@ class Constellation(models.Model):
     def moons(self):
         return self.map.filter(type__name='Moon')
 
+    def icon(self, size):
+        if self.alliance:
+            return self.alliance.icon(size)
+        else:
+            return None
+
     @property
     def icon16(self):
-        return self.alliance.icon16
+        return self.icon(16)
     
     @property
     def icon32(self):
-        return self.alliance.icon32
+        return self.icon(32)
 
     @property
     def icon64(self):
-        return self.alliance.icon64
+        return self.icon(64)
     
     @property
     def icon128(self):
-        return self.alliance.icon128
+        return self.icon(128)
     
 class SolarSystem(models.Model):
     region = models.ForeignKey(Region, db_column='regionid', related_name='solarsystems')
