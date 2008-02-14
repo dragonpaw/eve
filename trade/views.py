@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q, QNot
 
 from decimal import Decimal
-from datetime import date
+#from datetime import date
 
 from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue
 from eve.ccp.models import Item
@@ -18,6 +18,8 @@ blueprint_nav = make_nav("Blueprints Owned", "/trade/blueprints/", '09_15',
                           note="The blueprints you can make things with.")
 transaction_nav = make_nav("Transactions", "/trade/transactions/", '64_14',
                             note="Everything you've bought and sold.")
+salvage_nav = make_nav('Salvage', '/trade/salvage/', '69_11', 
+                       'Calculate what rigs you can make with that pile of salvage filling your hangar.')
 
 @login_required
 def transactions(request):
@@ -48,6 +50,7 @@ def transaction_detail(request, id=None):
     
     return render_to_response('trade_transaction_detail.html', d)
 
+@login_required
 def blueprint_list(request):
     d = {}
     d['nav'] = [ blueprint_nav ]
@@ -182,3 +185,63 @@ def fixed_price_update(request, id):
         d['form'] = FixedPriceForm(initial={'buy_price':buy_price,'sell_price':sell_price})
     
     return render_to_response('trade_index_update.html', d, context_instance=RequestContext(request))
+
+
+def salvage(request):
+    d = {}
+    d['items'] = Item.objects.filter(group__name='Salvaged Materials')
+    d['nav'] = [salvage_nav]
+    
+    if request.method != 'POST':
+        return render_to_response('trade_salvage.html', d, context_instance=RequestContext(request))
+
+    assert(request.method=='POST')
+
+    if request.user.is_anonymous() is False:
+        profile = request.user.get_profile()
+    else:
+        profile = None
+        
+    bits = {}
+    d['bits'] = bits
+    d['nav'].append({'name':'Rigs you can make'})
+
+    # Make a lookup table out of the salvage available.
+    for key in request.POST.keys():
+        id = int(key)
+        if not id > 0:
+            continue
+            
+        qty = int(request.POST[key])
+        bits[id] = qty
+        
+    rigs = {}
+    for rig in Item.objects.filter(marketgroup__parent__id='955'):
+        for m in rig.materials(activity='Manufacturing').filter(material__group__name='Salvaged Materials'):
+            id = m.material.id
+            can_make = int(bits[id] / m.quantity)
+            if rigs.has_key(rig.id):
+                rigs[rig.id]['qty'] = min(rigs[rig.id]['qty'], can_make)
+            else:
+                rigs[rig.id] = { 'qty': can_make, 'item': rig }
+                
+            # If we can make 0, it's not going to get higher.
+            if rigs[rig.id]['qty'] == 0:
+                break
+            
+    objects = []
+    d['objects'] = objects
+    for id in rigs.keys():
+        if rigs[id]['qty'] == 0:
+            continue
+        if profile:
+            buy = profile.get_buy_price(rigs[id]['item'])
+            sell =  profile.get_sell_price(rigs[id]['item'])
+        else:
+            buy = sell = None
+        objects.append({
+                        'item':rigs[id]['item'], 
+                        'quantity':rigs[id]['qty'],
+                        })
+         
+    return render_to_response('ccp_item_list.html', d, context_instance=RequestContext(request))

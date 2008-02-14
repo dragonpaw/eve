@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from eve.trade.views import blueprint_nav, index_nav, transaction_nav
+from eve.trade.views import blueprint_nav, index_nav, transaction_nav, salvage_nav
 from eve.ccp.views import region_nav, item_nav, sov_nav
 from eve.pos.views import pos_nav
 from eve.user.views import user_nav, user_create_nav
@@ -28,7 +28,7 @@ def home(request):
     objects = [about_nav, changelog_nav,
                region_nav, item_nav,
                index_nav, sov_nav, 
-               features_nav,
+               features_nav, salvage_nav,
     ]
     
     if user.is_authenticated() and (user.username == 'ash' or user.username == 'Ductape'):

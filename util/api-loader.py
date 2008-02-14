@@ -20,6 +20,31 @@ import pprint
 import os
 os.environ['TZ'] = 'UTC'
 
+error_limited_api_key = ('EVE Magic Widget: Wrong API key used.',
+'''When you registered your account with the EVE Magic widget,
+you provided an API key for the account numbered '%s'.
+
+Unfortunately, you provided the 'Limited' key and not the 'Full' one.
+Since the EVE Magic Widget does a lot of magic based off of your 
+transaction history and inventory, it really won't work without the
+'Full' key.
+
+To find the full key, go to http://myeve.eve-online.com/api/ and find the
+SECOND button on the page, that says, 'Yes, I need my full access key and
+understand what this means.' Once you do this, a second key will appear,
+which will give the Widget authorization to view your transaction history.
+
+Please return to the Widget once you have the correct key, and enter it on
+the account page at http://eve.magicwidget.net/user/
+
+To prevent further emails, the existing limited key you provided has now
+been deleted from the Widget. 
+
+If you do not feel comfortable providing this key, then you are free to use
+the public functions of the Widget, without logging in. You just will not get
+maximum value and 'magic' from the EVE Magic Widget.
+''')
+
 from optparse import OptionParser
 parser = OptionParser()
 parser.add_option('-m', '--map', action='store_true',  default=False,
@@ -531,15 +556,20 @@ for character in characters:
     try:
         update_character(character)
     except eveapi.Error, e:
-        print "Failed! [%s]" % e
-        exit_code = 1
+        if e.message == 'Current security level not high enough':
+            character.user.user.email_user(error_limited_api_key[0], error_limited_api_key[1] % account.id)
+            character.account.delete()
+            print "Deleted account '%s', user gave limited key." % account.id
+        else:
+            print "Failed! [%s]" % e
+            exit_code = 1
 
 old = Transaction.objects.filter(time__lt=transaction_cutoff)
 print "Purging %d old transactions..." % old.count()
 old.delete()
 
 if options.user:
-    profiles = [ UserProfile.objects.get(name=options.user) ]
+    profiles = [ User.objects.get(username=options.user).get_profile() ]
 else:
     profiles = UserProfile.objects.all()
     

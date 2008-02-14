@@ -37,23 +37,16 @@ configurable events.</p>
     <!-- {{ request.POST|pprint|safe }} -->
     {% if id %}<TR><TH>User ID:</TH><TD>{{ id }}</TD></TR>{% endif %}
 	{{ form }}
-	<TR>
-		<TD colspan="2">
-		{% if id %}<INPUT type="submit" value="Update" />
-		{% else %}<INPUT type="submit" value="Add" /> 
-		{% endif %}</TD>
-	</TR>
 </TABLE>
+{% if id %}<INPUT type="submit" value="Update" />
+{% else %}<INPUT type="submit" value="Add" />
+{% endif %} 
 </FORM>
 {% if id %}
 <FORM method="post">
 <INPUT type="hidden" name="delete" value="1">
 <INPUT type="hidden" name="id" value="{{ id }}">
-<TABLE>
-	<TR>
-		<TD><INPUT type="submit" value="Delete" /></TD>
-	</TR>
-</TABLE>
+<INPUT type="submit" value="Delete" /></TD>
 </FORM>
 {% endif %}
 {% endspaceless %} {% endblock %}</FORM>

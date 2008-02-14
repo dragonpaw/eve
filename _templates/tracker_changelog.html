@@ -6,7 +6,7 @@
 <div class="changelog">
 {% for l in logs %}
 <div class="changelog-entry">
-  <h4>{{ l.date }}</h4>
+  <h4>{{ l.date|date:"Y-m-d" }}</h4>
   <p>{{ l.description|markdown }}</p>
 </div>
 {% endfor %}

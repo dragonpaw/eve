@@ -290,11 +290,26 @@ class Faction(models.Model):
     
     def iconid(self):
         ids = {
-               'Caldari State':'19_01',
-               'Minmatar Republic':'19_02',
-               'Gallente Federation':'19_03',
-               'Amarr Empire':'19_04',
-               'Khanid Kingdom':'59_03',
+               'Caldari State':'caldari',
+               'Minmatar Republic':'minmatar',
+               'Gallente Federation':'gallente',
+               'Amarr Empire':'amarr',
+               'Khanid Kingdom':'khanid-kingdom',
+               'CONCORD Assembly':'concord',
+               'Ammatar Mandate':'ammatar',
+               'Jove Empire':'jovian-directorate',
+               'The Syndicate':'intaki-syndicate',
+               'Guristas Pirates':'guristas',
+               'Angel Cartel':'angel-cartel',
+               'The Blood Raider Covenant':'',
+               'The InterBus':'interbus',
+               'ORE':'ore',
+               'Thukker Tribe':'thukker-tribe',
+               'The Servant Sisters of EVE':'soe',
+               'The Society':'society-of-conscious',
+               "Mordu's Legion Command":"mordus-legion",
+               "Sansha's Nation":'sanshas-nation',
+               'Serpentis':'serpentis',
         }
         
         if ids.has_key(self.name):
@@ -307,7 +322,7 @@ class Faction(models.Model):
         if id is None:
             return None
         else:
-            return "/static/ccp-icons/white/%d_%d/icon%s.png" % (size, size, id)
+            return "/static/ccp-icons/corporation/%s %s.jpg" % (id, size)
         
     @property
     def icon32(self):
@@ -1201,7 +1216,7 @@ class MarketGroup(models.Model):
         return self.name
         
     def get_absolute_url(self):
-        return "/group/%i/" % self.id
+        return "/items/%i/" % self.id
 
     #-------------------------------------------------------------------------
     # All things iconic.
@@ -1747,7 +1762,8 @@ class Station(models.Model):
     maxshipvolumedockable = models.FloatField('Max Dockable')
     officerentalcost = models.IntegerField('Office Rental')
     operationid = models.IntegerField(null=True, blank=True)
-    stationtypeid = models.IntegerField(null=True, blank=True)
+    type = models.ForeignKey(Item, null=True, blank=True,
+                             db_column='stationtypeid', related_name='staitons')
     x = models.FloatField()
     y = models.FloatField()
     z = models.FloatField()
@@ -1784,6 +1800,8 @@ class Station(models.Model):
     def icon32(self):
         if self.corporation.alliance:
             return self.corporation.alliance.icon32
+        else:
+            return self.type.icon32
         
     
 class StationResourcePurpose(models.Model):

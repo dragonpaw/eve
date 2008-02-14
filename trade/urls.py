@@ -11,4 +11,6 @@ urlpatterns = patterns('',
 
     (r'^transactions/$', 'eve.trade.views.transactions'),
     (r'^transaction/(?P<id>\d+)/$', 'eve.trade.views.transaction_detail'),
+    
+    (r'^salvage/$', 'eve.trade.views.salvage'),
 )

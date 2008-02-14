@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+<h4>Rig Builder</h4>
+
+<form method="post">
+  <table>
+    <tr>
+    	<th>Fuel</th>
+    	<th class="number">Qty</th>
+    </tr>
+	{% for item in items %}
+	<tr>{% spaceless %}
+	  <th><a href="{{ item.get_absolute_url }}"> <img src="{{ item.icon16 }}"> {{ item.name }}</a></th>
+	  <td><input type="text" size="8" value="0" name="{{ item.id }}"></td>
+	</tr>{% endspaceless %}
+	{% endfor %}
+</table>
+<input type="submit" value="What can I build?"/>
+</form>
+{% endblock %}

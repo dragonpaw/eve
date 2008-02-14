@@ -43,7 +43,7 @@ class Ticket(models.Model):
         
 class ChangeLog(models.Model):
     """Changes made"""
-    date = models.DateField(auto_now_add=True)
+    date = models.DateTimeField(auto_now=True)
     description = models.TextField()
     
     class Meta:
