@@ -17,13 +17,14 @@ urlpatterns = patterns('',
     (r'^constellation/(?P<name>.*)/$', 'eve.ccp.views.constellation'),
     (r'^region/(?P<name>.*)/$', 'eve.ccp.views.region'),
     (r'^regions/$', 'eve.ccp.views.region_list'),
-    (r'^changelog/$', 'eve.tracker.views.changelog'),
     (r'^item/(?P<item_id>\d+)/$', 'eve.ccp.views.item'),
-    (r'^group/$', 'eve.ccp.views.group_index'),
-    (r'^group/(?P<group_id>\d+)/$', 'eve.ccp.views.group'),
-    (r'^sov/changes/$', 'eve.ccp.views.sov_changes'),
+    (r'^items/$', 'eve.ccp.views.group_index'),
+    (r'^items/(?P<group_id>\d+)/$', 'eve.ccp.views.group'),
 
+    (r'^sov/changes/$', 'eve.ccp.views.sov_changes'),
     
+    (r'^changelog/$', 'eve.tracker.views.changelog'),
+    (r'^changelog/(?P<when>\d{4}-\d\d-\d\d-\d\d:\d\d)/$', 'eve.tracker.views.changelog'),
 
     (r'^login/$', 'django.contrib.auth.views.login',
         {'template_name': 'auth_login.html'}),

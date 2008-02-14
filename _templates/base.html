@@ -17,25 +17,6 @@
 </head>
 <body orient="landscape"><div class="page">
     {% spaceless %}<h1>EVE Magic Widget</h1>
-    <!--  {% if user %}:
-    <span id="user">
-    {% if user.is_authenticated %}
-    <A href="/user/">
-    {{ user.username }}
-    </A>
-    {% else %}
-    <A href="/login/">
-    login
-    </A>
-    {% endif %}
-    {% endif %}
-    </span>
-    -->
-    <!--
-    <a class="showPage button" href="#loginForm">Login</a>
-    <a class="showPage settings" href="#settingsForm">Topics</a>
-    -->
-    
 <!-- {{ nav|pprint|safe }} -->    
 <div class="trail">{% if nav %}<a href="/">Menu</a>
     {% for n in nav %} &raquo; {% if not forloop.last %}<a href="{{ n.get_absolute_url }}">{{ n.name }}</a>{% else %}{{ n.name }}{% endif %}{% endfor %}
@@ -43,7 +24,7 @@
     {% if flatpage %}
     <a href="/">Menu</a> &raquo; {{ flatpage.title }}
     {% else %}
-    Menu
+    <a href="/">Menu</a>
     {% endif %}
     {% endif %}
 </div>{% endspaceless %}

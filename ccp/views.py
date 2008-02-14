@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from django.db.models.query import Q, QNot
 
-item_nav = make_nav("Items", "/group/", '24_05', note='All items in the game.')
+item_nav = make_nav("Items", "/items/", '24_05', note='All items in the game.')
 region_nav = make_nav("Regions", "/regions/", '17_03', note='The universe, and everything in it.')
 sov_nav = make_nav('Sovereignty Changes', '/sov/changes/', '70_11', note='Who lost and gained systems.')
 
@@ -237,18 +237,29 @@ def item(request, item_id, days=30):
                                                    'buy_price'    : price,
                                                    'Refined From' : value}
 
+    # This triggers on materials that CAN react.
     if item.reacts.count():
-        materials['titles']['Reaction'] = 'POS Reaction'
         for mat in item.reacts.all():
             price = get_buy_price(profile, mat.reaction)
+            reaction = mat.reaction
             if mat.input:
-                input = "Input to"
+                materials['titles']['Reaction-in'] = 'Reactions Needing'
+                for r in reaction.reactions.filter(input=False):
+                    materials['materials'][r.item.id] = {'material': r.item,
+                                                         'buy_price': price,
+                                                         'input':'Needed',
+                                                         'Reaction-in': mat.quantity
+                                                         }
             else:
-                input = "Output of"
-            materials['materials'][mat.reaction.id] = {'material' : mat.reaction,
-                                                       'buy_price': price,
-                                                       'input'    : input,
-                                                       'Reaction' : mat.quantity}
+                materials['titles']['Reaction-out'] = 'Materials to React'
+                for r in reaction.reactions.filter(input=True):
+                    materials['materials'][r.item.id] = {'material': r.item,
+                                                         'buy_price': price,
+                                                         'input':'Used',
+                                                         'Reaction-out': r.quantity
+                                                         }
+                    
+    # This triggers on reaction blueprints
     if item.reactions.count():
         materials['titles']['Reaction'] = 'POS Reaction'
         for mat in item.reactions.all():
@@ -269,7 +280,7 @@ def item(request, item_id, days=30):
     materials['materials'].sort(key=lambda x:x['material'].name)
     materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
                           'Research Time Production', 'Copying', 'Inventing', 'Refining',
-                          'Refined From', 'Reaction']
+                          'Refined From', 'Reaction', 'Reaction-in', 'Reaction-out']
     materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
 
     d['materials'] = materials

@@ -167,7 +167,12 @@ class UserProfile(models.Model):
         return avg, best
        
 def create_profile_for_user(sender, instance, signal, *args, **kwargs):
-    UserProfile.objects.get_or_create(user=instance)
+    try:
+        UserProfile.objects.get(user=instance)
+    except UserProfile.DoesNotExist:
+        UserProfile(
+                    user=instance
+                    ).save()                                    
 
 dispatcher.connect(create_profile_for_user, signal=signals.post_save, sender=User)
        

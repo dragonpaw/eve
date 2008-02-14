@@ -20,7 +20,9 @@ Register with The Widget. Tap here if it is your first time.</a>
 <tr><td><label for="id_password">Password:</label></td><td>{{ form.password }}</td></tr>
 </table>
 
-<input type="submit" value="login" />
+<fieldset>
+<input type="submit" value="Login to the Widget" />
 <input type="hidden" name="next" value="{{ next }}" />
+</fieldset>
 </form>
 {% endblock %}

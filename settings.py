@@ -1,8 +1,7 @@
 # Django settings for eve project.
 # $Id$
 
-from database_settings import (DATABASE_ENGINE, DATABASE_NAME, DATABASE_USER, DATABASE_PASSWORD,
-                              DATABASE_HOST, DATABASE_PORT, SECRET_KEY, DEBUG)
+from database_settings import *
 import sys
 
 ADMINS = (
@@ -13,6 +12,8 @@ ADMINS = (
 MANAGERS = ADMINS
 
 TEMPLATE_DEBUG = DEBUG
+
+DEFAULT_FROM_EMAIL='ash@dragonpaw.org'
 
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/8.1/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
@@ -57,6 +58,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
+    'eve.tracker.middleware.ChangeLogMiddleware'
 )
 
 ROOT_URLCONF = 'eve.urls'
