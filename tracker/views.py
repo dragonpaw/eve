@@ -13,6 +13,7 @@ def changelog(request, when=None):
     if when:
         when = datetime(*time.strptime(when, "%Y-%m-%d-%H:%M")[0:5])
         d['logs'] = ChangeLog.objects.filter(date__gte=when)
+        d['nav'].append({'name':'Since you last logged in'})
     else:
         d['logs'] = ChangeLog.objects.all()
     
