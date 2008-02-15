@@ -4,22 +4,64 @@
 
 {% block content %}
 <!-- pos: {{ pos|pprint }} --> 
-<h4>{{ pos.moon }}</h4>
-<p>{{ pos.note }}</p>
-	<table class="pos">
-	<tr><th>Owning corporation</th><td>{{ pos.corporation }}</td></tr>
-	<tr><th>Depot</th><td>{{ pos.depot }}</td></tr>
-	<tr><th>Online time</th><td>{{ pos.online_time }}</td></tr>
-	<tr><th>Sov level</th><td>{{ pos.sov_level }}</td></tr>
-	<tr><th>State</th>
-	{% if pos.is_online %}<td class="online">{% else %}<td class="offline">{% endif %}
-	{{ pos.state_name }}</td></tr>
-	<tr><th>State time</th><td>{{ pos.state_time }}</td></tr>
-	<tr><th>Cached until</th><td>{{ pos.cached_until }}</td></tr>
-	<tr><th>CPU utilization</th><td>{{ pos.cpu_percent }} % (Estimated)</td></tr>
-	<tr><th>Power utilization</th><td>{{ pos.power_percent }} % (Estimated)</td></tr>
-	</table>
-	
+<h3>{{ pos.moon }}</h3>
+
+<h4>Fuel Status</h4>
+  {% if pos.cache_remaining %}
+<p>Data here will be automatically refreshed in another 
+{{ pos.cache_remaining|time }}. You may manually update it below if you
+have just changed the fuel supply in this tower.</p>
+{% else %}
+  <p>Data here has expired from the cache and will be refreshed shortly.</p>
+  {% endif %}
+  <table class="pos-fuel">
+    <tr>
+    	<th>Fuel</th>
+    	<th class="number">Qty</th>
+    	<th class="number">Burn</th>
+    	<th class="number">Need</th>
+    	<th class="number">Time</th>
+    </tr>
+	{% for f in fuels %}
+	{% spaceless %}<tr>
+	<th><a href="{{ f.type.get_absolute_url }}">
+	  <img src="{{ f.type.icon16 }}"> {{ f.type }}</a></th>
+	  <td>{{ f.fuel.quantity|comma }}</td>
+	  <td>{{ f.fuel.consumption|comma }}</td>
+	  {% expr f['fuel'].need(days=days) as need %}
+	  <td>{{ need|comma }}</td>
+	  {% expr f['fuel'].time_remaining as remaining %}
+	  {% expr remaining.days as days_remaining %}
+	  <td class="remaining remaining-{{days_remaining}}">{{ remaining|time }}</td>
+	</tr>
+	{% endspaceless %}{% endfor %}
+  <tr><th class="name" colspan=2>Remaining runtime</th>
+  <th class="number" colspan="3">{{ pos.time_remaining|time }}</th></tr>
+  </table>
+  <p>'Need' is defined as the additional quantity needed for a {{ days }}-day runtime.</p> 
+  
+  {% ifequal pos.sov_level 'Constellation' %}
+  <p class="warning">NOTE: This tower is anchored in a system where your
+alliance holds constellation sovereignty. There is a known bug where the
+manage screen for a tower will not include the constellation discount in
+the display, even though it does actually include the discount in
+consumption rates. As such, the numbers in-game will appear higher than
+what is listed here. However, these are the correct numbers.</p>
+  {% endifequal %}
+		
+<h4>Actions</h4>
+{% if inline_nav %}
+<ul class="links">
+{% for nav in inline_nav %}
+	<li><a href="{{ nav.get_absolute_url }}">
+	<img src="{{ nav.icon32 }}">
+	<span class="link">{{ nav.name }}</span><br>
+	<span class="note">{{ nav.note }}</span></a>
+  	</li>
+{% endfor %}
+</ul>
+{% endif %}
+		
 	<h4>Location</h4>
 	<ul class="links">
 	
@@ -45,63 +87,30 @@
 	<li><a href="{{ pos.tower.get_absolute_url }}"><img src="{{ pos.tower.icon32 }}">
 	<span class="name">{{ pos.tower }}</span></a></li>
 	</ul>
-
-<h4>Fuel Loaded</h4>
-  {% if pos.cache_remaining %}
-<p>Data here will be automatically refreshed in another 
-{{ pos.cache_remaining|time }}. You may manually update it below if you are
-impatient. :)</p>
-{% else %}
-  <p>Data here has expired from the cache and will be refreshed shortly.</p>
-  {% endif %}
-  <table class="pos-fuel">
-    <tr>
-    	<th>Fuel</th>
-    	<th class="number">Qty</th>
-    	<th class="number">Burn</th>
-    	<th class="number">Need</th>
-    	<th class="number">Time</th>
-    </tr>
-	{% for f in fuels %}
-	{% spaceless %}<tr>
-	<th><a href="{{ f.type.get_absolute_url }}">
-	  <img src="{{ f.type.icon16 }}"> {{ f.type }}</a></th>
-	  <td>{{ f.fuel.quantity|comma }}</td>
-	  <td>{{ f.fuel.consumption|comma }}</td>
-	  {% expr f['fuel'].need(days=days) as need %}
-	  <td>{{ need|comma }}</td>
-	  {% expr f['fuel'].time_remaining as remaining %}
-	  {% expr remaining.days as days_remaining %}
-	  <td class="remaining remaining-{{days_remaining}}">{{ remaining|time }}</td>
-	</tr>
-	{% endspaceless %}{% endfor %}
-  <tr><th class="runtime" colspan=2>Remaining runtime</th>
-  <td class="runtime remaining" colspan="3">{{ pos.time_remaining|time }}</td></tr>
-  </table>
-  <ul class="links">
-  <li><a href="{{ refuel_nav.get_absolute_url }}">
-	<img src="{{ refuel_nav.icon32 }}">
-	<span class="link">{{ refuel_nav.name }}</span><br>
-	<span class="note">{{ refuel_nav.note }}</span></a></li>
-  </ul>
-  <p>'Need' is defined as the additional quantity needed for a {{ days }}-day runtime.</p> 
-  
-  {% ifequal pos.sov_level 'Constellation' %}
-  <p class="warning">NOTE: This tower is anchored in a system where your
-alliance holds constellation sovereignty. There is a known bug where the
-manage screen for a tower will not include the constellation discount in
-the display, even though it does actually include the discount in
-consumption rates. As such, the numbers in-game will appear higher than
-what is listed here. However, these are the correct numbers.</p>
-  {% endifequal %}
+<h4>Facts</h4>
+<p>{{ pos.note }}</p>
+	<table class="pos">
+	<tr><th>Owning corporation</th><td>{{ pos.corporation }}</td></tr>
+	<tr><th>Depot</th><td>{{ pos.depot }}</td></tr>
+	<tr><th>Online time</th><td>{{ pos.online_time }}</td></tr>
+	<tr><th>Sov level</th><td>{{ pos.sov_level }}</td></tr>
+	<tr><th>State</th>
+	{% if pos.is_online %}<td class="online">{% else %}<td class="offline">{% endif %}
+	{{ pos.state_name }}</td></tr>
+	<tr><th>State time</th><td>{{ pos.state_time }}</td></tr>
+	<tr><th>Cached until</th><td>{{ pos.cached_until }}</td></tr>
+	<tr><th>CPU utilization</th><td>{{ pos.cpu_percent }} % (Estimated)</td></tr>
+	<tr><th>Power utilization</th><td>{{ pos.power_percent }} % (Estimated)</td></tr>
+	</table>
 	
-<H4>Fuel costs</H4>
+
+<H4>Weekly Fuel Costs</H4>
 <table class="pos-fuel">
 	<tr>
    		<th>Fuel</th>
-    	<th class="number">Weekly</th>
+    	<th class="number">Qty</th>
     	<th class="number">Price</th>
-    	<th class="number">Cost</th>
+    	<th class="number">Total</th>
     </tr>
 	{% for fuel in fuels %}
 	{% spaceless %}<tr>
@@ -113,7 +122,7 @@ what is listed here. However, these are the correct numbers.</p>
 	</tr>
 	{% endspaceless %}{% endfor %}
   <tr><th class="runtime" colspan=2>Weekly cost</th>
-  <td class="runtime remaining" colspan="3">{{ weekly_cost|floatformat:2|comma }} ISK</td></tr>
+  <th class="number" colspan="3">{{ weekly_cost|floatformat:2|comma }} ISK</th></tr>
   </table>
   
   
@@ -137,4 +146,5 @@ what is listed here. However, these are the correct numbers.</p>
 	<tr><th>Deployment flag</th><td>{{ pos.deploy_flags }}</td></tr>
 	<tr><th>Usage flag</th><td>{{ pos.usage_flags }}</td></tr>
 	</table>  
- {% endblock %}
+
+{% endblock %}

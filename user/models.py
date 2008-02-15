@@ -215,7 +215,8 @@ class Character(models.Model):
     training_skill = models.ForeignKey(Item, null=True, blank=True,
                      limit_choices_to = {'group__category__name': 'Skill'})
     is_director = models.BooleanField(default=False)
-    corporation = models.ForeignKey(Corporation)
+    is_pos_monkey = models.BooleanField(default=False)
+    corporation = models.ForeignKey(Corporation, related_name='characters')
     user = models.ForeignKey(UserProfile, related_name='characters')
     last_updated = models.DateTimeField(blank=True)
     cached_until = models.DateTimeField(blank=True)
@@ -229,7 +230,16 @@ class Character(models.Model):
         
     def __str__(self):
         return self.name
-        
+    
+    def save( self ):
+        if self._get_pk_val():
+            old = Character.objects.get( pk = self._get_pk_val() )
+            if self.corporation_id != old.corporation_id:
+                print "Corporation changed. Purging delegations and rights."
+                self.pos_delegations.all().delete()
+                self.is_pos_monkey = False
+        super( Character, self ).save()
+    
     def icon(self, size):
         return "http://img.eve.is/serv.asp?s=%d&c=%s" % (size, self.id)
         

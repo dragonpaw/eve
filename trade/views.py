@@ -242,6 +242,8 @@ def salvage(request):
         objects.append({
                         'item':rigs[id]['item'], 
                         'quantity':rigs[id]['qty'],
+                        'buy':buy,
+                        'sell':sell,
                         })
-         
+    objects.sort(key=lambda x:x['item'].name)
     return render_to_response('ccp_item_list.html', d, context_instance=RequestContext(request))

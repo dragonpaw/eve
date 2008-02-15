@@ -23,14 +23,14 @@
 		<li class="pos">{% spaceless %}
 			<a href="{{ pos.get_absolute_url }}">
 			<img src="{{ pos.tower.icon32 }}">
-			<span class="moon">{{ pos.moon }}</span>
+			<span class="name">{{ pos.moon }}</span>
     		{% if pos.is_online %}
 	        	<span class="state online right">Online</span>
     		{% else %}
 	        	<span class="state offline right">{{ pos.state_name }}</span>
     		{% endif %}
     		<br>
-    		<span class="type">{{ pos.tower }}</span>
+    		<span class="note">{{ pos.tower }}</span>
     		{% expr int(pos.time_remaining.days) as days %}
     		<span class="runtime runtime-{{ days }} right">{{ pos.time_remaining|time }}</span>
     		</a>

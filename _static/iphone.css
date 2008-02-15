@@ -456,6 +456,24 @@ li.character a {
 	left: 160px;
 }
 
+/* Controller: POS ****************************************************************/
+
+.pos-access .director {
+	color: purple;
+	font-weight: bold;
+}
+.pos-access .monkey {
+	color: blue;
+}
+
+.pos-access .granted {
+	color: green;
+}
+
+.pos-access .denied {
+	color: red;
+}
+
 .pos .online {
 	color: green;
 	font-weight: bold;
@@ -554,6 +572,7 @@ li.character a {
 
 /************************************************************************************************/
 
+
 .links {
     left: 0;
     width: 100%;
@@ -573,6 +592,10 @@ li.character a {
     min-height: 48px;
 }
 
+.links li.no-link {
+	background: none;
+}
+
 .links span {
 	font-size: 1.4em;
     font-weight: bold;
@@ -585,13 +608,17 @@ li.character a {
 }
 
 .links span.link {
-	color: blue;
+	color: black;
 }
 
 .links span.note {
-	color: grey;
+	color: #888;
 	font-weight: normal;
-	font-size: 1.2em;
+	font-size: 1em;
+}
+
+.links span.name {
+	color: black;
 }
 
 .links a {
