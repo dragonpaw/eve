@@ -3,7 +3,7 @@
 {% load markup %}
 
 {% block content %}
-{% if corporation.count %}
+{% if corporations %}
 <p>Use this setting to designate someone within your corporation as a
 POS Helper, who will be able to view and update status on all POSes
 within their corporation.</p>
@@ -47,6 +47,4 @@ ownership tool there.</p>
 {% else %}
 <P>This control is only avilable to the director of a corporation.</P>
 {% endif %}
-
-
 {% endblock %}
