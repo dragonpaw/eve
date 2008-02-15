@@ -88,7 +88,7 @@ def account(request, id=None):
 
 class UserCreationForm(forms.Form):
     username = forms.CharField(label="Desired Username", max_length=30)
-    email = forms.EmailField(label="Email Address (optional)", required=False)
+    email = forms.EmailField(label="Email Address")
     password = forms.CharField(label='Password', min_length=5, widget=forms.PasswordInput, 
                                help_text='NOT your eve password. Pick a new one.')
     password2 = forms.CharField(label='Password, again', min_length=5, widget=forms.PasswordInput)
