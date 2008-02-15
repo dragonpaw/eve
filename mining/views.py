@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 
 mining_op_nav = make_nav("Mining Operations", "/mining/ops/", '40_14')
 
+@login_required
 def op_list(request):
     d = {}
     d['nav'] = [mining_op_nav]

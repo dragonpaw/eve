@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}
+{% if corporation.count %}
+<p>Use this setting to designate someone within your corporation as a
+POS Helper, who will be able to view and update status on all POSes
+within their corporation.</p>
+
+<p>If you want to designate a single person as the owner of a
+personal POS, then do <strong>not</strong> use this page to do that. Go
+to the page for the specific POS, and you will find a delegation and
+ownership tool there.</p>
+
+{% for c in corporations %}
+<h3>{{ c.name }}</h3>
+<h4>Characters</h4>
+<p>Characters in green can view POS status. Those in red cannot.</p>
+
+<ul class="links">
+{% for char in c.characters.all %}
+{% if char.is_director %}
+<li class="pos-access no-link">
+<img src="{{ char.icon64 }}" style="width: 32px; height: 32px">
+<a>
+<span class="director">{{ char.name }}</span><br>
+<span class="note">This character is a director. They will always see POS status.</span>
+{% else %}
+{% if char.is_pos_monkey %}
+<li class="pos-access">
+<img src="{{ char.icon64 }}" style="width: 32px; height: 32px">
+<a href="/pos/revoke/{{ char.name }}/">
+<span class="granted">{{ char.name }}</span><br>
+<span class="note">Click to revoke POS status access for all corporation towers.</span>
+{% else %}
+<li class="pos-access">
+<img src="{{ char.icon64 }}" style="width: 32px; height: 32px">
+<a href="/pos/grant/{{ char.name }}/">
+<span class="denied">{{ char.name }}</span><br>
+<span class="note">Click to grant POS view access.</span>
+{% endif %}{% endif %}
+</a></li>
+{% endfor %}
+</ul>
+{% endfor %}
+{% else %}
+<P>This control is only avilable to the director of a corporation.</P>
+{% endif %}
+
+
+{% endblock %}

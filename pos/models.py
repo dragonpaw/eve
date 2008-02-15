@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import math
 
-from eve.ccp.models import (MapDenormalize, Item, SolarSystem, Region, Constellation, Corporation,
-                            StationResource)
+from eve.ccp.models import (MapDenormalize, Item, SolarSystem, Region, Constellation, Corporation)
+from eve.user.models import Character
 
 class FuelDepot(models.Model):
     location = models.ForeignKey(SolarSystem)
@@ -31,6 +31,9 @@ class FuelSupply(models.Model):
 
     class Admin:
         list_display = ('depot', 'type', 'quantity')
+        
+    class Meta:
+        ordering = ['type']
         
 # Create your models here.
 class PlayerStation(models.Model):
@@ -205,6 +208,12 @@ class PlayerStationModule(models.Model):
     class Admin:
         list_display = ('station', 'item')
         list_display_links = ['item']
+        
+class PlayerStationDelegation(models.Model):
+    station = models.ForeignKey(PlayerStation, related_name='delegates',
+                                edit_inline=models.TABULAR, core=True)
+    character = models.ForeignKey(Character, related_name='pos_delegations',
+                                  edit_inline=models.TABULAR, core=True)
         
 class PlayerStationFuelSupply(models.Model):
     station = models.ForeignKey(PlayerStation, related_name='fuel', edit_inline=models.TABULAR)
