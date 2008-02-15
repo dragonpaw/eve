@@ -232,12 +232,14 @@ class Character(models.Model):
         return self.name
     
     def save( self ):
-        if self._get_pk_val():
+        try:
             old = Character.objects.get( pk = self._get_pk_val() )
             if self.corporation_id != old.corporation_id:
                 print "Corporation changed. Purging delegations and rights."
                 self.pos_delegations.all().delete()
                 self.is_pos_monkey = False
+        except Character.DoesNotExist:
+            pass
         super( Character, self ).save()
     
     def icon(self, size):
