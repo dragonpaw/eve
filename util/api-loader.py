@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 import eveapi
 import time
 import pprint
+from exceptions import Exception
 
 import os
 os.environ['TZ'] = 'UTC'
@@ -516,21 +517,21 @@ start_time = datetime.utcnow()
 if options.alliances:
     try:
         update_alliances()
-    except eveapi.Error, e:
+    except Exception, e:
         output ("Failed! [%s]" % e)
         exit_code = 1
     
 if options.map:
     try:
         update_map()
-    except eveapi.Error, e:
+    except Exception, e:
         output ("Failed! [%s]" % e)
         exit_code = 1
 
 if options.stations:
     try:
         update_stations()
-    except eveapi.Error, e:
+    except Exception, e:
         output ("Failed! [%s]" % e)
         exit_code = 1
 
@@ -553,7 +554,10 @@ for account in accounts:
             and account.last_refreshed + character_security_timeout < datetime.utcnow() ):
             output ("This account has had an invalid API key for too long. Deleting...")
             account.delete()
-             
+        else:
+            output ("Failed! [%s]" % e)
+            exit_code = 1
+    except: 
         output ("Failed! [%s]" % e)
         exit_code = 1
 
@@ -570,14 +574,17 @@ for character in characters:
         if e.message == 'Current security level not high enough':
             try:
                 character.user.user.email_user(error_limited_api_key[0], error_limited_api_key[1] % account.id)
-            except e:
+                character.account.delete()
+		output ("Deleted account '%s', user gave limited key." % account.id)
+            except Exception, e:
                 output ("Error sending email while purging account #%s: %s" % (account.id, e))
                 exit_code = 1
-            character.account.delete()
-            output ("Deleted account '%s', user gave limited key." % account.id)
         else:
             output ("Failed! [%s]" % e)
             exit_code = 1
+    except:
+        output ("Failed! [%s]" % e)
+        exit_code = 1
 
 old = Transaction.objects.filter(time__lt=transaction_cutoff)
 output ("Purging %d old transactions..." % old.count())
@@ -604,7 +611,7 @@ else:
 for character in directors:
     try:
         update_poses(character)
-    except eveapi.Error, e:
+    except Exception, e:
         output ("Failed! [%s]" % e)
         exit_code = 1
         
