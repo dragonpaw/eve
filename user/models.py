@@ -273,7 +273,7 @@ class Account(models.Model):
             character.user=self.user
             try:
                 # The name doesn't exist until AFTER the refresh many times.
-                temp = character.refresh()
+                temp = character.refresh(force=force)
                 char_messages.append({'name':character.name, 'messages':temp})
                 m.append('Account has character: %s' % character.name)
             except eveapi.Error, e:
