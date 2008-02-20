@@ -164,9 +164,9 @@
 		{% for m in makes %}{% spaceless %}
 			<li><a href="{{ m.item.get_absolute_url }}">
 			<img src="{{ m.item.icon32 }}">
-			{{ m.item.name }}
+			<span class="name">{{ m.item.name }}</span>
 			<br>
-			<span class="quantity">{{ m.activity }}
+			<span class="note">{{ m.activity }}
 			({% if item.is_skill %}Level: {{ m.quantity }}{% else %}x {{ m.quantity }}{% endif %})
 			</span>
 			</a></li>

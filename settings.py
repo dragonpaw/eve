@@ -4,6 +4,9 @@
 from database_settings import *
 import sys
 
+import os
+os.environ['TZ'] = 'UTC'
+
 ADMINS = (
     ('Ash', 'ash@dragonpaw.org'),
     # ('Your Name', 'your_email@domain.com'),
@@ -67,8 +70,8 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    "C:/django-sites/eve/_templates",
     "/home/ash/django-sites/eve/_templates",
+    "C:/django-sites/eve/_templates",
 )
 
 AUTHENTICATION_BACKENDS = (
@@ -89,7 +92,6 @@ INSTALLED_APPS = (
     'eve.ccp',
     'eve.user',
     'eve.emails',
-    'eve.corp',
     'eve.trade',
     'eve.pos',
 )

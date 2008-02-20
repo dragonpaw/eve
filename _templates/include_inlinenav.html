@@ -1,0 +1,11 @@
+{% if inline_nav %}
+<ul class="links">
+{% for nav in inline_nav %}
+	<li><a href="{{ nav.get_absolute_url }}">
+	<img src="{{ nav.icon32 }}">
+	<span class="link">{{ nav.name }}</span><br>
+	<span class="note">{{ nav.note }}</span></a>
+  	</li>
+{% endfor %}
+</ul>
+{% endif %}

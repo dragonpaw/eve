@@ -61,4 +61,17 @@ QtcIndustries = {
         'WardConsole': 25606,
         'Zydrine': 39,
     }
-    }
+}
+
+EveCentral = {
+    'feed': "http://eve-central.com/home/marketstat_xml.html?regionlimit=%(region_id)s&typeid=%(item_id)s",
+    'url': "http://www.eve-central.com/",
+    'description': "Min/max sell/buy prices from %(region)s.",
+    'name': "EVE Central: %(region)s",
+    'regions': ({'name':'Domain',    'priority':151}, # Amarr: Amarr
+                {'name':'The Forge', 'priority':154}, # Caldari: Jita
+                {'name':'Heimatar',  'priority':152}, # Minmatar: Rens
+                {'name':'Essence',   'priority':153}, # Gallente: Oursalert
+                ),
+    'categories': ('Charge','Drone','Commodity','Material','Implant','Ship'),
+}

@@ -5,15 +5,7 @@
 {% block content %}
 <!-- poses: {{ poses|pprint }} --> 
 {% if poses %}
-<ul class="links">
-{% for nav in inline_nav %}
-<li><a href="{{ nav.get_absolute_url }}">
-<img src="{{ nav.icon32 }}">
-<span class="link">{{ nav.name }}</span><br>
-<span class="note">{{ nav.note }}</span>
-</a></li>
-{% endfor %}
-</ul>
+{% include "include_inlinenav.html" %}
 
 {% for corp in poses %}
 <!-- corp: {{ corp|pprint }} -->

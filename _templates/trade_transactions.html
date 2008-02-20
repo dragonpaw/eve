@@ -2,22 +2,34 @@
 {% load trade %}
 
 {% block content %}
-{% spaceless %}
+<p>Only certain 'interesting' journal entries are shown. Sales tax,
+contract fees, etc, are filtered out for brevity.</p>
 <ul class="links">
-        {% for t in transactions %}
-            <li class="transaction"><a href="{{ t.get_absolute_url }}">
-                <img src="{{ t.item.icon32 }}">
-            	<span class="name">{{ t.item }}</span><br>
-            	<span class="quantity">x{{ t.quantity|comma }}</span>
-            	{% if t.sold %}
-            	<span class="sold right">+ {{ t.value|floatformat:2|comma }}</span>
-            	{% else %}
-            	<span class="bought right">- {{ t.value|floatformat:2|comma }}</span>
-            	{% endif %}
-            	<br><span class="character">{{ t.character.name }}</span>
-            	<span class="system right">{{ t.station.solarsystem.name }}</span>
-            </a></li>
-        {% endfor %}
+{% for t in transactions %}{% spaceless %}
+	<li class="transaction"><a href="{{ t.get_absolute_url }}">
+	<img src="{{ t.icon32 }}">
+	{% if t.is_transaction %}
+		<span class="name">{{ t.item }}</span><br/>
+		<span class="quantity">x{{ t.quantity|comma }}</span>
+	{% else %}
+		<span class="name">{{ t.client }}</span><br/>
+		{% if t.reason %}
+			<span class="quantity">{{ t.reason }}</span><br/>
+       	{% endif %}
+		<span class="quantity">&nbsp;</span>
+	{% endif %}
+	{% if t.sold %}
+		<span class="sold right">+ {{ t.value|floatformat:2|comma }}</span>
+	{% else %}
+		<span class="bought right">- {{ t.value|floatformat:2|comma }}</span>
+	{% endif %}
+	<br><span class="note">{{ t.character.name }}</span>
+	{% if t.is_transaction %}
+		<span class="note right">{{ t.station.solarsystem.name }}</span>
+	{% else %}
+		<span class="note right">{{ t.type }}</span><br/>
+	{% endif %}
+	</a></li>{% endspaceless %}
+{% endfor %}
 </ul>
-{% endspaceless %}
 {% endblock %}
