@@ -123,36 +123,31 @@ def group(request, slug):
                               context_instance=RequestContext(request))
 
     
-def get_buy_price(profile, item):
-    from eve.trade.models import MarketIndexValue
-    
+def get_index_price(profile, item, type=None):
     # I'm lazy in group above, and call this for market groups as well as items.
     if not isinstance(item, Item):
         return None
      
     if profile is not None:
         return profile.get_buy_price(item)
-    else:
-        try:
-            return MarketIndexValue.objects.get(index__user__isnull=True, item=item).buy
-        except MarketIndexValue.DoesNotExist:
-            return None
-        
-def get_sell_price(profile, item):
-    from eve.trade.models import MarketIndexValue
     
-    # I'm lazy in group above, and call this for market groups as well as items.
-    if not isinstance(item, Item):
+    temp = list( item.index_values.all() )
+    if len(temp) == 0:
         return None
-     
-    if profile is not None:
-        return profile.get_sell_price(item)
-    else:
-        try:
-            return MarketIndexValue.objects.get(index__user__isnull=True, item=item).sell
-        except MarketIndexValue.DoesNotExist:
-            return None
-    
+    temp.sort(key=lambda x:x.index.priority, reverse=True)
+    for k in temp:
+        if type == 'buy' and k.buy:
+            return k.buy
+        if type == 'sell' and k.sell:
+            return k.sell
+        
+    return None
+
+def get_sell_price(profile, item):
+    return get_index_price(profile, item, type='sell')
+
+def get_buy_price(profile, item):
+    return get_index_price(profile, item, type='buy')
 
 def item(request, slug, days=30):
     item = get_object_or_404(Item, slug=slug)
