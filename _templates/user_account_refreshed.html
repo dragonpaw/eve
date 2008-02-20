@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h3>Refresh Completed</h3>
+
+{% if account.id %}
+<p>A data refresh for your account, {{ account.id }}, has been
+completed.</p>
+{% else %}
+<p>A data refresh for your account was run, however it was an invalid
+key and could not be added.</p>
+{% endif %}
+<!-- {{ messages|pprint|safe }} -->
+
+{% for m in messages %}
+<h4>{{ m.name }}</h4>
+<ul>
+{% for message in m.messages %}
+	<li>{{ message }}</li>
+{% endfor %}
+</ul>
+{% endfor %}
+
+{% include "include_inlinenav.html" %}
+{% endblock %}

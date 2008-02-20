@@ -6,7 +6,66 @@ from eve.user.models import Character, UserProfile
 from datetime import date
 from decimal import Decimal
 
-# Create your models here.
+class JournalEntryType(models.Model):
+    name = models.CharField(max_length=100)
+    is_boring = models.BooleanField(default=False)
+    
+    class Admin:
+        list_display = ('name', 'is_boring',)
+    
+    class Meta:
+        ordering = ('name',)
+        
+    def __str__(self):
+        return self.name
+
+class JournalEntry(models.Model):
+    transaction_id = models.IntegerField('ID')
+    character = models.ForeignKey(Character, related_name='journal', raw_id_admin=True)
+    type = models.ForeignKey(JournalEntryType)
+    client = models.CharField(max_length=100)
+    time = models.DateTimeField()
+    price = models.DecimalField(max_digits=20, decimal_places=2)
+    reason = models.CharField(max_length=200)
+    
+    class Admin:
+        list_display = ('time', 'character', 'client', 'type', 'price',)
+        
+    class Meta:
+        ordering = ('-time',)
+        
+    def __str__(self):
+        if self.price < 0:
+            return "%s: %s -> %s" % (self.type, self.price, self.client)
+        else:
+            return "%s: %s <= %s" % (self.type, self.price, self.client)
+        
+    def get_absolute_url(self):
+        return "/trade/journal/%d/" % self.transaction_id
+
+    @property
+    def name(self):
+        return "J: %s" % self.transaction_id
+
+    @property
+    def is_transaction(self):
+        return False
+    
+    @property
+    def sold(self):
+        return self.price > 0
+    
+    @property
+    def value(self):
+        if self.sold:
+            return self.price
+        else:
+            return (self.price * Decimal(-1))
+
+    @property
+    def icon32(self):
+        return '/static/ccp-icons/white/32_32/icon06_03.png'
+
 class Transaction(models.Model):
     transaction_id = models.IntegerField('ID')
     character = models.ForeignKey(Character, related_name='transactions',
@@ -32,6 +91,13 @@ class Transaction(models.Model):
     def __str__(self):
         return "T: %i" % self.transaction_id
         
+    def get_absolute_url(self):
+        return "/trade/transaction/%d/" % self.transaction_id
+
+    @property
+    def is_transaction(self):
+        return True
+    
     def get_price_formatted(self):
         return comma(self.price) + ' ISK'
     get_price_formatted.short_description="ISK Each"
@@ -55,12 +121,13 @@ class Transaction(models.Model):
     get_total_formatted.short_description = 'Total'
     total_formatted = property(get_total_formatted)
         
-    def get_absolute_url(self):
-        return "/trade/transaction/%d/" % self.transaction_id
-    
     def get_name(self):
         return "T: %d" % self.transaction_id
     name = property(get_name)
+    
+    @property
+    def icon32(self):
+        return self.item.icon32
     
 class MarketIndex(models.Model):
     name = models.CharField(max_length=200)
@@ -88,9 +155,20 @@ class MarketIndex(models.Model):
     def set_value(self, item, buy=0, sell=0, buy_qty=0, sell_qty=0):
         assert(isinstance(item, Item))
         #print "self: %s, item: %s, b: %s/%s s: %s/%s" % (self, item, buy, buy_qty, sell, sell_qty)
+        if sell:
+            sell = Decimal(str(sell))
+        else:
+            sell = 0
+            
+        if buy:
+            buy = Decimal(str(buy))
+        else:
+            buy = 0
+            
         if buy==0 and sell==0:
+            #print "Deleting index price."
             return self.items.filter(item=item).delete()
-        
+        #print "Updating index."
         try:
             index = self.items.get(item=item)
         except MarketIndexValue.DoesNotExist:
@@ -109,8 +187,8 @@ class MarketIndexValue(models.Model):
     date = models.DateField()
     buy = models.FloatField(core=True)
     sell = models.FloatField(core=True)
-    buy_qty = models.IntegerField(blank=True)
-    sell_qty = models.IntegerField(blank=True)
+    buy_qty = models.IntegerField(blank=True, default=0)
+    sell_qty = models.IntegerField(blank=True, default=0)
     
     class Meta:
         ordering = ['item']

@@ -17,9 +17,9 @@ urlpatterns = patterns('',
     (r'^constellation/(?P<name>.*)/$', 'eve.ccp.views.constellation'),
     (r'^region/(?P<name>.*)/$', 'eve.ccp.views.region'),
     (r'^regions/$', 'eve.ccp.views.region_list'),
-    (r'^item/(?P<item_id>\d+)/$', 'eve.ccp.views.item'),
+    (r'^item/(?P<slug>[\w\-]+)/$', 'eve.ccp.views.item'),
     (r'^items/$', 'eve.ccp.views.group_index'),
-    (r'^items/(?P<group_id>\d+)/$', 'eve.ccp.views.group'),
+    (r'^items/(?P<slug>[\w\-]+)/$', 'eve.ccp.views.group'),
 
     (r'^sov/changes/$', 'eve.ccp.views.sov_changes'),
     

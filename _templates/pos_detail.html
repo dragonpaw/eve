@@ -50,17 +50,7 @@ what is listed here. However, these are the correct numbers.</p>
   {% endifequal %}
 		
 <h4>Actions</h4>
-{% if inline_nav %}
-<ul class="links">
-{% for nav in inline_nav %}
-	<li><a href="{{ nav.get_absolute_url }}">
-	<img src="{{ nav.icon32 }}">
-	<span class="link">{{ nav.name }}</span><br>
-	<span class="note">{{ nav.note }}</span></a>
-  	</li>
-{% endfor %}
-</ul>
-{% endif %}
+{% include "include_inlinenav.html" %}
 		
 	<h4>Location</h4>
 	<ul class="links">

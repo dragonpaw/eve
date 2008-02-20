@@ -102,8 +102,8 @@ def group_index(request):
     return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
-def group(request, group_id):
-    group = get_object_or_404(MarketGroup, id=group_id)
+def group(request, slug):
+    group = get_object_or_404(MarketGroup, slug=slug)
     profile = None
     if request.user.is_anonymous() == False:
         profile = request.user.get_profile()
@@ -154,8 +154,8 @@ def get_sell_price(profile, item):
             return None
     
 
-def item(request, item_id, days=30):
-    item = get_object_or_404(Item, id=item_id)
+def item(request, slug, days=30):
+    item = get_object_or_404(Item, slug=slug)
     d = {}
     d['time_span'] = '%d days' % days
     d['item'] = item
@@ -181,7 +181,6 @@ def item(request, item_id, days=30):
             d['blueprint'] = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=profile)[0]
         except IndexError:
             pass
-        
    
    
     materials = {'titles':{},
@@ -190,6 +189,9 @@ def item(request, item_id, days=30):
         
     # Can it be manufactured?
     for mat in item.materials():
+        if mat.quantity <= 0:
+            continue
+        
         name = mat.activity.name
         materials['titles'][name] = name
         if not materials['materials'].has_key(mat.material.id):
@@ -210,7 +212,7 @@ def item(request, item_id, days=30):
     for key, value in materials['titles'].items():
         cost = Decimal(0)
         for m in materials['materials'].values():
-            if m.has_key(key) and m['buy_price']:
+            if m.has_key(key) and m['buy_price'] and not m['material'].is_skill:
                 cost += Decimal(str(m['buy_price'])) * m[key]
         if item.is_blueprint:
             portion = item.blueprint_makes.portionsize
@@ -288,7 +290,11 @@ def item(request, item_id, days=30):
     # Un-seeded items have no group.
     if item.marketgroup and item.marketgroup.name != 'Minerals':
         #filter = QNot(Q(item__group__category__name='Blueprint')) & Q(item__published=True)
-        filter = Q(item__published=True) & QNot(Q(activity__name__contains='Not in game'))
+        filter = Q(item__published=True) 
+        filter &= QNot(Q(activity__name__contains='Not in game'))
+        filter &= Q(quantity__gt=0)
+        filter &= QNot(Q(activity__name='Refining'))
+        
         d['makes'] = list(item.helps_make.filter(filter))
         d['makes'].sort(key=lambda x:x.item.name)
         # FIXME: Make this return an order_by instead.
@@ -307,7 +313,8 @@ def item(request, item_id, days=30):
                                           b.attributecategory)
                          or cmp (a.id, b.id))
     q = Q(index__user__isnull=True) | Q(index__user=profile)
-    d['indexes'] = item.index_values.filter(q)
+    d['indexes'] = list(item.index_values.filter(q))
+    d['indexes'].sort(key=lambda x:x.index.priority, reverse=True)
     
     return render_to_response('ccp_item.html', d,
                               context_instance=RequestContext(request))

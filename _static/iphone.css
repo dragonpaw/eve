@@ -34,10 +34,8 @@ p {
 }
 
 .trail {
-	xxbackground: #aaa;
 	background: url(iPhoneToolbar.png) #6d84a2 repeat-x;
 	padding: 6px 10px;
-    xxwidth: 100%;
 	color: #666;
 	font-weight: bold;
 	font-size: 1.4em;
@@ -562,7 +560,8 @@ li.character a {
 	text-align: left;
 }
 
-.messages .error {
+.messages .error,
+.errorlist {
 	color: red;
 }
 .messages li {

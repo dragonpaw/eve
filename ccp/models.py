@@ -7,16 +7,23 @@
 # Also note: You'll have to insert the output of 'django-admin.py sqlcustom [appname]'
 # into your database.
 
-from django.db import models
 from decimal import Decimal
+
+from django.db import models
 from django.db.models.query import Q, QNot
+
 from eve.util.alliance_graphics import id
 from eve.util.formatting import comma, time
+from eve.util import eveapi
+from eve.util.cachehandler import MyCacheHandler
+
+from eve.settings import DEBUG
 
 TRUE_FALSE = (
     ('true', 'Yes'),
     ('false', 'No'),
 )
+API = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)
 
 class Agent(models.Model):
     id = models.IntegerField(primary_key=True, db_column='agentid')
@@ -467,7 +474,8 @@ class Corporation(models.Model):
     #stationcount = models.IntegerField()
     #stationsystemcount = models.IntegerField()
     alliance = models.ForeignKey(Alliance, null=True)
-    
+    last_updated = models.DateTimeField(blank=True)
+    cached_until = models.DateTimeField(blank=True)
     
     class Meta:
 
@@ -475,16 +483,60 @@ class Corporation(models.Model):
         
     class Admin:
         search_fields = ('id', 'name')
-        #list_display = ('id', 'name', 'faction', 'mainactivity') 
-        list_display = ('id', 'name',)
+        list_display = ('id', 'name', 'is_player_corp')
 
-    def get_name(self):
+    @property
+    def name(self):
         obj = Name.objects.get(pk=self.id)
         return obj.name
-    name = property(get_name)    
     
     def __str__(self):
         return self.name
+
+    @property
+    def is_player_corp(self):
+        return self.faction == None
+    
+    def directors(self):
+        return self.characters.filter(is_director=True)
+
+    def refresh(self, character=None, name=None):
+        messages = []
+        
+        if self.is_player_corp() is False:
+            messages.append('Not a player corp.')
+            return messages
+        
+        i = Item.objects.get(name='Corporation')
+                
+        if name:
+            self.name = name
+
+        record = None        
+        try:
+            if character:
+                api = character.api_corporation()
+                record = api.CorporationSheet(corporationID=id)
+            else:
+                api = API
+                record = api.corp.CorporationSheet(corporationID=id)
+            self.name = record.corporationName
+        except eveapi.Error:
+            pass
+                
+        if name == None:
+            messages.append("Unable to add %s to corp DB, no name available." % id)
+            return messages
+        
+        name = Name(id=id, name=name, type=i, group=i.group, category=i.group.category)
+        name.save()
+        messages.append("Added: %s to name database. [%d]" % (name.name, name.id))
+
+        if record:
+            self.alliance = Alliance.objects.get(pk=record.allianceID) 
+        messages.append('Refreshed: %s(%s)' % (self.name, self.id))
+        self.save()
+        return messages
 
 class CorporationDivision(models.Model):
     id = models.IntegerField(primary_key=True, db_column='divisionid')
@@ -620,11 +672,12 @@ class Attribute(models.Model):
             return self.attributename
             
     def get_icon(self, size):
-        if self.graphic:
+        if self.displayname == 'Used with (chargegroup)':
+            return Group.objects.get(pk=self.get_value()).get_icon(size)
+        elif self.graphic:
             return self.graphic.get_icon(size)
         else:
             return Graphic.objects.get(icon='07_15').get_icon(size)
-    
             
     @property
     def icon16(self):
@@ -827,7 +880,7 @@ class Group(models.Model):
     
     It also contains non-item groups like 'Alliance'."""
     id = models.IntegerField(primary_key=True, db_column='groupid')
-    category = models.ForeignKey(Category, db_column='categoryid')
+    category = models.ForeignKey(Category, db_column='categoryid', related_name='groups')
     name = models.CharField(max_length=300, db_column='groupname')
     description = models.TextField()
     graphic = models.ForeignKey(Graphic, null=True, blank=True, db_column='graphicid')
@@ -856,6 +909,9 @@ class Group(models.Model):
         
     def __str__(self):
         return self.name
+    
+    def get_icon(self, size):
+        return self.graphic.get_icon(size)
 
 class BlueprintDetail(models.Model):
     # Using the proper foreign key relationship here causes a fatal django error.
@@ -972,7 +1028,7 @@ class Item(models.Model):
     
     """
     id = models.IntegerField(primary_key=True, db_column='typeid')
-    group = models.ForeignKey('Group', db_column='groupid')
+    group = models.ForeignKey('Group', db_column='groupid', related_name='items')
     graphic = models.ForeignKey('Graphic', null=True, blank=True,
                                 raw_id_admin=True,
                                 db_column='graphicid')
@@ -990,6 +1046,7 @@ class Item(models.Model):
     published = models.BooleanField()
     chanceofduplicating = models.FloatField()
     objects = models.Manager()
+    slug = models.SlugField(max_length=100)
     #is_pos_fuel = models.BooleanField()
     
     class Meta:
@@ -1023,7 +1080,7 @@ class Item(models.Model):
     category = property(get_category)
         
     def get_absolute_url(self):
-        return "/item/%i/" % self.id        
+        return "/item/%s/" % self.slug
 
     def get_parent(self):
         return self.marketgroup
@@ -1204,19 +1261,20 @@ class MarketGroup(models.Model):
     graphic = models.ForeignKey(Graphic, null=True, blank=True, db_column='graphicid')
     description = models.TextField()
     hastypes = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
+    slug = models.SlugField(max_length=50)
+    
     class Meta:
-
         ordering = ( 'name',)
 
     class Admin:
         search_fields = ('name',)
-        list_display = ('name', 'id', 'description', 'graphic') 
+        list_display = ('name', 'slug', 'description', 'graphic') 
         
     def __str__(self):
         return self.name
         
     def get_absolute_url(self):
-        return "/items/%i/" % self.id
+        return "/items/%s/" % self.slug
 
     #-------------------------------------------------------------------------
     # All things iconic.

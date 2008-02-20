@@ -8,7 +8,7 @@ from django.db.models.query import Q, QNot
 from decimal import Decimal
 #from datetime import date
 
-from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue
+from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue, JournalEntry
 from eve.ccp.models import Item
 from eve.util.formatting import make_nav
 
@@ -27,13 +27,31 @@ def transactions(request):
     d['nav'] = [transaction_nav]
     d['user'] = request.user
     
-    t = request.user.get_profile().trade_transactions(days=14)
-    t = t.select_related().order_by('-time')
-    #t = t.order_by('ccp_category.categoryname','ccp_group.groupname','ccp_item.name')
+    profile = request.user.get_profile()
+    
+    t = profile.trade_transactions(days=14)
+    j = profile.journal_entries(days=14, is_boring=False)
+    t = list(t) + list(j)
+    t.sort(key=lambda x:x.time, reverse=True)
     
     d['transactions'] = t
     
     return render_to_response('trade_transactions.html', d)
+
+@login_required
+def journal_detail(request, id=None):
+    profile = request.user.get_profile()
+    transaction = JournalEntry.objects.filter(transaction_id=id, character__user=profile)
+    if transaction.count() == 0:
+        raise Http404
+    else:
+        transaction = transaction[0]
+
+    d = {}
+    d['nav'] = [ transaction_nav, transaction ]
+    d['transaction'] = transaction
+    
+    return render_to_response('trade_journal_detail.html', d)
 
 @login_required
 def transaction_detail(request, id=None):

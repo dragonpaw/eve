@@ -1,12 +1,26 @@
-from datetime import datetime, timedelta
 from decimal import Decimal
+import time
+from datetime import datetime, timedelta
+
 from django.contrib.auth.models import User
+from django.template.loader import render_to_string
 from django.db.models.query import Q, QNot
 from django.db import models
 from django.db.models import signals
 from django.dispatch import dispatcher
-from eve.ccp.models import Item, Corporation
+
+from eve.util.cachehandler import MyCacheHandler
+from eve.util import eveapi
+from eve.ccp.models import Item, Corporation, Station, MapDenormalize, SolarSystem
 from eve.util.formatting import comma
+from eve.settings import DEBUG
+
+API = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)
+SKILLS = Item.objects.filter(group__category__name__exact='Skill')
+
+CHARACTER_CACHE_TIME = timedelta(hours=1, minutes=4)
+TRANSACTION_CUTOFF = timedelta(days=30)
+STALE_ACCOUNT = timedelta(days=14)
 
 class UserProfile(models.Model):
     #url = models.URLField() 
@@ -27,6 +41,10 @@ class UserProfile(models.Model):
     def username(self):
         return self.user.username
     
+    @property
+    def is_stale(self):
+        return self.user.last_login < (datetime.utcnow() - STALE_ACCOUNT)
+    
     def max_skill_level(self, name):
         q = SkillLevel.objects.filter(
                             character__account__user__exact=self,
@@ -39,9 +57,20 @@ class UserProfile(models.Model):
 
     def trade_transactions(self, item=None, days=None):
         from eve.trade.models import Transaction
-        transactions = Transaction.objects.filter(character__account__user__exact=self)
+        transactions = Transaction.objects.filter(character__account__user=self)
         if item:
             transactions = transactions.filter(item=item)
+        if days:
+            target = datetime.now() - timedelta(days)
+            transactions = transactions.filter(time__gte=target)
+        return transactions
+
+    def journal_entries(self, days=None, is_boring=True):
+        from eve.trade.models import JournalEntry
+        transactions = JournalEntry.objects.filter(character__account__user=self)
+        if is_boring is False:
+            boring = Q(type__is_boring=False)
+            transactions = transactions.filter(boring)
         if days:
             target = datetime.now() - timedelta(days)
             transactions = transactions.filter(time__gte=target)
@@ -202,7 +231,84 @@ class Account(models.Model):
     
     @property
     def name(self):
-        return 'Account: %d' % self.id
+        if self.id:
+            return 'Account: %d' % self.id
+        else:
+            return 'Account'
+    
+    def api_auth(self):
+        auth = API.auth(userID=self.id, apiKey=self.api_key)
+        return auth
+    
+    def refresh(self, force=False):
+        m = []
+        char_messages = []
+        auth = self.api_auth()
+        messages = [{'name':'Account', 'messages':m}]      
+        if self.user.is_stale:
+            m.append('This account has not been accessed recently, so refresh is disabled.')
+            return messages
+        
+        try:
+            result = auth.account.Characters()
+        except eveapi.Error, e:
+            if e.message in ('Authentication failure',
+                             'Failed getting user information', 
+                             'Cached API key authentication failure'): 
+                m.append("This account has an invalid API key. Deleted.")
+                self.email('user_invalid_api_key.txt', subject='Invalid API key')
+                self.delete()
+                return messages
+            else:
+                raise
+    
+        ids = []
+        for c in result.characters:
+            ids.append(c.characterID)
+            try:
+                character = Character.objects.get(id = c.characterID)
+            except Character.DoesNotExist:
+                character = Character(id=c.characterID)
+            character.account = self
+            character.user=self.user
+            try:
+                # The name doesn't exist until AFTER the refresh many times.
+                temp = character.refresh()
+                char_messages.append({'name':character.name, 'messages':temp})
+                m.append('Account has character: %s' % character.name)
+            except eveapi.Error, e:
+                if e.message == 'Current security level not high enough':
+                    self.email('user_wrong_api_key.txt', subject='Wrong API key used')
+                    m.append("Deleted account '%s', user gave limited key." % self.id)
+                    self.delete()
+                    return messages
+                else:
+                    raise
+        
+        # Look for deleted characters.
+        for character in Character.objects.filter(account__id=self.id).exclude(id__in=ids):
+            m.append("Lost character: %s will be purged." % character.name)
+            character.delete()
+        
+        self.last_refreshed = datetime.now()
+        self.save()
+        
+        return messages + char_messages
+    
+    def email(self, template, subject=None):
+        if self.user.user.email is None:
+            return
+        
+        d = {}
+        d['account'] = self
+        if subject:
+            subject = "EVE Magic Widget: " + subject + "."
+        else:
+            subject = "EVE Magic Widget" 
+        
+        body = render_to_string(template, d)
+        self.user.user.email_user(subject, body)
+
         
 class Character(models.Model):
     id = models.IntegerField(primary_key=True, core=True)
@@ -231,6 +337,9 @@ class Character(models.Model):
     def __str__(self):
         return self.name
     
+    def get_absolute_url(self):
+        return "/user/character/%d/" % self.id
+    
     def save( self ):
         try:
             old = Character.objects.get( pk = self._get_pk_val() )
@@ -241,6 +350,7 @@ class Character(models.Model):
         except Character.DoesNotExist:
             pass
         super( Character, self ).save()
+
     
     def icon(self, size):
         return "http://img.eve.is/serv.asp?s=%d&c=%s" % (size, self.id)
@@ -270,13 +380,6 @@ class Character(models.Model):
         return comma( self.skill_points )
     skill_points_formatted = property(get_sp_formatted)
     get_sp_formatted.short_description = "Skill Points"
-    
-    #--------------------------------------------------------------------------
-    #@property
-    #def materials(self, item):
-        # FIXME: This isn't the right formula actually. Not always 10% waste.
-        #pe = self.skills.get(skill__name__exact='Production Efficiency').level
-        # round($base_qty*(1+(0.1/(1+$mineral_level)))*(1.25-(0.05*$prod_eff_skill)))
         
     @property
     def is_training(self):
@@ -289,8 +392,341 @@ class Character(models.Model):
         else:
             return None
         
-    def get_absolute_url(self):
-        return "/user/character/%d/" % self.id
+    def api_character(self):
+        auth = self.account.api_auth()
+        auth = auth.character(self.id)
+        return auth
+    
+    def api_corporation(self):
+        auth = self.account.api_auth()
+        auth = auth.corporation(self.id)
+        return auth
+    
+    def refresh(self, force=False):
+        messages = []
+
+        messages.extend( self.refresh_character(force=force) )
+                
+        if self.is_director:
+            messages.extend( self.refresh_poses(force=force) )
+        
+        return messages
+
+    def refresh_character(self, force=False):
+        messages = []
+        if not force and self.cached_until and self.cached_until > datetime.utcnow():
+            messages.append("Character: %s (%d): Still cached." % (self.name, self.id))
+            return messages
+            
+        api = self.api_character()
+        
+        character_sheet = api.CharacterSheet()
+        self.name = character_sheet.name
+        self.corporation_id = character_sheet.corporationID
+
+        messages.append("Starting Character: %s (%d)" % (self.name, self.id))
+        #corp = update_corporation(character_sheet.corporationID, name=character_sheet.corporationName)
+        
+        # Am I a director?
+        try:
+            auth = self.api_corporation()
+            auth.StarbaseList()
+            self.is_director = True
+            messages.append("Is a Director.")
+        except eveapi.Error, e:
+            if e.message == 'Character must be a Director or CEO':
+                self.is_director = False
+                messages.append("Not Director.")
+            else:
+                raise e
+    
+        # We set the account earlier in update_account. Now just make sure it matches.
+        # Usernames can change, but a character might move between accounts.
+        self.user = self.account.user
+        self.last_updated = datetime.utcnow()
+        self.cached_until = datetime.utcnow() + CHARACTER_CACHE_TIME
+        self.save()
+        
+        messages.extend( self.refresh_wallet() )
+        messages.extend( self.refresh_skills() )
+        messages.extend( self.refresh_journal() )
+        
+        msg, new = self.refresh_transactions()
+        messages.extend( msg )
+        
+        msg, purged = self.purge_old_data()
+        messages.extend( msg )
+        
+        if purged or new:
+            self.user.update_personal_index()
+            messages.append('Transactions changed, updated personal index.')
+
+        return messages
+    
+    def refresh_wallet(self):
+        me = self.api_character()
+        
+        wallet = me.AccountBalance()
+        self.isk = wallet.accounts[0].balance
+        self.save()
+        return ['Wallet balance: %s ISK' % comma(self.isk)]
+    
+    def refresh_skills(self):
+        me = self.api_character()
+        skills = 0
+        points = 0
+        
+        training = me.SkillInTraining()
+        if training.skillInTraining:
+            t = datetime.fromtimestamp(training.trainingEndTime) 
+            skill = Item.objects.get(pk=training.trainingTypeID)
+            
+            self.training_skill = skill
+            self.training_level = training.trainingToLevel
+            self.training_completion = t
+        else:
+            self.training_skill = None
+            self.training_level = None
+            self.training_completion = None
+        self.save()
+            
+        sheet = me.CharacterSheet()
+        for d_skill in SKILLS:
+            trained = sheet.skills.Get(d_skill.id, False)
+            if trained:
+                skills += 1
+                try:
+                    obj = SkillLevel.objects.get(character = self, skill = d_skill)
+                    obj.points = trained.skillpoints
+                    obj.level = trained.level
+                except SkillLevel.DoesNotExist:
+                    obj = SkillLevel(character = self, skill = d_skill,
+                                     level = trained.level, points = trained.skillpoints)
+                points += obj.points
+                obj.save()
+                
+        return ['Skills: %d, Total SP: %0.2fm' % (skills, points/1000000.0)]
+                        
+    def refresh_transactions(self):
+        from eve.trade.models import Transaction
+        me = self.api_character()
+        messages = []
+        
+        last_id = 0
+        stopping_time = time.time() - (60*60*24*7)
+        qty = 0
+        wallet = None
+        last_time = time.time()
+        
+        while qty==0 or (len(wallet.transactions) == 1000 and last_time > stopping_time):
+            if last_id == 0:
+                #m.append("Loading first wallet.")
+                wallet = me.WalletTransactions()
+            else:
+                #m.append("Loading wallet before %d" % last_id)
+                wallet = me.WalletTransactions(beforeTransID=last_id)
+            for t in wallet.transactions:
+                try:
+                    self.transactions.get(character = self,
+                                          transaction_id = t.transactionID)
+                    messages.append("Loaded %d new transactions." % qty)
+                    return messages, qty
+                except Transaction.DoesNotExist:
+                    pass
+            
+                self.update_transactions_single(t)
+                last_id = t.transactionID
+                last_time = t.transactionDateTime
+                qty+=1
+            if last_id == 0:
+                messages.append("No transactions to load.") 
+                return messages, qty
+            else:
+                messages.append("Loaded %d new transactions." % qty)
+                return messages, qty
+    
+    def update_transactions_single(self, t):
+        from eve.trade.models import Transaction
+        
+        if t.transactionType == 'buy':
+            sold = False
+        else:
+            sold = True
+
+        item = Item.objects.get(pk=t.typeID)
+        station = Station.objects.get(id=t.stationID)
+                
+        obj = Transaction(character = self,
+                          transaction_id = t.transactionID,
+                          sold = sold,
+                          item = item,
+                          price = t.price,
+                          quantity = t.quantity,
+                          station =  station,
+                          region = station.region,
+                          time = datetime(*time.gmtime(t.transactionDateTime)[0:5]),
+                          client = t.clientName,
+                          )
+        obj.save()
+
+    def refresh_journal(self):
+        from eve.trade.models import JournalEntry
+        
+        me = self.api_character()
+        messages = []
+        qty = 0
+        
+        result = me.WalletJournal()
+        for t in result.entries:
+            if t.amount == 0:
+                continue
+            
+            id = t.refID
+            
+            try:
+                self.journal.get(character = self, transaction_id = id)
+                break
+            except JournalEntry.DoesNotExist:
+                pass
+            
+            type = t.refTypeID
+            amount = t.amount
+            transaction_time = datetime(*time.gmtime(t.date)[0:5])
+            if amount < 0:
+                client = t.ownerName2
+            else:
+                client = t.ownerName1
+            reason = t.reason
+            x = self.journal.create(transaction_id=id, time=transaction_time, client=client,
+                                    price=amount, type_id=type, reason=reason)
+            x.save()
+            qty += 1
+            
+        if qty == 0:
+            messages.append("No journal entries to load.") 
+        else:
+            messages.append('Loaded %d new journal entries.' % qty)
+        return messages
+        
+    def refresh_poses(self, force=False):
+        from eve.pos.models import PlayerStation
+
+        api = self.api_corporation()
+        corp = self.corporation
+        messages = []
+    
+        ids = []
+        for record in api.StarbaseList().starbases:
+            ids.append(record.itemID)
+            messages.extend( self.refresh_pos_detail(record, force=force) )
+        
+        # Look for POSes that got taken down.
+        for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
+            messages.append("Removed POS: %s will be purged." % pos.moon)
+            pos.delete()
+            
+        return messages
+        
+    def refresh_pos_detail(self, record, force=False):
+        from eve.pos.models import PlayerStation, PlayerStationFuelSupply
+        api = self.api_corporation()
+        messages = []
+        
+        try:
+            station = PlayerStation.objects.get(pk=record.itemID)
+        except PlayerStation.DoesNotExist:
+            station = PlayerStation(id=record.itemID)
+            station.depot = ""
+
+        moon = MapDenormalize.objects.get(id=record.moonID)
+        solarsystem = SolarSystem.objects.get(id=record.locationID)
+        tower = Item.objects.get(pk=record.typeID)
+    
+        if not force and station.cached_until and station.cached_until > datetime.utcnow():
+            messages.append("POS: %s at %s: Still cached." % (tower, moon))
+            return messages
+        
+        messages.append("POS: %s at %s" % (tower, moon))
+    
+        detail = api.StarbaseDetail(itemID=record.itemID)
+    
+        station.tower = tower
+        station.corporation = self.corporation
+        station.moon = moon
+        station.solarsystem = solarsystem
+        station.constellation = station.moon.constellation        
+        station.region = station.moon.region
+        
+        state_time = datetime(*time.gmtime(record.stateTimestamp)[0:5])
+        online_time = datetime(*time.gmtime(record.onlineTimestamp)[0:5])
+        hours_since_update = 0
+        if station.state_time:
+            hours_since_update = state_time - station.state_time
+            hours_since_update = hours_since_update.seconds / 60**2
+        
+        station.state = record.state
+        station.online_time = online_time
+        station.state_time = state_time
+        
+        station.corporation_use = detail.generalSettings.allowCorporationMembers == 1
+        station.alliance_use = detail.generalSettings.allowAllianceMembers == 1
+        station.claim = detail.generalSettings.claimSovereignty == 1
+        station.usage_flags = detail.generalSettings.usageFlags
+        station.deploy_flags = detail.generalSettings.deployFlags
+        
+        station.attack_aggression = detail.combatSettings.onAggression.enabled == 1
+        station.attack_atwar= detail.combatSettings.onCorporationWar.enabled == 1
+        station.attack_secstatus_flag = detail.combatSettings.onStatusDrop.enabled == 1
+        station.attack_secstatus_value = detail.combatSettings.onStatusDrop.standing / 100.0
+        station.attack_standing_flag = detail.combatSettings.onStandingDrop.enabled == 1
+        station.attack_standing_value = detail.combatSettings.onStandingDrop.standing / 100.0
+    
+        station.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)
+        station.last_updated = datetime.utcnow()
+    
+        station.save()
+        station.setup_fuel_supply()
+        
+        # Now, the fuel.
+        for fuel_type in detail.fuel:
+            type = Item.objects.get(id=fuel_type.typeID)
+            fuel = PlayerStationFuelSupply.objects.get(type=type, station=station)
+            
+            purpose = fuel.purpose
+            consumed = (fuel.quantity - fuel_type.quantity)
+            max = Decimal(fuel.max_consumption)
+            if (purpose == 'CPU' or purpose == 'Power') and hours_since_update > 0:
+                consumed /= hours_since_update
+                if consumed > 0 and consumed < max:
+                    if purpose == 'CPU':
+                        station.cpu_utilization = consumed / max
+                        messages.append("CPU Utilization: %s" % station.cpu_utilization)
+                    else:
+                        station.power_utilization = consumed / max
+                        messages.append("Power Utilization: %s" % station.power_utilization)
+                    station.save()
+            
+            fuel.quantity=fuel_type.quantity
+            fuel.save()
+        return messages
+        
+    def purge_old_data(self):
+        messages = []
+        cutoff = datetime.utcnow() - TRANSACTION_CUTOFF
+        old_transactions = self.transactions.filter(time__lt=cutoff)
+        old_transaction_count = old_transactions.count()
+        if old_transaction_count > 0:
+            old_transactions.delete()
+            messages.append('Deleting old transactions: %d removed.' % old_transaction_count)
+        
+        old = self.journal.filter(time__lt=cutoff)
+        old_count = old.count()
+        if old_count > 0:
+            old.delete()
+            messages.append('Deleting old journal entries: %d removed.' % old_count)
+
+        return messages, old_transaction_count
+                
         
 class SkillLevel(models.Model):
     character = models.ForeignKey(Character, related_name='skills')

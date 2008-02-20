@@ -41,6 +41,36 @@ class ApiFormEdit(forms.Form):
     api_key = forms.CharField(label='Full API Key', min_length=64, max_length=64)
 
 @login_required
+def account_refresh_warning(request, id):
+    account = get_object_or_404(Account, id=id)
+    if account.user != request.user.get_profile():
+        raise Http404
+    
+    d = {}
+    d['account'] = account
+    d['nav'] = [ user_nav, account, { 'name':'Refreshing' }]
+    
+    
+    return render_to_response('user_account_refresh_pending.html', d,
+                                   context_instance=RequestContext(request))
+
+@login_required
+def account_refresh(request, id):
+    d = {}
+    
+    account = get_object_or_404(Account, id=id)
+    if account.user != request.user.get_profile():
+        raise Http404
+        
+    d['nav'] = [user_nav, account, { 'name': 'Refresh Completed'} ]
+    d['messages'] = account.refresh()
+    d['account'] = account
+    d['inline_nav'] = [ user_nav ]
+    
+    return render_to_response('user_account_refreshed.html', d,
+                                   context_instance=RequestContext(request))
+
+@login_required
 def account(request, id=None):
     d = {}
     d['id'] = id
@@ -80,11 +110,13 @@ def account(request, id=None):
                                    context_instance=RequestContext(request))
     if not id:
         id = form.cleaned_data['id']
-    api_key = form.cleaned_data['api_key']
-    user = request.user
-    profile = user.get_profile()
-    Account(api_key=api_key, user=profile, id=id).save()
-    return HttpResponseRedirect('/user/')
+        account = Account(id=id)
+    account.api_key = form.cleaned_data['api_key']
+    account.user = request.user.get_profile()
+    
+    account.save()
+    
+    return HttpResponseRedirect('%srefreshing/' % account.get_absolute_url() )
 
 class UserCreationForm(forms.Form):
     username = forms.CharField(label="Desired Username", max_length=30)
@@ -98,8 +130,12 @@ class UserCreationForm(forms.Form):
 
 def user_creation(request):
     d = {}
-    d['errors'] = []
+    
+    errors = []
+    d['errors'] = errors
+    
     d['nav'] = [ user_create_nav ]  
+
     if request.method == 'GET':
         d['form'] = UserCreationForm()
         return render_to_response('user_account_detail.html', d,
@@ -109,15 +145,17 @@ def user_creation(request):
     form = UserCreationForm(request.POST)
     d['form'] = form
     if form.is_valid() == False:
-        d['errors'].append('Form validation errors.')
+        for field in form.fields:
+            for error in form[field].errors:
+                errors.append('%s: %s' % (form[field].label, error))
     else:
         if form.cleaned_data['password'] != form.cleaned_data['password2']:
-            d['errors'].append("The passwords did not match.")
+            errors.append("The passwords did not match.")
     
         if Account.objects.filter(id=form.cleaned_data['eve_user_id']).count() > 0:
-            d['errors'].append("That EVE user ID is already registered to a different account.")
+            errors.append("That EVE user ID is already registered to a different account.")
         
-    if d['errors']:
+    if errors:
         return render_to_response('user_account_detail.html', d,
                                    context_instance=RequestContext(request))
         
