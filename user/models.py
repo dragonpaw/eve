@@ -229,6 +229,12 @@ class Account(models.Model):
     def get_absolute_url(self):
         return "/user/account/%d/" % self.id
     
+    def get_refresh_url(self):
+        return "/user/account/%d/refresh/" % self.id
+
+    def get_refresh_warning_url(self):
+        return "/user/account/%d/refreshing/" % self.id
+    
     @property
     def name(self):
         if self.id:
@@ -749,4 +755,4 @@ class SkillLevel(models.Model):
         ordering = ('character', 'skill')
     
     def __str__(self):
-        return self.skill.name
+        return "%s: %s" % (self.skill.name, self.level)

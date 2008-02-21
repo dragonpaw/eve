@@ -1,11 +1,15 @@
+# $Id$
+from django import newforms as forms
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from django import newforms as forms
-from django.http import HttpResponseRedirect, Http404
-from django.contrib.auth.models import User
-from eve.util.formatting import make_nav
+
 from eve.user.models import Character, Account
-from django.contrib.auth.decorators import login_required
+
+from eve.util.formatting import make_nav
 
 user_nav = make_nav("Characters", "/user/", '34_12', note='Your characters and accounts.')
 user_create_nav = make_nav("Create Login", "/user/create/", '07_03', note='Register with the widget.')
@@ -98,7 +102,7 @@ def account(request, id=None):
     # Delete the account?
     if id and request.POST.has_key('delete') and request.POST['delete'] == "1":
         account.delete()
-        return HttpResponseRedirect('/user/')
+        return HttpResponseRedirect( user_nav['get_absolute_url'] )
     if id:
         form = ApiFormEdit(request.POST)
     else:
@@ -116,7 +120,7 @@ def account(request, id=None):
     
     account.save()
     
-    return HttpResponseRedirect('%srefreshing/' % account.get_absolute_url() )
+    return HttpResponseRedirect( account.get_refresh_warning_url() )
 
 class UserCreationForm(forms.Form):
     username = forms.CharField(label="Desired Username", max_length=30)
@@ -165,8 +169,15 @@ def user_creation(request):
     password = form.cleaned_data['password']
     eve_user_id = form.cleaned_data['eve_user_id']
     eve_api_key = form.cleaned_data['eve_api_key']
+    
     user = User.objects.create_user(username, email, password)
     user.save()
+    
     profile = user.get_profile()
-    Account(user=profile, api_key=eve_api_key, id=eve_user_id).save()
-    return HttpResponseRedirect('/login/')
+    account = Account(user=profile, api_key=eve_api_key, id=eve_user_id)
+    account.save()
+    
+    user = authenticate(username=username, password=password)
+    login(request, user)
+    
+    return HttpResponseRedirect( account.get_refresh_warning_url() )
