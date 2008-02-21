@@ -767,7 +767,7 @@ class Graphic(models.Model):
     description = models.TextField(null=True, blank=True)
     # Everythign in the dump is published.
     #published = models.CharField(max_length=15, choices=TRUE_FALSE)
-    obsolete = models.BooleanField()
+    obsolete = models.BooleanField(default=False)
     icon = models.CharField(max_length=300)
     urlsound = models.CharField(max_length=300, null=True, blank=True)
     explosionid = models.IntegerField(null=True, blank=True)
@@ -818,7 +818,16 @@ class Graphic(models.Model):
         return self.get_icon(128, item)
 
 def icon32(icon):
-    return Graphic.objects.filter(icon=icon)[0].icon32
+    search = Graphic.objects.filter(icon=icon)
+    if search.count() > 0:
+        return search[0].icon32
+    else:
+        min_id = 10000 # We enter new id's on demand, but not below this value.
+        max_id = Graphic.objects.all().order_by('-id')[0].id
+        max_id = max(max_id,min_id)
+        graphic = Graphic(icon=icon, id=max_id+1, description='Automatically added by Django make_nav')
+        graphic.save()
+        return graphic.icon32
         
 class Unit(models.Model):
     id = models.IntegerField(primary_key=True, db_column='unitid')

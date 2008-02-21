@@ -11,12 +11,9 @@ from eve.ccp.models import Graphic
 about_nav = make_nav("About", "/about/", '07_15', note='The origins of the Widget.')
 admin_nav = make_nav('Admin', '/admin/', '09_08', note='Thou art God.')
 login_nav = make_nav('Login', '/login/', '09_06', note='Log yourself in for full use.')
-
-Graphic.objects.get_or_create(icon='09_05', defaults={'id':10003, 'obsolete':False})
+logout_nav = make_nav('Logout', '/logout/', '07_07', note='Log out if you like. (Or if you share your computer.)')
 ship_fit_nav = make_nav('Ship Fitting', '/fitting/', '09_05',
                         note='A little tool to assist you with fitting a ship.')
-
-Graphic.objects.get_or_create(icon='06_07', defaults={'id':10004, 'obsolete':False})
 features_nav = make_nav('Features', '/features/', '06_07',
                         note='Reasons why you want to use the Widget.')
 
@@ -42,6 +39,7 @@ def home(request):
                        user_nav,
                        transaction_nav,
                        pos_nav,
+                       logout_nav,
                        ])
     else:
         objects.extend([login_nav, user_create_nav])
