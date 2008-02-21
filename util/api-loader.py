@@ -213,13 +213,16 @@ else:
     
 for account in accounts:
     try:
+        print "-" * 78
         print "Starting: %s(%s)" % (account.user, account.id)
         messages = account.refresh(force=options.force)
         for x in messages:
             output("-- %s" % x['name'])
-            output("\n".join(x['messages']))
+            output("  " +("\n  ".join(x['messages'])))
     except Exception, e:
         output ("Failed! [%s]" % e)
+        if DEBUG:
+            raise
         exit_code = 1
    
 exit()
