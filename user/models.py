@@ -422,7 +422,12 @@ class Character(models.Model):
         
         character_sheet = api.CharacterSheet()
         self.name = character_sheet.name
-        self.corporation_id = character_sheet.corporationID
+        try:
+            corporation = Corporation.objects.get(pk=character_sheet.corporationID)
+        except Corporation.DoesNotExist:
+            corporation = Corporation(id=character_sheet.corporationID)
+        messages.extend( corporation.refresh(character=self, name=character_sheet.corporationName) )
+        self.corporation = corporation
 
         messages.append("Starting Character: %s (%d)" % (self.name, self.id))
         #corp = update_corporation(character_sheet.corporationID, name=character_sheet.corporationName)
@@ -441,7 +446,7 @@ class Character(models.Model):
                 raise e
     
         # We set the account earlier in update_account. Now just make sure it matches.
-        # Usernames can change, but a character might move between accounts.
+        # Usernames can not change, but a character might move between accounts.
         self.user = self.account.user
         self.last_updated = datetime.utcnow()
         self.cached_until = datetime.utcnow() + CHARACTER_CACHE_TIME

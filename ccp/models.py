@@ -503,15 +503,12 @@ class Corporation(models.Model):
     def refresh(self, character=None, name=None):
         messages = []
         
-        if self.is_player_corp() is False:
-            messages.append('Not a player corp.')
+        if self.is_player_corp is False:
+            messages.append('No refresh needed for NPC corps.')
             return messages
         
         i = Item.objects.get(name='Corporation')
                 
-        if name:
-            self.name = name
-
         record = None        
         try:
             if character:
@@ -520,21 +517,27 @@ class Corporation(models.Model):
             else:
                 api = API
                 record = api.corp.CorporationSheet(corporationID=id)
-            self.name = record.corporationName
+            name = record.corporationName
         except eveapi.Error:
             pass
                 
         if name == None:
-            messages.append("Unable to add %s to corp DB, no name available." % id)
+            messages.append("Unable to refresh corporation '%s', no name available." % self.id)
             return messages
         
-        name = Name(id=id, name=name, type=i, group=i.group, category=i.group.category)
-        name.save()
-        messages.append("Added: %s to name database. [%d]" % (name.name, name.id))
+        try:
+            name = Name.objects.get(id=self.id)
+        except Name.DoesNotExist:
+            name = Name(id=self.id, name=name, type=i, group=i.group, category=i.group.category)
+            name.save()
+            messages.append("Added: %s to name database. [%d]" % (name.name, name.id))
 
         if record:
-            self.alliance = Alliance.objects.get(pk=record.allianceID) 
-        messages.append('Refreshed: %s(%s)' % (self.name, self.id))
+            if record.allianceID:
+                self.alliance = Alliance.objects.get(pk=record.allianceID)
+            else:
+                self.alliance = None 
+        messages.append('Corp refreshed: %s(%s)' % (name, self.id))
         self.save()
         return messages
 
