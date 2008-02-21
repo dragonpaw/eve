@@ -764,7 +764,7 @@ class Graphic(models.Model):
     id = models.IntegerField(primary_key=True, db_column='graphicid')
     url3d = models.CharField(max_length=300, null=True, blank=True)
     urlweb = models.CharField(max_length=300, null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
+    description = models.TextField(null=True, blank=True, default='Automatically added by Django')
     # Everythign in the dump is published.
     #published = models.CharField(max_length=15, choices=TRUE_FALSE)
     obsolete = models.BooleanField(default=False)
@@ -784,22 +784,30 @@ class Graphic(models.Model):
     #-------------------------------------------------------------------------
     # All things iconic.
     def get_icon(self, size, item=None):
-        dir = "/static/ccp-icons"
+        d = {
+                'dir'    : "/static/ccp-icons" ,
+                'size'   : size,
+                'color'  : 'white',
+                'icon'   : self.icon,
+            }
+        if item is not None:
+            d['item_id'] = item.id
+            
         # TODO: This is garbage. Search for the file instead.
         if item is None:
-            return "%s/white/%d_%d/icon%s.png" % (dir, size, size, self.icon)
+            return "%(dir)s/%(color)s/%(size)d_%(size)d/icon%(icon)s.png" % d
         elif item.category == 'Blueprint':
-            return "%s/blueprints/%d_%d/%d.png" % (dir, size, size, item.id)
+            return "%(dir)s/blueprints/%(size)d_%(size)d/%(item_id)d.png" % d
         elif item.category == 'Drone':
-            return "%s/dronetypes/%d_%d/%d.png" % (dir, size, size, item.id)
+            return "%(dir)s/dronetypes/%(size)d_%(size)d/%(item_id)d.png" % d
         elif item.category == 'Ship':
-            return "%s/shiptypes/%d_%d/%d.png" % (dir, size, size, item.id)
+            return "%(dir)s/shiptypes/%(size)d_%(size)d/%(item_id)d.png" % d
         elif item.category == 'Station':
-            return "%s/stationtypes/%d_%d/%d.png" % (dir, size, size, item.id)
+            return "%(dir)s/stationtypes/%(size)d_%(size)d/%(item_id)d.png" % d
         elif item.category == 'Structure':
-            return "%s/structuretypes/%d_%d/%d.png" % (dir, size, size, item.id)
+            return "%(dir)s/structuretypes/%(size)d_%(size)d/%(item_id)d.png" % d
         else:
-            return "%s/white/%d_%d/icon%s.png" % (dir, size, size, self.icon)
+            return "%(dir)s/%(color)s/%(size)d_%(size)d/icon%(icon)s.png" % d
           
     @property
     def icon16(self, item=None):
@@ -817,18 +825,26 @@ class Graphic(models.Model):
     def icon128(self, item=None):
         return self.get_icon(128, item)
 
-def icon32(icon):
-    search = Graphic.objects.filter(icon=icon)
-    if search.count() > 0:
-        return search[0].icon32
+    def save(self):
+        """Custom save handler to set a good and safe id on new objects."""
+        if self.id is None:
+            min_id = 10000 # We enter new id's on demand, but not below this value.
+            max_id = Graphic.objects.all().order_by('-id')[0].id
+            max_id = max(max_id,min_id)
+            self.id=max_id+1
+            
+        super( Graphic, self ).save()
+
+def get_graphic(icon):
+    """Helper utility that will find one icon or make it for you. Used in make_nav and elsewhere.
+    Useful because icons are often non-unique, but I don't care in my app."""
+    g = Graphic.objects.filter(icon=icon)
+    if g.count() == 0:
+        graphic = Graphic.objects.create(icon=icon)
     else:
-        min_id = 10000 # We enter new id's on demand, but not below this value.
-        max_id = Graphic.objects.all().order_by('-id')[0].id
-        max_id = max(max_id,min_id)
-        graphic = Graphic(icon=icon, id=max_id+1, description='Automatically added by Django make_nav')
-        graphic.save()
-        return graphic.icon32
-        
+        graphic = g[0]
+    return graphic
+
 class Unit(models.Model):
     id = models.IntegerField(primary_key=True, db_column='unitid')
     unitname = models.CharField(blank=True, max_length=300)
@@ -1141,13 +1157,13 @@ class Item(models.Model):
         for s in set:
             try:
                 if s.attributename == 'requiredSkill1':
-                    s.graphic = Graphic.objects.get(icon='50_13')
+                    s.graphic = get_graphic('50_13')
                     s.valuefloat = set.filter(attributename='requiredSkill1Level')[0].valueint
                 if s.attributename == 'requiredSkill2':
-                    s.graphic = Graphic.objects.get(icon='50_11')
+                    s.graphic = get_graphic('50_11')
                     s.valuefloat = set.filter(attributename='requiredSkill2Level')[0].valueint
                 if s.attributename == 'requiredSkill3':
-                    s.graphic = Graphic.objects.get(icon='50_14')
+                    s.graphic = get_graphic(icon='50_14')
                     s.valuefloat = set.filter(attributename='requiredSkill3Level')[0].valueint
             except IndexError:
                 s.valuefloat = 1

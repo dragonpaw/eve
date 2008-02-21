@@ -76,9 +76,10 @@ def title(nav):
         
 
 def make_nav(name, url, icon, note=None):
-    from eve.ccp.models import icon32
+    from eve.ccp.models import get_graphic
 
     if icon is not None:
-        return {'name':name, 'get_absolute_url':url,'icon32':icon32(icon), 'note':note}
+        graphic = get_graphic(icon)
+        return {'name':name, 'get_absolute_url':url,'icon32':graphic.icon32, 'note':note}
     else:
         return {'name':name, 'get_absolute_url':url,'icon32':None, 'note':note}
