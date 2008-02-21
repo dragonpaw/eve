@@ -128,9 +128,6 @@ def get_index_price(profile, item, type=None):
     if not isinstance(item, Item):
         return None
      
-    if profile is not None:
-        return profile.get_buy_price(item)
-    
     temp = list( item.index_values.all() )
     if len(temp) == 0:
         return None
@@ -144,9 +141,15 @@ def get_index_price(profile, item, type=None):
     return None
 
 def get_sell_price(profile, item):
+    if profile is not None:
+        return profile.get_sell_price(item)
+    
     return get_index_price(profile, item, type='sell')
 
 def get_buy_price(profile, item):
+    if profile is not None:
+        return profile.get_buy_price(item)
+    
     return get_index_price(profile, item, type='buy')
 
 def item(request, slug, days=30):
