@@ -1,12 +1,11 @@
 import datetime
 import re
 from decimal import Decimal, InvalidOperation
-import math
+from django.template.defaultfilters import slugify
 
 comma_regex = re.compile(r'^(-?\d+)(\d{3})')
-
 def comma(num, separator=','):
-    """commify(num, separator) -> string
+    """comma(num, separator) -> string
 
     Return a string representing the number num with separator inserted
     for every power of 1000.   Separator defaults to a comma.
@@ -18,8 +17,18 @@ def comma(num, separator=','):
         (num, more_to_do) = comma_regex .subn(r'\1%s\2' % separator,num)
     return num
 
-isk_map = (" kmbt")
+isk_map = (" kmbt") # kilo, million, billion, trillion...
 def isk(isk):
+    """Take a integer value and return it in human representation with a suffix
+    such as 'b' for billion.
+    
+    There will always be 3 significant digits in the results.
+    
+    Examples:
+    '2.33k ISK' = isk(2330)
+    '100k ISK'  = isk(100000)
+    '12.2m ISK' = isk(12000000)
+    """
     try:    
         isk = Decimal(str(isk))
     except InvalidOperation:
@@ -83,3 +92,47 @@ def make_nav(name, url, icon, note=None):
         return {'name':name, 'get_absolute_url':url,'icon32':graphic.icon32, 'note':note}
     else:
         return {'name':name, 'get_absolute_url':url,'icon32':None, 'note':note}
+
+
+def unique_slug(item,slug_source,slug_field='slug'):
+    """Ensures a unique slug field by appending an integer counter to duplicate 
+    slugs.
+  
+    If the item already has a slug, then it is returned without modification
+    or checking. If it does not have a slug, then one will be determined and
+    returned.
+    
+    The item's slug field is first populated by slugify-ing the source field.
+    If that value already exists, a counter is appended to the slug, and the 
+    counter incremented upward until the value is unique.
+  
+    For instance, if you save an object titled Daily Roundup, and the slug 
+    daily-roundup is already taken, this function will try daily-roundup-2, 
+    daily-roundup-3, daily-roundup-4, etc, until a unique value is found.
+  
+    Call from within a model's custom save() method like so:
+    item.slug = unique_slug(item, slug_source='name')
+
+    A default slug field of 'slug' is assumed. If this is not the case, you
+    may add 'slug_field=fieldname' to the arguments. 
+    """
+    # if it's already got a slug, do nothing.
+    slug = getattr(item, slug_field)
+    if slug:
+        return slug 
+    
+    slug = slugify(getattr(item,slug_source))
+    
+    slug_search = slug_source + '__istartswith'
+    itemModel = item.__class__
+    query = itemModel.objects.filter(**{slug_search:slug})
+    
+    # the following gets all existing slug values
+    slugs = [x[slug_field] for x in query.values(slug_field)]
+    test = slug
+
+    counter = 1 # Increments to 2 if the slug is not unique
+    while test in slugs:
+        counter += 1
+        test = "%s-%i" % (slug, counter)
+    return test

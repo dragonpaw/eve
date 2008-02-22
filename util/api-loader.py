@@ -86,13 +86,17 @@ def update_alliances():
         for m in messages:
             output(m)
         
+    # Force immediate evaluation to protect from odd interaction with the cursor
+    # while deleting rows.
+    delete_me = []
     for a in Alliance.objects.all():
         if a.id in alliance_ids:
             # It still exists.
             continue
-        output('Removing defunct alliance: %s' % alliance.name)
+        delete_me.append(a)
+    for a in delete_me:
+        output('Removing defunct alliance: %s' % a.name)
         a.delete()
-        
             
 def update_map():
     output ("Starting galaxy map...")

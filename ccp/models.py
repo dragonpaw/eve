@@ -15,7 +15,7 @@ from eve.settings import DEBUG
 from eve.util import eveapi
 from eve.util.alliance_graphics import id
 from eve.util.cachehandler import MyCacheHandler
-from eve.util.formatting import comma, time
+from eve.util.formatting import comma, time, unique_slug
 
 TRUE_FALSE = (
     ('true', 'Yes'), 
@@ -74,10 +74,10 @@ class Alliance(models.Model):
     objects = models.Manager()
     
     class Admin:
-        pass
+        search_fields = ('name',)
     
     class Meta:
-        ordering = ['name']
+        ordering = ('name',)
     
     def __str__(self):
         return self.name
@@ -105,15 +105,17 @@ class Alliance(models.Model):
             return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, '01_01')
     
     def save(self):
-        #self.slug = slugify(self.name + ' ' + self.ticker)
-        self.slug = slugify(self.name)
+        self.slug = unique_slug(self, 'name')
         super(Alliance, self).save()
         
     def delete(self):
         # Break the links to the alliance, so they are clean, and don't 
         # get cascade deleted.
+        print "Removing executor corp."
         self.executor = None
+        self.save()
         for c in self.corporations.all():
+            print "Breaking link from alliance '%s' to corp '%s'" % (self.name, c.name)
             c.alliance = None
             c.save()
         super(Alliance, self).delete()
