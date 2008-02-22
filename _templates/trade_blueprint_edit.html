@@ -6,24 +6,21 @@
 
 {% block content %}
 <div class="blueprints">
-{% if item %}
 <ul class="links">
-<li><a href="{{ item.get_absolute_url }}">
-<img src="{{ item.icon32 }}">
-<span class="name">{{ item.name }}</span>
-</a></li>
+	<li><a href="{{ item.get_absolute_url }}">
+	<img src="{{ item.icon32 }}">
+	<span class="name">{{ item.name }}</span>
+	</a></li>
 </ul>
-{% endif %}
+
 <form method="post">
 <table>
 {{ form }}
 </table>
-{% if item %}
-<input type="hidden" name="item" value="{{ item.id }}">
-<input type="submit" value="Update collection"/>
-{% else %}
-<input type="submit" value="Add to collection"/>
-{% endif %}
+<input type="submit" value="Update Collection"/>
 </form>
+<form method="post">
+<INPUT type="hidden" name="delete" value="1">
+<INPUT type="submit" value="Delete Blueprint" />
 </div>
 {% endblock %}

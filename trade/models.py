@@ -208,7 +208,8 @@ class BlueprintOwned(models.Model):
                                                       'published':True})
     pe = models.IntegerField('Production Efficiency', default=0)
     me = models.IntegerField('Material Efficiency', default=0)
-    original = models.BooleanField(default=True)
+    original = models.BooleanField('Is Original?', default=True)
+    cost_per_run = models.FloatField(default=0)
     
     class Meta:
         ordering = ('blueprint',)
@@ -220,6 +221,9 @@ class BlueprintOwned(models.Model):
         
     def __str__(self):
         return self.blueprint.name
+    
+    def get_absolute_url(self):
+        return "/trade/blueprint/%s/" % self.blueprint.slug
     
     def waste(self):
         base = Decimal(self.blueprint.blueprint_details.wastefactor)

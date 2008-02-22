@@ -49,3 +49,9 @@ def home(request):
     d['objects'] = objects
     d['title'] = "EVE Tool"
     return render_to_response('generic_menu.html', d, context_instance=RequestContext(request))    
+
+def debug(request):
+    d = {}
+    d['request'] = request
+    
+    return render_to_response('debug.html', d, context_instance=RequestContext(request))

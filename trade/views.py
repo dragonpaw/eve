@@ -1,4 +1,5 @@
 from django import newforms as forms
+from django.newforms import ModelForm
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
@@ -77,57 +78,40 @@ def blueprint_list(request):
     
     return render_to_response('trade_blueprint_list.html', d)
 
-class BlueprintOwnedFormEdit(forms.Form):
-    me = forms.IntegerField(label='Material Efficiency', initial=0)
-    pe = forms.IntegerField(label='Production Efficiency', initial=0)
-    original = forms.BooleanField(label='Original?', initial=True)
-
-class BlueprintOwnedFormNew(forms.Form):
-    set = Item.objects.filter(group__category__name__exact='Blueprint', published=True)
-    set = set.order_by('name',)
-    item = forms.ModelChoiceField(queryset=set)
-    me = forms.IntegerField(label='Material Efficiency', initial=0)
-    pe = forms.IntegerField(label='Production Efficiency', initial=0)
-    original = forms.BooleanField(label='Original?', initial=True)
+class BlueprintOwnedForm(ModelForm):
+    class Meta:
+        model = BlueprintOwned
+        exclude = ('user','blueprint',)
 
 @login_required
-def blueprint_edit(request, item_id=None):
+def blueprint_edit(request, slug):
     d = {}
-    item = None
-    # FIXME: Either get a Django version where BooleanField works, or change 'original' to select
-
-    if request.method == 'POST':
-        form = BlueprintOwnedFormNew(request.POST)
-        if form.is_valid():
-            id = form.cleaned_data['item']
-            me = form.cleaned_data['me']
-            pe = form.cleaned_data['pe']
-            original = form.cleaned_data['original']
-            try:
-                bpo = BlueprintOwned.objects.get(blueprint=id, user=request.user)
-                bpo.me = me
-                bpo.pe = pe
-                bpo.original = original
-                bpo.save()
-            except BlueprintOwned.DoesNotExist:
-                BlueprintOwned(blueprint=id, user=request.user, pe=pe, me=me, original=original).save()
-            return HttpResponseRedirect('/trade/blueprints/')
-    else:
-        if item_id is None:
-            form = BlueprintOwnedFormNew()
-        else:
-            try:
-                bpo = BlueprintOwned.objects.get(blueprint=item_id, user=request.user)
-                form = BlueprintOwnedFormEdit(initial={'me': bpo.me, 'pe': bpo.pe, 'original':bpo.original})
-                item = bpo.blueprint
-            except BlueprintOwned.DoesNotExist:
-                form = BlueprintOwnedFormEdit(initial={'item': item_id})
-                item = Item.objects.get(pk=item_id)
-        
-    d['form'] = form
-    d['item'] = item
+    form = None
+    d['item'] = item = get_object_or_404(Item, slug=slug)
     d['nav'] = [ blueprint_nav, {'name':'Add'} ]
-    return render_to_response('trade_blueprint_edit.html', d)
+    template = 'trade_blueprint_edit.html'
+    profile = request.user.get_profile()
+    blueprint, _ = BlueprintOwned.objects.get_or_create(blueprint=item, user=profile)
+    
+    if request.method == 'GET':
+        form = BlueprintOwnedForm(instance=blueprint)
+        d['form'] = form
+        return render_to_response(template, d)
+    
+    assert(request.method == 'POST')
+
+    if request.POST.has_key('delete'):
+        blueprint.delete()
+        return HttpResponseRedirect(blueprint_nav['get_absolute_url'])
+
+    form = BlueprintOwnedForm(request.POST, instance=blueprint)
+    d['form'] = form
+
+    if form.is_valid() is False:
+        return render_to_response(template, d)
+    else:
+        form.save()
+        return HttpResponseRedirect(blueprint_nav['get_absolute_url']) 
 
 @login_required
 def blueprint_add(request):

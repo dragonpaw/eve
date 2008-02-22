@@ -67,22 +67,10 @@
     </li>
     {% endif %}
     {% if blueprint %}
-    <li class="blueprint"><a href="/trade/blueprints/edit/{{ blueprint.blueprint.id }}/">
-		<img src="{{ blueprint.blueprint.icon32 }}">
-    	<span class="name">{{ blueprint.blueprint.blueprint_makes.name }}</span>
-    	<br>
-    	<span class="me">ME:{{ blueprint.me }}</span>
-    	<span class="pe">PE:{{ blueprint.pe }}</span>
-    	<span class="waste">W: {{ blueprint.waste_display }}</span>
-    	{% if blueprint.original %}
-        	<span class="right is_original original">BPO</span>
-    	{% else %}
-        	<span class="right is_original copy">Copy</span>
-    	{% endif %}
-    	</a>
-    </li>
+    {% expr [blueprint] as blueprints %}
+    {% include "include_bpo.html" %}
     {% else %}
-    <li><a href="/trade/blueprints/edit/{{ item.blueprint.id }}/">
+    <li><a href="/trade/blueprint/{{ item.blueprint.slug }}/">
     <span class="name">You do not own this blueprint.</span><br> 
     <span class="link">Actually, I do. (Add to collection)</span></a></li>
     {% endif %}
@@ -90,43 +78,6 @@
     {% endif %}
     
 {% if materials %}
-    <!-- {{materials|pprint|safe }} -->
-    <!-- 
-    <h4>Materials{% ifnotequal item.portionsize 1 %} (per {{ item.portionsize }}){% endifnotequal %}</h4>
-    <table class="materials">
-	<tr><th></th>
-	{% for x in materials.order %}
-		<th>{% expr materials['titles'][x] %}</th>
-	{% endfor %}
-    <th>ISK</th>
-    </tr>
-	{% expr len(materials['titles'])+1 as item_colspan %}
-	{% for m in materials.materials %}
-	<tr>
-		<th class="icon" rowspan="2"><img src="{{ m.material.icon16 }}"></td>
-		<th class="name" colspan="{{item_colspan}}"><a href="{{ m.material.get_absolute_url }}">{{ m.material.name }}</a></td>
-	</tr><tr>
-		{% for x in materials.order %}
-			{% expr m.has_key(x) and m[x] as quantity %}
-			<td>{{ quantity|default:"&#8211;"|comma|safe }}</td>
-		{% endfor %}
-		<td>
-		{% if m.material.is_skill %}Skill
-		{% else %}{{ m.index.value|default:"N/A"|isk }}</td>
-		{% endif %}
-	</tr>
-	{% endfor %}
-    {% if materials.isk %}
-    	<tr><th>ISK{% ifnotequal item.portionsize 1 %} (Each){% endifnotequal %}</th>
-    	{% for x in materials.order %}
-        	{% expr materials['isk'][x] as cost %}
-        	<td>{{ cost|default:"&#8211;"|isk }}</td>
-        {% endfor %}
-        <td>&nbsp;</td>
-        </tr>
-	{% endif %}
-	</table>
-	-->
 	{% for x in materials.order %}
 		<h4>{% expr materials['titles'][x] %}</h4>
 		<p>Red value is buy price, green value is sell price.</p>

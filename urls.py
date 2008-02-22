@@ -15,7 +15,7 @@ urlpatterns = patterns('',
     # CCP Items count as part of the root.
     (r'^solarsystem/(?P<name>.*)/$', 'eve.ccp.views.solarsystem'),
     (r'^constellation/(?P<name>.*)/$', 'eve.ccp.views.constellation'),
-    (r'^region/(?P<name>.*)/$', 'eve.ccp.views.region'),
+    (r'^region/(?P<slug>[\w\-]+)/$', 'eve.ccp.views.region'),
     (r'^regions/$', 'eve.ccp.views.region_list'),
     (r'^item/(?P<slug>[\w\-]+)/$', 'eve.ccp.views.item'),
     (r'^items/$', 'eve.ccp.views.group_index'),
@@ -32,7 +32,7 @@ urlpatterns = patterns('',
         {'template_name': 'auth_logout.html'}),
     (r'^test404/$', handler404),
     (r'^test500/$', handler500),
-        
+    (r'^debug/$', 'eve.views.debug'),
     
 )
 

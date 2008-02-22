@@ -2,8 +2,7 @@ from django.conf.urls.defaults import patterns
 
 urlpatterns = patterns('',
     (r'^blueprints/$', 'eve.trade.views.blueprint_list'),
-    (r'^blueprints/edit/$', 'eve.trade.views.blueprint_edit'),
-    (r'^blueprints/edit/(?P<item_id>\d+)/$', 'eve.trade.views.blueprint_edit'),
+    (r'^blueprint/(?P<slug>[\w\-]+)/$', 'eve.trade.views.blueprint_edit'),
     
     (r'^indexes/$', 'eve.trade.views.market_index_list'),
     (r'^index/customize/(?P<id>\d+)/$', 'eve.trade.views.fixed_price_update'),

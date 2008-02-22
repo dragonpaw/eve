@@ -2,24 +2,18 @@
 # $Id$
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'eve.settings'
-
-from eve.ccp.models import *
-from eve.user.models import *
-from eve.trade.models import *
-from eve.pos.models import *
-from eve.settings import DEBUG
-import sys
+os.environ['TZ'] = 'UTC'
 
 from cachehandler import MyCacheHandler
-
 from datetime import datetime, timedelta
+from exceptions import Exception
 import eveapi
 import time
 import pprint
-from exceptions import Exception
+import sys
 
-import os
-os.environ['TZ'] = 'UTC'
+from eve.ccp.models import Alliance, Station, Corporation, Item
+from eve.settings import DEBUG
 
 exit_code = 0
 message = ''
@@ -64,29 +58,12 @@ def exit():
     if exit_code != 0 and not (options.debug or options.verbose):
         print message
     sys.exit(exit_code)
-
-def auth(d_account):
-    """Login as a EVE account."""
-    auth = api.auth(userID=d_account.id, apiKey=d_account.api_key)
-    return auth
-
-def auth_corp(d_character):
-    """Login as a specific character and setup to access the corporation pages."""
-    d_account = d_character.account
-    auth_o = auth(d_account)
-    me = auth_o.corporation(d_character.id)
-    return me
-
-def auth_character(d_character):
-    """Login as a specific character and setup to access the user's data"""
-    d_account = d_character.account
-    auth_o = auth(d_account)
-    me = auth_o.character(d_character.id)
-    return me
     
 def update_alliances():
     output ("Starting alliance list...")
-    corp_to_alliance = {}
+    
+    alliance_ids = []
+    
     for a in api.eve.AllianceList().alliances:
         try:
             alliance = Alliance.objects.get(id=a.allianceID)
@@ -95,13 +72,26 @@ def update_alliances():
         alliance.member_count = a.memberCount
         alliance.executor_id = a.executorCorpID
         alliance.save()
+
+        alliance_ids.append(alliance.id)
             
         # Cannot use get_or_create, as we cannot immediately save it.
         try:
             corp = Corporation.objects.get(id=a.executorCorpID)
         except Corporation.DoesNotExist:
             corp = Corporation(id=a.executorCorpID)
-        output( corp.refresh(name=a.name) )
+        messages = corp.refresh(name=a.name)
+        
+        for m in messages:
+            output(m)
+        
+    for a in Alliance.objects.all():
+        if a.id in alliance_ids:
+            # It still exists.
+            continue
+        output('Removing defunct alliance: %s' % alliance.name)
+        a.delete()
+        
             
 def update_map():
     output ("Starting galaxy map...")
@@ -167,8 +157,15 @@ def update_stations():
     for s in api.eve.ConquerableStationList().outposts:
         #output ("%s: %s (%s)" % (s.solarSystemID, s.stationName, s.corporationID))
         
-        corporation = update_corporation(s.corporationID, name=s.corporationName)
-
+        corp_id = s.corporationID
+        corp_name = s.corporationName
+        try:
+            corporation = Corporation.objects.get(id=corp_id)
+        except Corporation.DoesNotExist:
+            corporation = Corporation(id=corp_id)
+        messages = corporation.refresh(name=corp_name)
+        for m in messages:
+            output(m)
         try:
             station = Station.objects.get(id=s.stationID)
         except Station.DoesNotExist:
@@ -185,6 +182,8 @@ if options.alliances:
     except Exception, e:
         output ("Failed! [%s]" % e)
         exit_code = 1
+        if DEBUG:
+            raise
     
 if options.map:
     try:
@@ -192,6 +191,8 @@ if options.map:
     except Exception, e:
         output ("Failed! [%s]" % e)
         exit_code = 1
+        if DEBUG:
+            raise
 
 if options.stations:
     try:
@@ -199,6 +200,8 @@ if options.stations:
     except Exception, e:
         output ("Failed! [%s]" % e)
         exit_code = 1
+        if DEBUG:
+            raise
 
 if options.stations or options.map or options.alliances:
     # We do not load users if we're loading other things.
