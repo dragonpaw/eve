@@ -12,7 +12,8 @@ import time
 import pprint
 import sys
 
-from eve.ccp.models import Alliance, Station, Corporation, Item
+from eve.ccp.models import Alliance, Station, Corporation, Item, SolarSystem
+from eve.user.models import Account
 from eve.settings import DEBUG
 
 exit_code = 0
@@ -33,7 +34,7 @@ parser.add_option('-f', '--force', action='store_true', default=False,
                   help='Force reload of cached data.')
 parser.add_option('-v', '--verbose', action='store_true', default=False,
                   help='Be a little bit chatty.')
-parser.add_option('-d', '--debug', action='store_true', default=False,
+parser.add_option('-d', '--debug', action='store_true', default=DEBUG,
                   help='Be really chatty.')
 
 (options, args) = parser.parse_args()
