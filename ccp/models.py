@@ -115,6 +115,7 @@ class Alliance(models.Model):
         self.executor = None
         for c in self.corporations.all():
             c.alliance = None
+            c.save()
         super(Alliance, self).delete()
     
 # class Agent_config(models.Model):
