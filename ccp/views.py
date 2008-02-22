@@ -62,8 +62,8 @@ def constellation(request, name):
     return render_to_response('ccp_constellation.html', d,
                               context_instance=RequestContext(request))
     
-def region(request, name):
-    item = get_object_or_404(Region, name=name)
+def region(request, slug):
+    item = get_object_or_404(Region, slug=slug)
     #item = Constellation.objects.get(name=name)
 
     d = {}
@@ -173,10 +173,10 @@ def item(request, slug, days=30):
     if request.user.is_authenticated():
         max_pe = profile.max_skill_level('Production Efficiency')
         
-    d['blueprint'] = None    
+    my_blueprint = None
     if profile:
         try:
-            d['blueprint'] = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=profile)[0]
+            my_blueprint = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=profile)[0]
         except IndexError:
             pass
    
@@ -199,12 +199,20 @@ def item(request, slug, days=30):
         materials['materials'][mat.material.id][name] = mat.quantity
         
         # Then, if we own the blueprint, the manufacture quantity.
-        if d['blueprint'] and name == 'Manufacturing':
+        if my_blueprint and name == 'Manufacturing':
             perfect = materials['materials'][mat.material.id]['Manufacturing']
-            materials['materials'][mat.material.id]['Personal'] = d['blueprint'].mineral(perfect, max_pe)
+            materials['materials'][mat.material.id]['Personal'] = my_blueprint.mineral(perfect, max_pe)
             
-    if d['blueprint']:
-        materials['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, d['blueprint'].me)
+    # If we own this blueprint...
+    if my_blueprint:
+        # Add in the Blueprint itself.
+        materials['materials'][my_blueprint.blueprint.id] = {'Personal': 1,
+                                                             'material':my_blueprint.blueprint,
+                                                             'buy_price':my_blueprint.cost_per_run,
+                                                             'input':'Blueprint run cost',
+                                                             }
+        materials['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, my_blueprint.me)
+        # We only show our manufacturing if we have the blueprint.
         del materials['titles']['Manufacturing']
 
     for key, value in materials['titles'].items():
@@ -277,7 +285,7 @@ def item(request, slug, days=30):
                                                    'Reaction' : mat.quantity}
     # Display order, and filter out actions we cannot perform.
     materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
-    materials['materials'].sort(key=lambda x:x['material'].name)
+    materials['materials'].sort(key=lambda x:"%s-%s" % (x['material'].is_blueprint, x['material'].name))
     materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
                           'Research Time Production', 'Copying', 'Inventing', 'Refining',
                           'Refined From', 'Reaction', 'Reaction-in', 'Reaction-out']
@@ -313,6 +321,8 @@ def item(request, slug, days=30):
     q = Q(index__user__isnull=True) | Q(index__user=profile)
     d['indexes'] = list(item.index_values.filter(q))
     d['indexes'].sort(key=lambda x:x.index.priority, reverse=True)
+    
+    d['blueprint'] = my_blueprint
     
     return render_to_response('ccp_item.html', d,
                               context_instance=RequestContext(request))

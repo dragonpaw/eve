@@ -426,6 +426,8 @@ li.character a {
 	left: 170px;
 }
 
+/* Controller: Trade **************************************************************/
+
 .blueprint .name {
 	font-size: 1.4em;
 }
@@ -434,24 +436,34 @@ li.character a {
 	color: green;
 }
 
+.blueprint .is_original {
+	font-size: 1em;
+	font-wight: bold;
+}
+
+.blueprint .pe,
+.blueprint .me,
+.blueprint .cost {
+	font-size: 1em;
+	font-weight: normal;
+}
+
 .blueprint .pe {
 	color: green;
-	font-weight: normal;
 	position: absolute;
-	left: 105px;
+	left: 35%;
 }
 
 .blueprint .me {
 	color: grey;
-	font-weight: normal;
 	left: 50px;
 }
 
-.blueprint .waste {
+.blueprint .cost {
 	color: grey;
-	font-weight: normal;
 	position: absolute;
-	left: 160px;
+	right: 30%;
+	text-align: right;
 }
 
 /* Controller: POS ****************************************************************/

@@ -12,7 +12,7 @@
             {% expr o.solarsystem.security < 0.5 as lowsec %}
             <span class="name">{{ o.name }}</span>
             <br>
-            <span class="solarsystem">{{ o.solarsystem }}</span>
+            <span class="note">Solar system: {{ o.solarsystem }}</span>
             <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">
             ({{ o.solarsystem.security|floatformat:3 }})</span>
         	</a>
