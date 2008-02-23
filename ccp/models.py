@@ -13,7 +13,7 @@ from django.db.models.query import Q, QNot
 from django.template.defaultfilters import slugify
 from eve.settings import DEBUG
 from eve.util import eveapi
-from eve.util.alliance_graphics import id
+from eve.util.alliance_graphics import alliance_graphics
 from eve.util.cachehandler import MyCacheHandler
 from eve.util.formatting import comma, time, unique_slug
 
@@ -65,7 +65,6 @@ class AgentType(models.Model):
         return self.agenttype
     
 class Alliance(models.Model):
-
     name = models.CharField(max_length=100)
     executor = models.ForeignKey('Corporation', blank=True, null=True, related_name='executors')
     ticker = models.CharField(max_length=10)
@@ -74,7 +73,8 @@ class Alliance(models.Model):
     objects = models.Manager()
     
     class Admin:
-        search_fields = ('name',)
+        search_fields = ('name', 'ticker')
+        list_display = ('name', 'executor', 'ticker', 'member_count')
     
     class Meta:
         ordering = ('name',)
@@ -99,13 +99,13 @@ class Alliance(models.Model):
         return self.icon(128)
 
     def icon(self, size):
-        if id.has_key(self.id):
+        if alliance_graphics.has_key(self.id):
             return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, id[self.id])
         else:
             return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, '01_01')
     
     def save(self):
-        self.slug = unique_slug(self, 'name')
+        self.slug = unique_slug(self)
         super(Alliance, self).save()
         
     def delete(self):
@@ -345,7 +345,7 @@ class Faction(models.Model):
         if id is None:
             return None
         else:
-            return "/static/ccp-icons/corporation/%s %s.jpg" % (id, size)
+            return "/static/ccp-icons/corporation/%s-%s.jpg" % (id, size)
         
     @property
     def icon32(self):
@@ -1478,6 +1478,9 @@ class Region(models.Model):
                 return alliance
             else:
                 return None
+    
+    def note(self):
+        return self.owner()
     
     def alliance(self):
         alliances= {}

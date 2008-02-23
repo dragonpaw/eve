@@ -80,14 +80,16 @@ def region(request, slug):
                               context_instance=RequestContext(request))
     
 def region_list(request):
+    d = {}
+    d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
+
     q1 = Q(faction__isnull=True)
     q2 = QNot(Q(faction__name='Jove Empire'))
+
+    regions = list(Region.objects.filter(q1)) + list(Region.objects.filter(q2))
+    regions.sort(key=lambda x:x.name)
     
-    d = {}
-    d['objects'] = list(Region.objects.filter(q1)) + list(Region.objects.filter(q2))
-    d['objects'].sort(key=lambda x:x.name)
-    d['title'] = "Region List"
-    d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
+    d['inline_nav'] = regions
     
     return render_to_response('ccp_regions.html', d,
                               context_instance=RequestContext(request))

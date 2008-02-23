@@ -1,19 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% spaceless %}
-<ul class="links" >
-{% for o in objects %}
-    <li class="region">
-        <a href="{{ o.get_absolute_url }}">
-            {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
-            <span class="name">{{ o.name }}</span><br>
-            <span class="note">{{ o.owner }}</span>
-        </a>
-    </li>
-{% endfor %}
-</ul>
-{% endspaceless %}
+{% include "include_inlinenav.html" %}
 <p>Alliance ownership of a region is given when only one alliance holds
 one or more sovereign constellations within the region. If two or more
 alliances hold constellations, it will show as None.</p>

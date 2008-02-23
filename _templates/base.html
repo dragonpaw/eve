@@ -1,33 +1,41 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"><head>
 {% load trade %}
-{% if flatpage %}
-<title>{{ flatpage.title }}
-{% else %}
-{% if nav %}
-<title>{{ nav|title|safe }}</title>
-{% else %}
-<title>EVE Magic Widget</title>
-{% endif %}
-{% endif %}
+<title>{% spaceless %}
+{% if flatpage %}{{ flatpage.title }}{% else %}
+{% if nav %}{{ nav|title|safe }}{% else %}
+EVE Magic Widget{% endif %}{% endif %}
+</title>
+{% endspaceless %}
 
 <meta name="viewport" content="width=320; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
-<link rel="stylesheet" href="/static/iphone.css">
+{% ifequal browser 'eve' %}
+<link rel="stylesheet" href="/static/eve.css">
+{% else %}
+<link rel="stylesheet" href="/static/main.css">
+{% endifequal %}
 {% block head %}{% endblock %}
 </head>
 <body orient="landscape"><div class="page">
-    {% spaceless %}<h1>EVE Magic Widget</h1>
+<h1>EVE Magic Widget</h1>
+{% ifequal browser 'eve' %}<hr>{% endifequal %}
 <!-- {{ nav|pprint|safe }} -->    
-<div class="trail">{% if nav %}<a href="/">Menu</a>
-    {% for n in nav %} &raquo; {% if not forloop.last %}<a href="{{ n.get_absolute_url }}">{{ n.name }}</a>{% else %}{{ n.name }}{% endif %}{% endfor %}
-    {% else %}
+{% spaceless %}
+<div class="trail">
+{% if nav %}<a href="/">Menu</a>
+    {% for n in nav %} &raquo; 
+    	{% if not forloop.last %}<a href="{{ n.get_absolute_url }}">{{ n.name }}</a>
+    	{% else %}{{ n.name }}{% endif %}
+    {% endfor %}
+{% else %}
     {% if flatpage %}
-    <a href="/">Menu</a> &raquo; {{ flatpage.title }}
+    	<a href="/">Menu</a> &raquo; {{ flatpage.title }}
     {% else %}
-    <a href="/">Menu</a>
+    	<a href="/">Menu</a>
     {% endif %}
-    {% endif %}
+{% endif %}
 </div>{% endspaceless %}
+{% ifequal browser 'eve' %}<hr>{% endifequal %}
 <div class="content">
 {% block content %}{% endblock %}
 </div>

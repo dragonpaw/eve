@@ -46,7 +46,7 @@ def home(request):
     
     objects.sort(lambda a,b: cmp(a['name'], b['name']))
     
-    d['objects'] = objects
+    d['inline_nav'] = objects
     d['title'] = "EVE Tool"
     return render_to_response('generic_menu.html', d, context_instance=RequestContext(request))    
 
