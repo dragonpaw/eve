@@ -94,8 +94,10 @@ def make_nav(name, url, icon, note=None):
         return {'name':name, 'get_absolute_url':url,'icon32':None, 'note':note}
 
 
-def unique_slug(item,slug_source,slug_field='slug'):
-    """Ensures a unique slug field by appending an integer counter to duplicate 
+def unique_slug(item,slug_source='name',slug_field='slug'):
+    """unique_slug(item,slug_source='name',slug_field='slug')
+    
+    Ensures a unique slug field by appending an integer counter to duplicate 
     slugs.
   
     If the item already has a slug, then it is returned without modification
@@ -111,10 +113,10 @@ def unique_slug(item,slug_source,slug_field='slug'):
     daily-roundup-3, daily-roundup-4, etc, until a unique value is found.
   
     Call from within a model's custom save() method like so:
-    item.slug = unique_slug(item, slug_source='name')
+    item.slug = unique_slug(item)
 
-    A default slug field of 'slug' is assumed. If this is not the case, you
-    may add 'slug_field=fieldname' to the arguments. 
+    Default slug_source field is 'name'.
+    Default slug_field name is 'slug'.
     """
     # if it's already got a slug, do nothing.
     slug = getattr(item, slug_field)
@@ -123,7 +125,7 @@ def unique_slug(item,slug_source,slug_field='slug'):
     
     slug = slugify(getattr(item,slug_source))
     
-    slug_search = slug_source + '__istartswith'
+    slug_search = slug_field + '__istartswith'
     itemModel = item.__class__
     query = itemModel.objects.filter(**{slug_search:slug})
     

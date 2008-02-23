@@ -12,7 +12,7 @@ import time
 import pprint
 import sys
 
-from eve.ccp.models import Alliance, Station, Corporation, Item, SolarSystem
+from eve.ccp.models import Alliance, Station, Corporation, Item, SolarSystem, Faction
 from eve.user.models import Account
 from eve.settings import DEBUG
 

@@ -2,6 +2,23 @@
 {% load trade %}
 
 {% block content %}
+{% ifequal browser 'eve' %}
+<table>
+{% for o in objects %}{% spaceless %}
+<tr>
+	<td rowspan="2"><img src="{{ o.item.icon32 }}"></td>
+	<th colspan="2"><a href="{{ o.item.get_absolute_url }}">{{ o.item.name }}</a> 
+	{% if o.quantity %}<span class="quantity"> x{{ o.quantity }}</span>{% endif %}
+	</th>
+	<td rowspan="2">{{ o.item.description }}</td>
+</tr>
+<tr>
+    {% if o.buy %}<td class="buy">{{ o.buy|floatformat:2|comma }} ISK</td>{% endif %}
+    {% if o.sell %}<td class="sell right">{{ o.sell|floatformat:2|comma }} ISK</td>{% endif %}
+</tr>
+{% endspaceless %}{% endfor %}
+</table>
+{% else %}
 <ul class="links" >
 {% for o in objects %}{% spaceless %}
     <li class="item">
@@ -19,5 +36,6 @@
 {% endspaceless %}
 {% endfor %}
 </ul>
+{% endifequal %}
 {% endblock %}
 

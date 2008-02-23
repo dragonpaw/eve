@@ -11,5 +11,7 @@ def borwser_id(request):
         return {'browser':'ie'}
     elif ua.count('iPhone'):
         return {'browser':'iphone'}
+    elif ua.count('EVE-minibrowser'):
+        return {'browser':'eve'}
     else:
         return {'browser':'unknown'}

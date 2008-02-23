@@ -1,11 +1,24 @@
 {% if inline_nav %}
-<ul class="links">
+{% ifequal browser 'eve' %}
+<table>
+{% for nav in inline_nav %}{% spaceless %}
+<tr>
+	<td><img src="{{ nav.icon32 }}"></td>
+	<td><a href="{{ nav.get_absolute_url }}">{{ nav.name }}<a href="{{ nav.get_absolute_url }}"></td>
+	<td>{{ nav.note }}</td>
+</tr>
+{% endspaceless %}{% endfor %}
+</table>
+{% else %}
+<ul class="links" >
 {% for nav in inline_nav %}
-	<li><a href="{{ nav.get_absolute_url }}">
-	<img src="{{ nav.icon32 }}">
-	<span class="link">{{ nav.name }}</span><br>
-	<span class="note">{{ nav.note }}</span></a>
-  	</li>
-{% endfor %}
+    {% spaceless %}<li>
+        <a href="{{ nav.get_absolute_url }}">
+            <img src="{{ nav.icon32 }}"><span class="name">{{ nav.name }}</span>
+            {% if nav.note %}<br><span class="note">{{ nav.note }}</span>{% endif %}
+        </a>
+    </li>
+{% endspaceless %}{% endfor %}
 </ul>
+{% endifequal %}
 {% endif %}

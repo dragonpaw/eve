@@ -23,6 +23,7 @@ def redistribute_characters():
         when = hour_from_now + x
         print "%-30s | %s" % (c.name, when)
         c.cached_until = when
+        c.save()
 
 def redistribute_poses():
     poses = PlayerStation.objects.all()
@@ -33,6 +34,7 @@ def redistribute_poses():
         when = six_from_now + x 
         print "%-30s | %s" % (p.name, when)
         p.cached_until += x
+        p.save()
         
 redistribute_characters()
 print "-" * 78
