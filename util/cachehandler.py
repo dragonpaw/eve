@@ -33,6 +33,7 @@ class MyCacheHandler(object):
 
 		# see if we have the requested page cached...
 		cached = self.cache.get(key, None)
+		full_path = path + '?' + ';'.join([ "%s=%s" % (x[0], x[1])  for x in params.items() ])
 		if cached:
 			cacheFile = None
 			#print "'%s': retrieving from memory" % path
@@ -40,7 +41,7 @@ class MyCacheHandler(object):
 			# it wasn't cached in memory, but it might be on disk.
 			cacheFile = join(self.tempdir, str(key) + ".cache")
 			if exists(cacheFile):
-				self.log("%s: retrieving from disk" % path)
+				self.log("%s: retrieving from disk" % full_path)
 				f = open(cacheFile, "rb")
 				cached = self.cache[key] = cPickle.loads(zlib.decompress(f.read()))
 				f.close()
@@ -48,16 +49,16 @@ class MyCacheHandler(object):
 		if cached:
 			# check if the cached doc is fresh enough
 			if time.time() < cached[0]:
-				self.log("%s: returning cached document" % path)
+				self.log("%s: returning cached document" % full_path)
 				return cached[1]  # return the cached XML doc
 
 			# it's stale. purge it.
-			self.log("%s: cache expired, purging!" % path)
+			self.log("%s: cache expired, purging!" % full_path)
 			del self.cache[key]
 			if cacheFile:
 				os.remove(cacheFile)
 
-		self.log("%s: not cached, fetching from server..." % path)
+		self.log("%s: not cached, fetching from server..." % full_path)
 		# we didn't get a cache hit so return None to indicate that the data
 		# should be requested from the server.
 		return None

@@ -529,10 +529,10 @@ class Corporation(models.Model):
         try:
             if character:
                 api = character.api_corporation()
-                record = api.CorporationSheet(corporationID=id)
+                record = api.CorporationSheet(corporationID=self.id)
             else:
                 api = API
-                record = api.corp.CorporationSheet(corporationID=id)
+                record = api.corp.CorporationSheet(corporationID=self.id)
             name = record.corporationName
         except eveapi.Error:
             pass
