@@ -251,7 +251,10 @@ class Account(models.Model):
             return 'Account'
     
     def refresh_messages_list(self):
-        return pickle.loads(self.refresh_messages)
+        if self.refresh_messages:
+            return pickle.loads(self.refresh_messages)
+        else:
+            return []
     
     def api_auth(self):
         auth = API.auth(userID=self.id, apiKey=self.api_key)
