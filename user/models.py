@@ -212,7 +212,7 @@ class Account(models.Model):
                              edit_inline = models.TABULAR)
     api_key = models.CharField(max_length=200)
     last_refreshed = models.DateTimeField(null=True, blank=True)
-    refresh_messages = models.TextField(blank=True, default='')
+    refresh_messages = models.TextField(default='')
 
     class Admin:
         list_display = ('user', 'id')
@@ -249,6 +249,9 @@ class Account(models.Model):
             return 'Account: %d' % self.id
         else:
             return 'Account'
+    
+    def last_refreshed_delta(self):
+        return datetime.utcnow() - self.last_refreshed
     
     def refresh_messages_list(self):
         if self.refresh_messages:
@@ -317,8 +320,8 @@ class Account(models.Model):
                 m.append('EVE API error: %s' % e)
         
         messages += char_messages
+        self.refresh_messages = pickle.dumps(m)
         self.last_refreshed = datetime.now()
-        self.refresh_messages = pickle.dumps(messages)
         self.save()
                 
         return messages
@@ -354,6 +357,7 @@ class Character(models.Model):
     user = models.ForeignKey(UserProfile, related_name='characters')
     last_refreshed = models.DateTimeField(blank=True)
     cached_until = models.DateTimeField(blank=True)
+    refresh_messages = models.TextField(default='')
     
     class Admin:
         list_display = ('name', 'user', 'corporation', 'get_isk_formatted', 
@@ -379,6 +383,11 @@ class Character(models.Model):
             pass
         super( Character, self ).save()
 
+    def refresh_messages_list(self):
+        if self.refresh_messages:
+            return pickle.loads(self.refresh_messages)
+        else:
+            return []
     
     def icon(self, size):
         return "http://img.eve.is/serv.asp?s=%d&c=%s" % (size, self.id)
@@ -487,7 +496,7 @@ class Character(models.Model):
         # We set the account earlier in update_account. Now just make sure it matches.
         # Usernames can not change, but a character might move between accounts.
         self.user = self.account.user
-        self.last_updated = datetime.utcnow()
+        self.last_refreshed = datetime.utcnow()
         self.cached_until = datetime.utcnow() + CHARACTER_CACHE_TIME
         self.save()
         
@@ -504,6 +513,9 @@ class Character(models.Model):
         if purged or new:
             self.user.update_personal_index()
             messages.append('Transactions changed, updated personal index.')
+
+        self.refresh_messages = pickle.dumps(messages)
+        self.save()
 
         return messages
     

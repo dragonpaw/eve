@@ -299,15 +299,11 @@ li.character a {
 	padding: 8px 32px 8px 80px;
 }
 
-.character .skill,.character .skill-completion {
-	font-weight: normal;
-	font-size: 1.2em;
-	color: grey;
-}
-
+.character .skill,
+.character .skill-completion,
 .character .corporation {
-	font-weight: normal;
 	color: grey;
+	font-weight: normal;
 	font-size: 1.1em;
 }
 
@@ -447,7 +443,7 @@ li.character a {
 .blueprint .pe {
 	color: green;
 	position: absolute;
-	left: 35%;
+	left: 45%;
 }
 
 .blueprint .me {
@@ -458,7 +454,7 @@ li.character a {
 .blueprint .cost {
 	color: grey;
 	position: absolute;
-	right: 30%;
+	right: 25%;
 	text-align: right;
 }
 

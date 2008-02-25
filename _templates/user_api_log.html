@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+{% for a in user.accounts.all %}
+	<h3>Account: {{ a.id }} ({{ a.last_refreshed_delta|time }} ago)</h3>
+	<ul>
+	{% for m in a.refresh_messages_list %}
+		<li>{{ m }}</li>
+	{% endfor %}
+	</ul>
+	{% for c in a.characters.all %}
+		<h4>{{ c.name }} ({{ c.last_refreshed_delta|time }} ago)</h4>
+		<ul>
+		{% for m in c.refresh_messages_list %}
+			<li>{{ m }}</li>
+		{% endfor %}
+		</ul>
+	{% endfor %}
+{% endfor %}
+{% endblock %}

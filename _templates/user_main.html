@@ -3,6 +3,9 @@
 
 {% block content %}
 {% spaceless %}
+<ul class="links">
+{% include "include_inlinenav.html" %}
+</ul>
 <h4>Details</h4>
 <table>
   <tr><th>User Name</th><td>{{ user.username }}</td></tr>
@@ -36,17 +39,11 @@
 <ul class="links">
   {% for a in accounts %}
   <li class="account">
-    <a href="{{ a.get_absolute_url }}">
+    <a href="{{ a.get_edit_url }}">
     <span class="name">{{ a.id }}</span><br>
     <span class="api-key">{{ a.api_key_short }}</span>
   </a>
   </li>
-  {% endfor %}
-  {% for nav in inline_nav %}
-  <li><a href="{{ nav.get_absolute_url }}">
-  <span class="name">{{ nav.name }}</span><br>
-  <span class="note">{{ nav.note }}</span>
-  </a></li>
   {% endfor %}
 </ul>
 {% endspaceless %}
