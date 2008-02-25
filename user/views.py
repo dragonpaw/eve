@@ -142,7 +142,7 @@ def account_edit(request, id=None):
         
     if form.is_valid() == False:
         d['form'] = form
-        return render_to_response('user_account_detail.html', d,
+        return render_to_response('user_account_edit.html', d,
                                    context_instance=RequestContext(request))
     if not id:
         id = form.cleaned_data['id']
@@ -174,7 +174,7 @@ def user_creation(request):
 
     if request.method == 'GET':
         d['form'] = UserCreationForm()
-        return render_to_response('user_account_detail.html', d,
+        return render_to_response('user_account_edit.html', d,
                                    context_instance=RequestContext(request))
         
     assert(request.method == 'POST')
@@ -195,7 +195,7 @@ def user_creation(request):
             errors.append("That user name is already registered.")
             
     if errors:
-        return render_to_response('user_account_detail.html', d,
+        return render_to_response('user_account_edit.html', d,
                                    context_instance=RequestContext(request))
         
     # OK, let's make a user.
