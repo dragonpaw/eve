@@ -11,9 +11,10 @@ from eve.user.models import Character, Account
 
 from eve.util.formatting import make_nav
 
-user_nav = make_nav("Characters", "/user/", '34_12', note='Your characters and accounts.')
-user_create_nav = make_nav("Create Login", "/user/create/", '07_03', note='Register with the widget.')
-account_add_nav = make_nav('Add API Key', '/user/add/', None, 'Add a new account/API key.')
+user_nav = make_nav("Characters", "/user/", '34_12', 'Your characters and accounts.')
+user_create_nav = make_nav("Create Login", "/user/create/", '07_03', 'Register with the widget.')
+account_add_nav = make_nav('Add API Key', '/user/add/', '12_02', 'Add a new account/API key. (Yes, you can have ALL of your accounts on a single Widget login.)')
+log_nav = make_nav('Refresh Log', '/user/api-log/', '22_42', 'View API refresh log.')
 
 @login_required
 def main(request):
@@ -21,7 +22,7 @@ def main(request):
     d['nav'] = [ user_nav ]  
     d['characters'] = request.user.get_profile().characters.all()
     d['accounts'] = request.user.get_profile().accounts.all()
-    d['inline_nav'] = [ account_add_nav ]
+    d['inline_nav'] = [ account_add_nav, log_nav ]
     
     return render_to_response('user_main.html', d, context_instance=RequestContext(request))
 
@@ -36,7 +37,7 @@ def character(request, id):
     
     d = {}
     d['nav'] = [ user_nav, character ]
-    d['inline_nav'] = [ log_nav ]
+    #d['inline_nav'] = [ log_nav ]
     d['c'] = character
     
     return render_to_response('user_character_detail.html', d, context_instance=RequestContext(request))
@@ -79,7 +80,7 @@ def account_refresh(request, id):
                                    context_instance=RequestContext(request))
 
 @login_required
-def account(request, id):
+def account_overview(request, id):
     account = get_object_or_404(Account, id=id)
     if account.user != request.user.get_profile():
         raise Http404
@@ -96,29 +97,25 @@ def account(request, id):
                                    context_instance=RequestContext(request))
 
 @login_required
-def account_log(request, id):
-    account = get_object_or_404(Account, id=id)
-    if account.user != request.user.get_profile():
-        raise Http404
+def account_log(request):
 
-    log_nav = make_nav('Refresh Log', account.get_log_url(), '22_42',
-                       'View API refresh log of this account.')
+    d = {'user':request.user.get_profile(),
+         'nav':[user_nav, log_nav]}
 
-    d = {'account':account, 'nav':[user_nav, account, log_nav]}
-
-    return render_to_response('user_account_log.html', d,
+    return render_to_response('user_api_log.html', d,
                                    context_instance=RequestContext(request))
 
 
 @login_required
-def account_edit(request, id):
+def account_edit(request, id=None):
     d = {}
     d['id'] = id
     d['request'] = request
-    account = get_object_or_404(Account, id=id)
-    if account.user != request.user.get_profile():
-        raise Http404
-        
+    
+    if id:
+        account = get_object_or_404(Account, id=id)
+        if account.user != request.user.get_profile():
+            raise Http404
         d['nav'] = [user_nav, account]
     else:
         d['nav'] = [user_nav, account_add_nav]
@@ -194,6 +191,9 @@ def user_creation(request):
         if Account.objects.filter(id=form.cleaned_data['eve_user_id']).count() > 0:
             errors.append("That EVE user ID is already registered to a different account.")
         
+        if User.objects.filter(username=form.cleaned_data['username']).count() > 0:
+            errors.append("That user name is already registered.")
+            
     if errors:
         return render_to_response('user_account_detail.html', d,
                                    context_instance=RequestContext(request))
