@@ -1,6 +1,7 @@
 from decimal import Decimal
 import time
 from datetime import datetime, timedelta
+import pickle
 
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
@@ -211,6 +212,7 @@ class Account(models.Model):
                              edit_inline = models.TABULAR)
     api_key = models.CharField(max_length=200)
     last_refreshed = models.DateTimeField(null=True, blank=True)
+    refresh_messages = models.TextField(blank=True, default='')
 
     class Admin:
         list_display = ('user', 'id')
@@ -235,12 +237,21 @@ class Account(models.Model):
     def get_refresh_warning_url(self):
         return "/user/account/%d/refreshing/" % self.id
     
+    def get_log_url(self):
+        return "/user/account/%d/api-log/" % self.id
+    
+    def get_edit_url(self):
+        return "/user/account/%d/edit/" % self.id
+
     @property
     def name(self):
         if self.id:
             return 'Account: %d' % self.id
         else:
             return 'Account'
+    
+    def refresh_messages_list(self):
+        return pickle.loads(self.refresh_messages)
     
     def api_auth(self):
         auth = API.auth(userID=self.id, apiKey=self.api_key)
@@ -257,6 +268,35 @@ class Account(models.Model):
         
         try:
             result = auth.account.Characters()
+    
+            ids = []
+            for c in result.characters:
+                ids.append(c.characterID)
+
+
+                try:
+                    character = Character.objects.get(id = c.characterID)
+                except Character.DoesNotExist:
+                    character = Character(id=c.characterID)
+                character.account = self
+                character.user=self.user
+
+                temp = []
+
+                try:
+                    # The name doesn't exist until AFTER the refresh many times.
+                    temp.extend( character.refresh(force=force) )
+                except eveapi.Error, e:
+                    temp.extend('EVE API error: %s' % e)
+
+                char_messages.append({'name':character.name, 'messages':temp})
+                m.append('Account has character: %s' % character.name)
+            
+            # Look for deleted characters.
+            for character in Character.objects.filter(account__id=self.id).exclude(id__in=ids):
+                m.append("Lost character: %s will be purged." % character.name)
+                character.delete()
+
         except eveapi.Error, e:
             if e.message in ('Authentication failure',
                              'Failed getting user information', 
@@ -265,41 +305,20 @@ class Account(models.Model):
                 self.email('user_invalid_api_key.txt', subject='Invalid API key')
                 self.delete()
                 return messages
+            elif e.message == 'Current security level not high enough':
+                self.email('user_wrong_api_key.txt', subject='Wrong API key used')
+                m.append("Deleted account '%s', user gave limited key." % self.id)
+                self.delete()
+                return messages
             else:
-                raise
-    
-        ids = []
-        for c in result.characters:
-            ids.append(c.characterID)
-            try:
-                character = Character.objects.get(id = c.characterID)
-            except Character.DoesNotExist:
-                character = Character(id=c.characterID)
-            character.account = self
-            character.user=self.user
-            try:
-                # The name doesn't exist until AFTER the refresh many times.
-                temp = character.refresh(force=force)
-                char_messages.append({'name':character.name, 'messages':temp})
-                m.append('Account has character: %s' % character.name)
-            except eveapi.Error, e:
-                if e.message == 'Current security level not high enough':
-                    self.email('user_wrong_api_key.txt', subject='Wrong API key used')
-                    m.append("Deleted account '%s', user gave limited key." % self.id)
-                    self.delete()
-                    return messages
-                else:
-                    raise
+                m.append('EVE API error: %s' % e)
         
-        # Look for deleted characters.
-        for character in Character.objects.filter(account__id=self.id).exclude(id__in=ids):
-            m.append("Lost character: %s will be purged." % character.name)
-            character.delete()
-        
+        messages += char_messages
         self.last_refreshed = datetime.now()
+        self.refresh_messages = pickle.dumps(messages)
         self.save()
-        
-        return messages + char_messages
+                
+        return messages
     
     def email(self, template, subject=None):
         if self.user.user.email is None:
@@ -330,7 +349,7 @@ class Character(models.Model):
     is_pos_monkey = models.BooleanField(default=False)
     corporation = models.ForeignKey(Corporation, related_name='characters')
     user = models.ForeignKey(UserProfile, related_name='characters')
-    last_updated = models.DateTimeField(blank=True)
+    last_refreshed = models.DateTimeField(blank=True)
     cached_until = models.DateTimeField(blank=True)
     
     class Admin:
@@ -369,6 +388,17 @@ class Character(models.Model):
     def icon256(self):
         return self.icon(256)
         
+    def last_refreshed_delta(self):
+        return datetime.utcnow() - self.last_refreshed
+    
+    def cache_remaining(self):
+        now = datetime.utcnow()
+        if self.cached_until < now:
+            return None
+        else:
+            return self.cached_until - now 
+        
+    
     @property
     def skill_points(self):
         total = 0

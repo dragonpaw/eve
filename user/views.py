@@ -31,8 +31,12 @@ def character(request, id):
     if character.user != request.user.get_profile():
         raise Http404
     
+    log_nav = make_nav('Refresh Log', character.account.get_log_url(), '22_42',
+                       'View API refresh log of this account.')
+    
     d = {}
-    d['nav'] = [ user_nav, character ]  
+    d['nav'] = [ user_nav, character ]
+    d['inline_nav'] = [ log_nav ]
     d['c'] = character
     
     return render_to_response('user_character_detail.html', d, context_instance=RequestContext(request))
@@ -75,14 +79,45 @@ def account_refresh(request, id):
                                    context_instance=RequestContext(request))
 
 @login_required
-def account(request, id=None):
+def account(request, id):
+    account = get_object_or_404(Account, id=id)
+    if account.user != request.user.get_profile():
+        raise Http404
+
+    log_nav = make_nav('Refresh Log', account.get_log_url(), '22_42',
+                       'View API refresh log of this account.')
+    edit_nav = make_nav('Edit', account.get_edit_url(), '09_03',
+                        'Edit the API key on this account.')  
+
+    d = {'nav': [ user_nav, account ], 
+         'inline_nav' : [ log_nav, edit_nav ] }
+    
+    return render_to_response('generic_menu.html', d,
+                                   context_instance=RequestContext(request))
+
+@login_required
+def account_log(request, id):
+    account = get_object_or_404(Account, id=id)
+    if account.user != request.user.get_profile():
+        raise Http404
+
+    log_nav = make_nav('Refresh Log', account.get_log_url(), '22_42',
+                       'View API refresh log of this account.')
+
+    d = {'account':account, 'nav':[user_nav, account, log_nav]}
+
+    return render_to_response('user_account_log.html', d,
+                                   context_instance=RequestContext(request))
+
+
+@login_required
+def account_edit(request, id):
     d = {}
     d['id'] = id
     d['request'] = request
-    if id is not None:
-        account = get_object_or_404(Account, id=id)
-        if account.user != request.user.get_profile():
-            raise Http404
+    account = get_object_or_404(Account, id=id)
+    if account.user != request.user.get_profile():
+        raise Http404
         
         d['nav'] = [user_nav, account]
     else:
@@ -93,7 +128,7 @@ def account(request, id=None):
             d['form'] = ApiFormEdit()
         else:
             d['form'] = ApiFormAdd()
-        return render_to_response('user_account_detail.html', d,
+        return render_to_response('user_account_edit.html', d,
                                    context_instance=RequestContext(request))
 
     # OK, here on out, it's a post.
