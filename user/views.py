@@ -9,7 +9,7 @@ from django.template import RequestContext
 
 from eve.user.models import Character, Account
 
-from eve.util.formatting import make_nav
+from eve.lib.formatting import make_nav
 
 user_nav = make_nav("Characters", "/user/", '34_12', 'Your characters and accounts.')
 user_create_nav = make_nav("Create Login", "/user/create/", '07_03', 'Register with the widget.')

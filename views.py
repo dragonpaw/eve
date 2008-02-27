@@ -4,7 +4,7 @@ from eve.trade.views import blueprint_nav, index_nav, transaction_nav, salvage_n
 from eve.ccp.views import region_nav, item_nav, sov_nav
 from eve.pos.views import pos_nav
 from eve.user.views import user_nav, user_create_nav
-from eve.util.formatting import make_nav
+from eve.lib.formatting import make_nav
 from eve.tracker.views import changelog_nav
 from eve.debug.views import debug_nav
 

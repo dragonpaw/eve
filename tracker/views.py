@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from eve.tracker.models import ChangeLog
-from eve.util.formatting import make_nav
+from eve.lib.formatting import make_nav
 from datetime import datetime
 import time
 

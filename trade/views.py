@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue, JournalEntry
 from eve.ccp.models import Item
-from eve.util.formatting import make_nav
+from eve.lib.formatting import make_nav
 
 index_nav = make_nav("Indexes", "/trade/indexes/", '25_08',
                       note="Where the prices come from.")
