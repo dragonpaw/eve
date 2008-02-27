@@ -10,10 +10,10 @@ from django.db import models
 from django.db.models import signals
 from django.dispatch import dispatcher
 
-from eve.util.cachehandler import MyCacheHandler
-from eve.util import eveapi
+from eve.lib.cachehandler import MyCacheHandler
+from eve.lib import eveapi
 from eve.ccp.models import Item, Corporation, Station, MapDenormalize, SolarSystem
-from eve.util.formatting import comma
+from eve.lib.formatting import comma
 from eve.settings import DEBUG
 
 API = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)

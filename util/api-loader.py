@@ -4,10 +4,10 @@ import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'eve.settings'
 os.environ['TZ'] = 'UTC'
 
-from cachehandler import MyCacheHandler
+from eve.lib.cachehandler import MyCacheHandler
 from datetime import datetime, timedelta
 from exceptions import Exception
-import eveapi
+import eve.lib.eveapi
 import time
 import pprint
 import sys

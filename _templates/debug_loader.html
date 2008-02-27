@@ -11,9 +11,11 @@
 <!-- {{ points|pprint }} -->
 
     <div class="flot" id="graph-chars"></div>
+    <p>Total characters with pending refreshes: {{ total_chars }}</p>
+    
     <div class="flot" id="graph-poses"></div>
-
-    <p>Distribution of upcoming refreshes over time.</p>
+	<p>Total POSes with pending refreshes: {{ total_poses }}</p>
+    
 
 <script id="source" language="javascript" type="text/javascript">
 $(function () {

@@ -9,7 +9,7 @@ from datetime import datetime
 
 from eve.pos.models import PlayerStation
 from eve.user.models import Character
-from eve.util.formatting import make_nav
+from eve.lib.formatting import make_nav
 
 pos_nav = make_nav("Player-Owned Structures", "/pos/", '40_14', 
                    note='Fuel status for all of your POSes.')

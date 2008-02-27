@@ -1,7 +1,7 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
-from eve.util.formatting import make_nav
+from eve.lib.formatting import make_nav
 from eve.user.models import Character
 from eve.pos.models import PlayerStation
 
@@ -29,7 +29,8 @@ def debug_loader(request):
     poses = {}
     d['poses'] = poses
     d['nav'] = [debug_nav, debug_loader_nav]
-    
+
+    total_poses = PlayerStation.objects.count()
     for p in PlayerStation.objects.all():
         remain = p.cache_remaining
         if remain:
@@ -44,9 +45,11 @@ def debug_loader(request):
     chars = {}
     d['chars'] = chars
 
+    total_chars = 0
     for c in Character.objects.all():
         if c.user.is_stale:
             continue
+        total_chars += 1
         
         remain = c.cache_remaining()
         if remain:
@@ -57,5 +60,8 @@ def debug_loader(request):
             chars[mins] += 1
         else:
             chars[mins] = 1
+            
+    d['total_poses'] = total_poses
+    d['total_chars'] = total_chars
 
     return render_to_response('debug_loader.html', d, context_instance=RequestContext(request))

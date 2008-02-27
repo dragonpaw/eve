@@ -12,10 +12,10 @@ from django.db import models
 from django.db.models.query import Q, QNot
 from django.template.defaultfilters import slugify
 from eve.settings import DEBUG
-from eve.util import eveapi
-from eve.util.alliance_graphics import alliance_graphics
-from eve.util.cachehandler import MyCacheHandler
-from eve.util.formatting import comma, time, unique_slug
+from eve.lib import eveapi
+from eve.lib.alliance_graphics import alliance_graphics
+from eve.lib.formatting import comma, time, unique_slug
+from eve.lib.cachehandler import MyCacheHandler
 
 TRUE_FALSE = (
     ('true', 'Yes'), 

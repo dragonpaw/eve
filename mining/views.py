@@ -2,7 +2,7 @@
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from eve.mining.models import MiningOp
-from eve.util.formatting import make_nav
+from eve.lib.formatting import make_nav
 from django.contrib.auth.decorators import login_required
 
 mining_op_nav = make_nav("Mining Operations", "/mining/ops/", '40_14')

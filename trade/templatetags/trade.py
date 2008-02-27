@@ -1,5 +1,5 @@
 from django import template
-from eve.util.formatting import comma, isk, time, title, javascript_points
+from eve.lib.formatting import comma, isk, time, title, javascript_points
 import re
 
 register = template.Library()

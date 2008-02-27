@@ -1,7 +1,7 @@
 #from django.contrib.auth.models import User 
 from django.db import models
 from eve.ccp.models import Item, Region, Station
-from eve.util.formatting import comma
+from eve.lib.formatting import comma
 from eve.user.models import Character, UserProfile
 from datetime import date
 from decimal import Decimal
