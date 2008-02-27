@@ -289,12 +289,7 @@ class Account(models.Model):
 
                 temp = []
 
-                try:
-                    # The name doesn't exist until AFTER the refresh many times.
-                    temp.extend( character.refresh(force=force) )
-                except eveapi.Error, e:
-                    temp.extend('EVE API error: %s' % e)
-
+                temp.extend( character.refresh(force=force) )
                 char_messages.append({'name':character.name, 'messages':temp})
                 m.append('Account has character: %s' % character.name)
             
@@ -699,10 +694,10 @@ class Character(models.Model):
         tower = Item.objects.get(pk=record.typeID)
     
         if not force and station.cached_until and station.cached_until > datetime.utcnow():
-            messages.append("POS: %s at %s: Still cached." % (tower, moon))
+            messages.append("Cached: POS: %s at %s." % (tower, moon))
             return messages
         
-        messages.append("POS: %s at %s" % (tower, moon))
+        messages.append("Reloading: POS: %s at %s." % (tower, moon))
     
         detail = api.StarbaseDetail(itemID=record.itemID)
     
@@ -756,10 +751,10 @@ class Character(models.Model):
                 if consumed > 0 and consumed < max:
                     if purpose == 'CPU':
                         station.cpu_utilization = consumed / max
-                        messages.append("CPU Utilization: %s" % station.cpu_utilization)
+                        messages.append("Calculated: CPU Utilization: %0.2f" % station.cpu_utilization)
                     else:
                         station.power_utilization = consumed / max
-                        messages.append("Power Utilization: %s" % station.power_utilization)
+                        messages.append("Calculated: Power Utilization: %0.2f" % station.power_utilization)
                     station.save()
             
             fuel.quantity=fuel_type.quantity
