@@ -6,12 +6,13 @@ from eve.pos.views import pos_nav
 from eve.user.views import user_nav, user_create_nav
 from eve.util.formatting import make_nav
 from eve.tracker.views import changelog_nav
-from eve.ccp.models import Graphic
+from eve.debug.views import debug_nav
 
 about_nav = make_nav("About", "/about/", '07_15', note='The origins of the Widget.')
 admin_nav = make_nav('Admin', '/admin/', '09_08', note='Thou art God.')
 login_nav = make_nav('Login', '/login/', '09_06', note='Log yourself in for full use.')
-logout_nav = make_nav('Logout', '/logout/', '07_07', note='Log out if you like. (Or if you share your computer.)')
+logout_nav = make_nav('Logout', '/logout/', '07_07', 
+                      note='Log out if you like. (Or if you share your computer.)')
 ship_fit_nav = make_nav('Ship Fitting', '/fitting/', '09_05',
                         note='A little tool to assist you with fitting a ship.')
 features_nav = make_nav('Features', '/features/', '06_07',
@@ -28,11 +29,12 @@ def home(request):
                features_nav, salvage_nav,
     ]
     
-    if user.is_authenticated() and (user.username == 'ash' or user.username == 'Ductape'):
+    if user.is_authenticated() and user.username in ('ash', 'Ductape'):
         objects.append(ship_fit_nav)
     
     if user.is_authenticated() and user.is_staff:
         objects.append(admin_nav)
+        objects.append(debug_nav)
     
     if user.is_authenticated():
         objects.extend([blueprint_nav,
@@ -49,9 +51,3 @@ def home(request):
     d['inline_nav'] = objects
     d['title'] = "EVE Tool"
     return render_to_response('generic_menu.html', d, context_instance=RequestContext(request))    
-
-def debug(request):
-    d = {}
-    d['request'] = request
-    
-    return render_to_response('debug.html', d, context_instance=RequestContext(request))
