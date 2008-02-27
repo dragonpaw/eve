@@ -1,5 +1,5 @@
 # $Id$
-from django.conf.urls.defaults import include, patterns, handler404, handler500
+from django.conf.urls.defaults import include, patterns
 from eve.settings import STATIC_DIR, DEBUG
 
 urlpatterns = patterns('',
@@ -9,6 +9,8 @@ urlpatterns = patterns('',
     (r'^pos/', include('eve.pos.urls')),
     (r'^mining/', include('eve.mining.urls')),
     (r'^user/', include('eve.user.urls')),
+    
+    (r'^debug/', include('eve.debug.urls')),
 
     (r'^$', 'eve.views.home'),
 
@@ -30,9 +32,6 @@ urlpatterns = patterns('',
         {'template_name': 'auth_login.html'}),
     (r'^logout/$', 'django.contrib.auth.views.logout',
         {'template_name': 'auth_logout.html'}),
-    (r'^test404/$', handler404),
-    (r'^test500/$', handler500),
-    (r'^debug/$', 'eve.views.debug'),
     
 )
 

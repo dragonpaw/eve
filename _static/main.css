@@ -58,6 +58,22 @@ p {
 	border-width: 2px 8px 2px 14px;
 }
 
+/* Flot ***************************************************************************/
+
+div.flot {
+	width: 90%;
+	height: 300px;
+	margin: 5%;
+}
+
+div.flot table,
+div.flot td {
+	align: left;
+	text-align: left;
+	width: auto;
+	border: none;
+}
+
 /* Headers ************************************************************************/
 h1 {
 	box-sizing: border-box;

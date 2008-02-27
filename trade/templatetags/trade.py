@@ -1,5 +1,5 @@
 from django import template
-from eve.util.formatting import comma, isk, time, title
+from eve.util.formatting import comma, isk, time, title, javascript_points
 import re
 
 register = template.Library()
@@ -8,6 +8,7 @@ register.filter('comma', comma)
 register.filter('isk',   isk)
 register.filter('time',  time)
 register.filter('title',  title)
+register.filter('jspoints',  javascript_points)
 
 from django.utils.translation import gettext_lazy as _
 

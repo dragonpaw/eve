@@ -93,6 +93,17 @@ def make_nav(name, url, icon, note=None):
     else:
         return {'name':name, 'get_absolute_url':url,'icon32':None, 'note':note}
 
+def javascript_points(list):
+    if isinstance(list, dict):
+        buffer = []
+        keys = list.keys()
+        keys.sort()
+        for x in keys:
+            buffer.append('[%s, %s]' % (x, list[x]))
+        return '[' + ', '.join(buffer) + ']'
+    else:
+        buffer = '[%s]' % ', '.join(['[%s]' % ', '.join(x) for x in list])
+        return buffer
 
 def unique_slug(item,slug_source='name',slug_field='slug'):
     """unique_slug(item,slug_source='name',slug_field='slug')
