@@ -2,6 +2,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 
 from eve.lib.formatting import make_nav
+from eve.lib.decorators import require_trust
 from eve.user.models import Character
 from eve.pos.models import PlayerStation
 
@@ -20,6 +21,9 @@ def debug_request(request):
     d = {}
     d['request'] = request
     d['nav'] = [debug_nav, debug_request_nav]
+    meta = request.META.keys()
+    meta.sort()
+    d['meta'] = [(x, request.META[x]) for x in meta]
 
     return render_to_response('debug_request.html', d, context_instance=RequestContext(request))
 

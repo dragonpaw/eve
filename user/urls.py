@@ -14,6 +14,4 @@ urlpatterns = patterns('',
     (r'^account/(\d+)/refresh/$', 'eve.user.views.account_refresh'),
     
     (r'^create/$', 'eve.user.views.user_creation'),
-    
-    (r'^debug/$', 'eve.user.views.debug_refresh_times'),
 )

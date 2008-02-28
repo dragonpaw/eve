@@ -23,7 +23,7 @@
 
 <h4>request.META</h4>
 <table>
-{% for key, value in request.META.items %}
+{% for key, value in meta %}
 {% ifnotequal "HTTP_COOKIE" key %}
     <tr><th>{{ key }}</th><td class="name">{{ value }}</td></tr>
 {% endifnotequal %}
