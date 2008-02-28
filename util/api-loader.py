@@ -7,7 +7,7 @@ os.environ['TZ'] = 'UTC'
 from eve.lib.cachehandler import MyCacheHandler
 from datetime import datetime, timedelta
 from exceptions import Exception
-import eve.lib.eveapi
+from eve.lib import eveapi
 import time
 import pprint
 import sys
