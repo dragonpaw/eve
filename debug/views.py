@@ -35,11 +35,15 @@ def debug_loader(request):
     poses = {}
     d['poses'] = poses
     d['nav'] = [debug_nav, debug_loader_nav]
+    
+    now = datetime.utcnow()
+    now = now - timedelta(seconds=now.second)
+    zero = timedelta(0)
 
     total_poses = PlayerStation.objects.count()
     for p in PlayerStation.objects.all():
-        remain = p.cache_remaining
-        if remain:
+        remain = p.cached_until - now
+        if remain > zero:
             hours = remain.seconds / 60 / 60.0
         else:
             hours = 0
@@ -52,15 +56,13 @@ def debug_loader(request):
     d['chars'] = chars
 
     total_chars = 0
-    now = datetime.utcnow()
-    now = now - timedelta(seconds=now.second)
     for c in Character.objects.all():
         if c.user.is_stale:
             continue
         total_chars += 1
         
-        remain = max(c.cached_until - now, timedelta(0))
-        if remain:
+        remain = c.cached_until - now
+        if remain > zero:
             mins = remain.seconds / 60
         else:
             mins = 0
