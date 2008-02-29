@@ -19,7 +19,7 @@ from eve.settings import DEBUG
 API = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)
 SKILLS = Item.objects.filter(group__category__name__exact='Skill')
 
-CHARACTER_CACHE_TIME = timedelta(hours=1, minutes=4)
+CHARACTER_CACHE_TIME = timedelta(hours=1)
 TRANSACTION_CUTOFF = timedelta(days=30)
 STALE_ACCOUNT = timedelta(days=14)
 

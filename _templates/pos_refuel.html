@@ -19,17 +19,15 @@
   <table class="pos-fuel">
     <tr>
     	<th>Fuel</th>
-    	<th class="number">Qty</th>
-    	<th class="number">Burn</th>
+    	<th>Loaded</th>
     	<th class="number">Goal</th>
     </tr>
 	{% for fuel in fuel %}
 	<tr>{% spaceless %}
 	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
-	  <td><input type="text" size="8" value="{{ fuel.quantity }}" name="{{ fuel.type.id }}"></td>
-	  <td>{{ fuel.consumption|comma }}</td>
-	  {% expr fuel.consumption * 24 * days as goal %}
-	  <td>{{ goal|comma }}</td>
+	  <td><input type="text" size="6" value="{{ fuel.quantity }}" name="{{ fuel.type.id }}"></td>
+	  {% expr fuel.goal(days) as goal %}
+	  <td>&nbsp;{{ goal|comma }}</td>
 	</tr>{% endspaceless %}
 	{% endfor %}
   </table>
@@ -40,6 +38,5 @@
 </table>
 <fieldset>
 <input type="submit" value="Update fuel quantities"/>
-</fieldset>
-</form>
+</fieldset></form>
 {% endblock %}
