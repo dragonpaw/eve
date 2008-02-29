@@ -8,21 +8,37 @@
 <h3>{{ corp.name }}</h3>
 
 <h4>Weekly tower profit and loss</h4>
-<p>Red number is fuel cost. Green number is POS reaction value.</p>
 <ul class="links">
 	{% for pos in corp.poses %}
 	<li class="pos-cost">
-	<a href="{{ pos.pos.get_absolute_url }}">
+	<a href="{{ pos.pos.get_profit_url }}">
 	<img src="{{ pos.pos.icon32 }}">
-	<span class="name">{{ pos.pos.moon }}</span><br>
-	<span class="cost">- {{ pos.cost|floatformat:0|comma }}</span>
-	<span class="right profit">+ {{ pos.profit|default:0|floatformat:0|comma }}</span>
+	<span class="moon">{{ pos.pos.moon }}</span>
+	{% if pos.is_profitable %}
+	<span class="right profit">+ {{ pos.profit|floatformat:0|comma }}</span>
+	{% else %}
+	<span class="right cost">{{ pos.profit|floatformat:0|comma }}</span>
+	{% endif %}
+	{% if pos.pos.reactions.count %}
+	{% for r in pos.pos.reactions.all %}
+		{% if r.is_mining %}
+		<br><span class="note">Mining: {{ r.type }}</span>
+		{% else %}
+		<br><span class="note">Reacting: {{ r.type }}</span>
+		{% endif %}
+	{% endfor %}
+	{% else %}
+	<br><span class="no-mining">No reactions or mining.</span>
+	{% endif %}
 	</a></li>
 	{% endfor %}
 </ul>
-	<p class="cost total">Total cost: {{ corp.cost_weekly|floatformat:0|comma }}</p>
-	<p class="cost total">Total income: {{ corp.income_weekly|floatformat:0|comma }}</p>
-	<p class="profit total">Net profit: {{ corp.profit_weekly|floatformat:0|comma }}</p>
+<span class="pos-cost">
+	<p class="right cost total">Total cost: {{ corp.cost_weekly|floatformat:0|comma }}</p>
+	<p class="right profit total">Total income: {{ corp.income_weekly|floatformat:0|comma }}</p>
+	<p class="right profit total">Net profit: {{ corp.profit_weekly|floatformat:0|comma }}</p>
+	<p class="right">Total m3 output per week: {{ corp.m3_weekly|floatformat:0|comma }} m3.</p>
+</span>
 </table>
 {% endfor %}
 

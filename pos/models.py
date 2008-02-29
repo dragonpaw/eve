@@ -55,14 +55,14 @@ class PlayerStation(models.Model):
     constellation = models.ForeignKey(Constellation, raw_id_admin=True, )
     region = models.ForeignKey(Region, raw_id_admin=True, )
     tower = models.ForeignKey(Item, limit_choices_to = q)
-    note = models.CharField(max_length=500, blank=True)
     depot = models.ForeignKey(FuelDepot, blank=True, null=True)
     state = models.IntegerField(choices=POS_STATES)
     state_time = models.DateTimeField(blank=True)
     online_time = models.DateTimeField(blank=True)
     cached_until = models.DateTimeField(blank=True)
     last_updated = models.DateTimeField(blank=True)
-    corporation = models.ForeignKey(Corporation, related_name='pos', raw_id_admin=True, )
+    corporation = models.ForeignKey(Corporation, related_name='pos',
+                                    raw_id_admin=True, )
     #corp = models.ForeignKey(PlayerCorp)
     
     corporation_use = models.BooleanField()
@@ -80,6 +80,10 @@ class PlayerStation(models.Model):
     
     cpu_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
     power_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
+    
+    note = models.CharField(max_length=500, blank=True)
+    is_personal_pos = models.BooleanField(default=False)
+    owner = models.CharField("Owner/Maintainer", max_length=100, blank=True)
     
     class Meta:
         ordering = ['moon']
@@ -129,7 +133,10 @@ class PlayerStation(models.Model):
         return [s for s in self.POS_STATES if s[0] == self.state][0][1]
     
     def get_absolute_url(self):
-        return "/pos/%d/detail/" % self.id
+        return "/pos/%d/fuel/" % self.id
+    
+    def get_profit_url(self):
+        return "/pos/%d/profit/" % self.id
 
     @property
     def cache_remaining(self):
@@ -191,6 +198,21 @@ class PlayerStation(models.Model):
     def icon32(self):
         return self.tower.icon32
     
+    def reacted_quantities(self):
+        d = {}
+        for r in self.reactions.all():
+            for item, quantity in r.consumes():
+                if d.has_key(item.id):
+                    d[item.id]['quantity'] -= quantity
+                else:
+                    d[item.id] = { 'quantity':-quantity, 'item':item }
+            for item, quantity in r.produces():
+                if d.has_key(item.id):
+                    d[item.id]['quantity'] += quantity
+                else:
+                    d[item.id] = { 'quantity': quantity, 'item': item }
+        return [(x['item'], x['quantity']) for x in d.values()]
+    
     #@property
     #def fuel(self):
     #    return StationResource.objects.filter(tower=self.tower)
@@ -216,24 +238,27 @@ class PlayerStationDelegation(models.Model):
                                   edit_inline=models.TABULAR, core=True)
         
 class PlayerStationFuelSupply(models.Model):
-    station = models.ForeignKey(PlayerStation, related_name='fuel', edit_inline=models.TABULAR)
-    type = models.ForeignKey(Item, raw_id_admin=True, related_name='active_stations_using', core=True)
+    station = models.ForeignKey(PlayerStation, related_name='fuel', 
+                                edit_inline=models.TABULAR)
+    type = models.ForeignKey(Item, raw_id_admin=True, 
+                             related_name='active_stations_using', core=True)
     solarsystem = models.ForeignKey(SolarSystem, raw_id_admin=True, )
     constellation = models.ForeignKey(Constellation, raw_id_admin=True, )
     region = models.ForeignKey(Region, raw_id_admin=True, )
-    corporation = models.ForeignKey(Corporation, related_name='pos_fuels', raw_id_admin=True, )
+    corporation = models.ForeignKey(Corporation, related_name='pos_fuels', 
+                                    raw_id_admin=True, )
 
     quantity = models.IntegerField()
     
-    def __str__(self):
-        return "%s: %s (%d)" % (self.station, self.type, self.quantity)
-
     class Admin:
         list_display = ('station', 'type', 'quantity')
         
     class Meta:
         ordering = ['type']
     
+    def __str__(self):
+        return "%s: %s (%d)" % (self.station, self.type, self.quantity)
+
     @property
     def fuel_info(self):
         fuel_info = self.station.tower.fuel.get(type=self.type)
@@ -265,9 +290,13 @@ class PlayerStationFuelSupply(models.Model):
             
         return int(burn_rate)
 
-    def need(self, days=14):
+    def need(self, days):
         if self.fuel_info.purpose == 'Reinforce':
-            return None
+            attrib = self.station.tower.attribute_by_name('capacitySecondary')
+            max_volume = attrib.value
+            max_qty = int(max_volume / self.type.volume)
+            need = max_qty - self.quantity
+            return need
         
         hours = days*24
         need = (self.consumption * hours) - self.quantity
@@ -298,3 +327,72 @@ class PlayerStationFuelSupply(models.Model):
     @property
     def runs_until(self):
         return datetime.utcnow() + self.time_remaining
+    
+class PlayerStationReaction(models.Model):
+    '''
+    All of the items that can be mined and/or reacted at a POS.
+    
+    This includes moon mining, basic reactions, and advanced reactions.
+    '''
+    
+    q = Q(group__name__in=['Moon Materials', 'Intermediate Materials',
+                           'Composite']) 
+    q = q & Q(published=True)
+    
+    station = models.ForeignKey(PlayerStation, related_name='reactions', 
+                                edit_inline=models.TABULAR, min_num_in_admin=6)
+    type = models.ForeignKey(Item, limit_choices_to = q,
+                             related_name='poses_reacting', core=True)
+    
+    class Admin:
+        list_display = ('station', 'type', )
+        
+    class Meta:
+        ordering = ['type']
+
+    def __str__(self):
+        return "%s: %s" % (self.station, self.type)
+    
+    @property
+    def is_mining(self):
+        return self.type.group.name == 'Moon Materials'
+    
+    @property
+    def is_reaction(self):
+        if self.type.group.name == 'Moon Materials':
+            return False
+        else:
+            return True
+        
+    def reaction(self):
+        return self.type.reacts.all()[0].reaction
+
+    def inputs(self):
+        return self.reaction().reactions.filter(input=True)
+
+    def output(self):
+        return self.reaction().reactions.filter(input=False)[0]
+
+    @property
+    def quantity(self):
+        if self.is_mining:
+            return 100
+        else:
+            return self.output().quantity
+    
+    def consumes(self):
+        '''
+        Return a tuple of (item, quantity) for all items consumed by this
+        reaction.
+        '''
+        if self.is_mining:
+            return ()
+        else:
+            return [(i.item, i.quantity) for i in self.inputs()]
+                
+    def produces(self):
+        '''
+        Return a tuple of (item, quantity) for what this reacton outputs.
+        '''
+        return [(self.type, self.quantity)] 
+            

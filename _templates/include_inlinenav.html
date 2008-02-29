@@ -4,7 +4,9 @@
 {% for nav in inline_nav %}{% spaceless %}
 <tr>
 	<td><img src="{{ nav.icon32 }}"></td>
-	<td><a href="{{ nav.get_absolute_url }}">{{ nav.name }}<a href="{{ nav.get_absolute_url }}"></td>
+	<td><a href="{{ nav.get_absolute_url }}">
+	{{ nav.name }}
+	<a href="{{ nav.get_absolute_url }}"></td>
 	<td>{{ nav.note }}</td>
 </tr>
 {% endspaceless %}{% endfor %}

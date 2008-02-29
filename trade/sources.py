@@ -64,14 +64,15 @@ QtcIndustries = {
 }
 
 EveCentral = {
-    'feed': "http://eve-central.com/home/marketstat_xml.html?regionlimit=%(region_id)s&typeid=%(item_id)s",
+    'feed': "http://eve-central.com/home/quicklook.html?typeid=%(item_id)s&outtype=xml",
     'url': "http://www.eve-central.com/",
-    'description': "Min/max sell/buy prices from %(region)s.",
-    'name': "EVE Central: %(region)s",
-    'regions': ({'name':'Domain',    'priority':151}, # Amarr: Amarr
-                {'name':'The Forge', 'priority':154}, # Caldari: Jita
-                {'name':'Heimatar',  'priority':152}, # Minmatar: Rens
-                {'name':'Essence',   'priority':153}, # Gallente: Oursalert
+    'description': "Min/max sell/buy prices from %(system)s.",
+    'name': "EVE Central: %(system)s",
+    'systems': (
+                 {'name':'Amarr',      'priority':151}, # Amarr: Amarr
+                 {'name':'Rens',       'priority':152}, # Minmatar: Rens
+                 {'name':'Oursulaert', 'priority':153}, # Gallente: Oursalert
+                 {'name':'Jita',       'priority':154}, # Caldari: Jita
                 ),
     'categories': ('Charge','Drone','Commodity','Material','Implant','Ship'),
 }

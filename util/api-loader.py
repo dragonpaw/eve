@@ -174,6 +174,7 @@ def update_stations():
         try:
             station = Station.objects.get(id=s.stationID)
         except Station.DoesNotExist:
+            print "system_id: %s" % s.solarSystemID
             solarsystem = SolarSystem.objects.get(id=s.solarSystemID)
             station = Station(id=s.stationID, solarsystem=solarsystem, 
                               region=solarsystem.region, constellation=solarsystem.constellation)
@@ -221,16 +222,16 @@ else:
     
 for account in accounts:
     try:
-        print "-" * 78
-        print "Starting: %s(%s)" % (account.user, account.id)
         messages = account.refresh(force=options.force)
+        output( "-" * 78 )
+        output ("Account: %s(%s)" % (account.user, account.id))
         for x in messages:
             output("-- %s" % x['name'])
             output("  " +("\n  ".join(x['messages'])))
     except Exception, e:
         output ("Failed! [%s]" % e)
+        exit_code = 1
         if DEBUG:
             raise
-        exit_code = 1
    
 exit()

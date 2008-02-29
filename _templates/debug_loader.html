@@ -10,12 +10,17 @@
 {% block content %}
 <!-- {{ points|pprint }} -->
 
-    <div class="flot" id="graph-chars"></div>
-    <p>Total characters with pending refreshes: {{ total_chars }}</p>
+	<div class="flot" id="graph-chars"></div>
+	<table>
+	<tr><th>Total characters with refreshes currently due</th><td>{{ chars.0|default:0 }}</td></tr>
+    <tr><th>Total characters with upcoming refreshes</th><td>{{ total_chars }}</td></tr>
+    </table>
     
-    <div class="flot" id="graph-poses"></div>
-	<p>Total POSes with pending refreshes: {{ total_poses }}</p>
-    
+	<div class="flot" id="graph-poses"></div>
+	<table>
+    <tr><th>Total POSes with pending refreshes due</th><td>{{ poses.0|default:0 }}</td></tr>
+	<tr><th>Total POSes with upcoming refreshes</th><td>{{ total_poses }}</td></tr>
+	</table>
 
 <script id="source" language="javascript" type="text/javascript">
 $(function () {
@@ -29,7 +34,7 @@ $(function () {
         points: { show: true },
         xaxis: {
             min: 0,
-            max: 120,
+            max: 60,
         	tickSize: 10,
         }, 
         yaxis: {
@@ -48,8 +53,8 @@ $(function () {
         points: { show: true },
         xaxis: {
             min: 0,
-            max: 12,
-        	ticks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+            max: 6,
+        	tickSize: 1
         }, 
         yaxis: {
             min: 0,

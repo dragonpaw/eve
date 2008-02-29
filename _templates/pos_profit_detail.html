@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load trade %}
+{% load markup %}
+
+{% block content %}
+<!-- pos: {{ pos|pprint }} --> 
+<h3>{{ pos.moon }}</h3>
+
+{% if inline_nav %}
+<h4>Actions</h4>
+{% include "include_inlinenav.html" %}
+{% endif %}
+
+<h4>Weekly Costs & Profits</h4>
+<table class="pos-fuel">
+	<tr>
+   		<th>Fuel</th>
+    	<th class="number">Qty</th>
+    	<th class="number">Price</th>
+    	<th class="number">Total</th>
+    </tr>
+	{% for fuel in fuels %}
+	{% spaceless %}
+	{% if fuel.weekly %}
+		<tr>
+		<th><a href="{{ fuel.type.get_absolute_url }}">
+		  <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
+		  <td>{{ fuel.weekly|comma }}</td>
+		  <td>{{ fuel.price|floatformat:2|comma }}</td>
+		  <td>{{ fuel.weekly_cost|isk }}</td>
+		</tr>
+	{% endif %}
+	{% endspaceless %}{% endfor %}
+    <tr><th class="runtime" colspan=2>Weekly cost</th>
+    <th class="number" colspan="3">- {{ weekly_cost|floatformat:2|comma }} ISK</th></tr>
+	<tr>
+		<th>Material</th>
+		<th class="number">Qty</th>
+		<th class="number">Price</th>
+		<th class="number">Total</th>
+	</tr>
+	{% for r in reaction_values %}
+	<tr>
+        <th><a href="{{ r.type.get_absolute_url }}">
+            <img src="{{ r.type.icon16 }}"> {{ r.type }}</a></th>
+         <td>{{ r.weekly|comma }}</td>
+         <td>{{ r.sell|floatformat:2|comma }}</td>
+         <td>{{ r.weekly_value|isk }}</td>
+    </tr>
+    {% endfor %}
+    <tr><th colspan=2>Weekly value</th>
+    <th class="number" colspan="3">+ {{ weekly_value|floatformat:2|comma }} ISK</th></tr>
+    <tr><th colspan=2>Total</th>
+    {% if profitable %}
+    <th class="number index-sell" colspan="3">+ {{ weekly_total|floatformat:2|comma }} ISK</th></tr>
+    {% else %}
+    <th class="number index-buy" colspan="3">{{ weekly_total|floatformat:2|comma }} ISK</th></tr>
+    {% endif %}
+</table>
+
+
+<h4>Reactions & Mining</h4>
+{% if reactions %}
+    <ul class="links">
+    {% for r in reactions %}
+        <li><a href="{{ r.type.get_absolute_url }}">
+        <img src="{{ r.type.icon32 }}">
+        <span class="name">{{ r.type.name }}</span><br>
+        <span class="note">{% if r.is_mining %}Moon Mining{% else %}Reaction{% endif %}</span>
+        </a></li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>None.</p>
+{% endif %}
+
+<h4>Type</h4>
+<ul class="links">
+    <li><a href="{{ pos.tower.get_absolute_url }}"><img src="{{ pos.tower.icon32 }}">
+    <span class="name">{{ pos.tower }}</span></a></li>
+</ul>
+
+{% endblock %}

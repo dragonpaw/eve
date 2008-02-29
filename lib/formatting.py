@@ -83,15 +83,34 @@ def title(nav):
             temp.append(x.name)
     return " &laquo; ".join(temp)
         
+class NavigationElement:
+    def __init__(self, name, url, icon=None, note=None, id=None):
+        from eve.ccp.models import get_graphic
+        if icon is not None:
+            graphic = get_graphic(icon)
+        else:
+            graphic = None
+            
+        self.url = url
+        self.name = name
+        self.graphic = graphic
+        self.note = note
+        self.id = id
+    
+    def get_absolute_url(self):
+        if self.id:
+            return self.url % self.id
+        else:
+            return self.url
+        
+    def icon32(self):
+        if self.graphic is None:
+            return None
+        else:
+            return self.graphic.icon32
 
 def make_nav(name, url, icon, note=None):
-    from eve.ccp.models import get_graphic
-
-    if icon is not None:
-        graphic = get_graphic(icon)
-        return {'name':name, 'get_absolute_url':url,'icon32':graphic.icon32, 'note':note}
-    else:
-        return {'name':name, 'get_absolute_url':url,'icon32':None, 'note':note}
+    return NavigationElement(name, url, icon, note=note, id=None)
 
 def javascript_points(list):
     if isinstance(list, dict):

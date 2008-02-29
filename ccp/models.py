@@ -84,23 +84,23 @@ class Alliance(models.Model):
 
     @property
     def icon16(self):
-        return self.icon(16)
+        return self.get_icon(16)
 
     @property
     def icon32(self):
-        return self.icon(32)
+        return self.get_icon(32)
 
     @property
     def icon64(self):
-        return self.icon(64)
+        return self.get_icon(64)
 
     @property
     def icon128(self):
-        return self.icon(128)
+        return self.get_icon(128)
 
-    def icon(self, size):
+    def get_icon(self, size):
         if alliance_graphics.has_key(self.id):
-            return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, id[self.id])
+            return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, alliance_graphics[self.id])
         else:
             return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, '01_01')
     
@@ -111,11 +111,24 @@ class Alliance(models.Model):
     def delete(self):
         # Break the links to the alliance, so they are clean, and don't 
         # get cascade deleted.
-        print "Removing executor corp."
+        print "Brakign all links for alliance '%s'." % self.name
+        print "Unlinking executor corp."
         self.executor = None
         self.save()
         for c in self.corporations.all():
-            print "Breaking link from alliance '%s' to corp '%s'" % (self.name, c.name)
+            print "Breaking link to corp '%s'" % c.name
+            c.alliance = None
+            c.save()
+        for s in self.solarsystems_lost.all():
+            print "Removing alliance from old sov in: %s" % s
+            s.alliance_old = None
+            s.save()
+        for s in self.solarsystems.all():
+            print "Removing alliance from new sov in: %s" % s
+            s.alliance = None
+            s.save()
+        for c in self.constellations.all():
+            print "Removing alliance from sov in constellation: %s" % c
             c.alliance = None
             c.save()
         super(Alliance, self).delete()
@@ -340,7 +353,7 @@ class Faction(models.Model):
         else:
             return None
 
-    def icon(self, size):
+    def get_icon(self, size):
         id = self.iconid()
         if id is None:
             return None
@@ -349,7 +362,7 @@ class Faction(models.Model):
         
     @property
     def icon32(self):
-        return self.icon(32)
+        return self.get_icon(32)
 
 class Race(models.Model):
     """Table contains the basic races in the game:
@@ -374,6 +387,9 @@ class Race(models.Model):
         
     def __str__(self):
         return self.name
+
+    def delete(self):
+        raise 'ERROR: Tried to remove an immutable.'
 
 # class Character_raceskills(models.Model):
 #     race = models.ForeignKey(Race, null=True, blank=True, db_column='raceid')
@@ -616,7 +632,6 @@ class Attribute(models.Model):
     highisgood = models.BooleanField()
     
     class Meta:
-
         ordering = ('attributename',)
 
     class Admin:
@@ -1136,7 +1151,6 @@ class Item(models.Model):
         else:
             return self.real_description
 
-    #-------------------------------------------------------------------------
     # All things iconic.
     @property
     def icon16(self):
@@ -1154,7 +1168,6 @@ class Item(models.Model):
     def icon128(self):
         return self.graphic.get_icon(128, item=self)
 
-    #-------------------------------------------------------------------------
     # Fancy way to get the attributes and their values.    
     def attributes(self):
         set = Attribute.objects.extra(
@@ -1183,7 +1196,26 @@ class Item(models.Model):
             except IndexError:
                 s.valuefloat = 1
         return set
-            
+    
+    def attribute_by_name(self, name):
+        set = Attribute.objects.extra(
+            select={
+                'valueint':'ccp_typeattribute.valueint', 
+                'valuefloat':'ccp_typeattribute.valuefloat', 
+            }, 
+            tables=['ccp_typeattribute'], 
+            where=[
+                'ccp_typeattribute.attributeid = ccp_attribute.attributeid', 
+                'ccp_typeattribute.typeid = %s',
+                'ccp_attribute.attributeName = %s',
+            ], 
+            params=[self.id, name]
+        )
+        if set.count() > 0:
+            return set[0]
+        else:
+            return None
+    
     def effects(self):
         set = Effect.objects.extra(
             tables=['dgmtypeeffects'], 
@@ -1195,7 +1227,6 @@ class Item(models.Model):
         )
         return set
         
-    #-------------------------------------------------------------------------
     # Skill-orientated methods
     @property
     def is_skill(self):
@@ -1215,7 +1246,6 @@ class Item(models.Model):
     # Allows for a search for just skills.
     skill_objects = ItemSkillManager()
 
-    #-------------------------------------------------------------------------
     # Construction-orientated methods
     @property
     def is_blueprint(self):
@@ -1382,7 +1412,7 @@ class Reaction(models.Model):
     reaction = models.ForeignKey(Item, db_column='reactiontypeid', related_name='reactions')
     input = models.BooleanField()
     item = models.ForeignKey(Item, db_column='typeid', related_name='reacts')
-    raw_quantity = models.IntegerField(db_column='quantity')
+    quantity = models.IntegerField()
     
     class Admin:
         pass
@@ -1395,10 +1425,6 @@ class Reaction(models.Model):
         if self.input == 1:
             arrow = '<-'
         return "%s %s %s[%d]" % (self.reaction, arrow, self.item, self.quantity)
-
-    @property
-    def quantity(self):
-        return self.raw_quantity * 100
 
 #class MapcClestialStatistics(models.Model):
 #    id = models.IntegerField(primary_key=True, db_column='celestialid')
@@ -1492,24 +1518,28 @@ class Region(models.Model):
         else:
             return None
         
-    def icon(self, size):
+    def get_icon(self, size):
         owner = self.owner()
         
         if owner is None:
             return None
         else:
-            return owner.icon(32)
+            return owner.get_icon(32)
     
     @property
     def icon32(self):
-        return self.icon(32)
+        return self.get_icon(32)
+
+    def delete(self):
+        raise 'ERROR: Tried to remove an immutable.'
 
 class Constellation(models.Model):
     id = models.IntegerField(primary_key=True, db_column='constellationid')
     name = models.CharField(max_length=300, db_column='constellationname', 
                             core=True)
     region = models.ForeignKey(Region, db_column='regionid', 
-                               edit_inline=models.TABULAR, related_name='constellations')
+                               edit_inline=models.TABULAR,
+                               related_name='constellations')
     faction = models.ForeignKey(Faction, null=True, blank=True, 
                                 db_column='factionid')
     x = models.FloatField()
@@ -1522,7 +1552,9 @@ class Constellation(models.Model):
     zmin = models.FloatField()
     zmax = models.FloatField()
     radius = models.FloatField()
-    alliance = models.ForeignKey(Alliance, null=True, blank=True, db_column='allianceID')
+    alliance = models.ForeignKey(Alliance, null=True, blank=True,
+                                 db_column='allianceID',
+                                 related_name='constellations')
     sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDateTime')
     
     class Meta:
@@ -1552,27 +1584,30 @@ class Constellation(models.Model):
     def moons(self):
         return self.map.filter(type__name='Moon')
 
-    def icon(self, size):
+    def get_icon(self, size):
         if self.alliance:
-            return self.alliance.icon(size)
+            return self.alliance.get_icon(size)
         else:
             return None
 
     @property
     def icon16(self):
-        return self.icon(16)
+        return self.get_icon(16)
     
     @property
     def icon32(self):
-        return self.icon(32)
+        return self.get_icon(32)
 
     @property
     def icon64(self):
-        return self.icon(64)
+        return self.get_icon(64)
     
     @property
     def icon128(self):
-        return self.icon(128)
+        return self.get_icon(128)
+    
+    def delete(self):
+        raise 'ERROR: Tried to remove an immutable.'    
     
 class SolarSystem(models.Model):
     region = models.ForeignKey(Region, db_column='regionid', related_name='solarsystems')
@@ -1598,12 +1633,15 @@ class SolarSystem(models.Model):
     regional = models.CharField(max_length=15)
     #constellation = models.CharField(max_length=15)
     security = models.FloatField()
-    faction = models.ForeignKey(Faction, null=True, blank=True, db_column='factionid', 
+    faction = models.ForeignKey(Faction, null=True, blank=True,
+                                db_column='factionid', 
                                 related_name='solarsystems')
     radius = models.FloatField()
     suntypeid = models.IntegerField(null=True, blank=True)
     securityclass = models.CharField(blank=True, max_length=6)
-    alliance = models.ForeignKey(Alliance, null=True, blank=True, db_column='allianceid')
+    alliance = models.ForeignKey(Alliance, null=True, blank=True, 
+                                 db_column='allianceid',
+                                  related_name='solarsystems')
     alliance_old = models.ForeignKey(Alliance, null=True, blank=True, 
                                      related_name='solarsystems_lost')
     sov = models.IntegerField(null=True, blank=True, db_column='sovereigntyLevel')
@@ -1618,6 +1656,9 @@ class SolarSystem(models.Model):
         
     def __str__(self):
         return self.name
+    
+    def delete(self):
+        raise 'ERROR: Tried to remove an immutable.'
     
     def moons(self):
         return self.map.filter(type__name='Moon')
@@ -1910,7 +1951,9 @@ class Station(models.Model):
             return self.corporation.alliance.icon32
         else:
             return self.type.icon32
-        
+    
+    def delete(self):
+        raise 'ERROR: Tried to remove an immutable.'    
     
 class StationResourcePurpose(models.Model):
     id = models.IntegerField(primary_key=True, db_column='purpose')
