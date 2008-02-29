@@ -57,7 +57,7 @@ def debug_loader(request):
         
         remain = c.cache_remaining()
         if remain:
-            mins = remain.seconds / 60
+            mins = remain.seconds / 60.0
         else:
             mins = 0
         if chars.has_key(mins):
