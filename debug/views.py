@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
@@ -50,14 +52,16 @@ def debug_loader(request):
     d['chars'] = chars
 
     total_chars = 0
+    now = datetime.utcnow()
+    now = now - timedelta(seconds=now.second)
     for c in Character.objects.all():
         if c.user.is_stale:
             continue
         total_chars += 1
         
-        remain = c.cache_remaining()
+        remain = max(c.cached_until - now, timedelta(0))
         if remain:
-            mins = remain.seconds / 60.0
+            mins = remain.seconds / 60
         else:
             mins = 0
         if chars.has_key(mins):
