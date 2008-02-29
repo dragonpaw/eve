@@ -290,16 +290,19 @@ class PlayerStationFuelSupply(models.Model):
             
         return int(burn_rate)
 
-    def need(self, days):
+    def goal(self, days):
         if self.fuel_info.purpose == 'Reinforce':
             attrib = self.station.tower.attribute_by_name('capacitySecondary')
             max_volume = attrib.value
-            max_qty = int(max_volume / self.type.volume)
-            need = max_qty - self.quantity
+            need = int(max_volume / self.type.volume)
             return need
         
         hours = days*24
-        need = (self.consumption * hours) - self.quantity
+        need = self.consumption * hours
+        return need
+
+    def need(self, days):
+        need = self.goal(days) - self.quantity
         return max(need, 0)
 
     @property
