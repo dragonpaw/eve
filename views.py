@@ -46,7 +46,7 @@ def home(request):
     else:
         objects.extend([login_nav, user_create_nav])
     
-    objects.sort(lambda a,b: cmp(a['name'], b['name']))
+    objects.sort(key=lambda x: x.name)
     
     d['inline_nav'] = objects
     d['title'] = "EVE Tool"

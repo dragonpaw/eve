@@ -1,12 +1,13 @@
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-#from django import newforms as forms
+from django import newforms as forms
 from django.http import HttpResponseRedirect, Http404
 from django.db.models.query import Q, QNot
 
 from datetime import datetime
 
+from eve.ccp.models import Item
 from eve.pos.models import PlayerStation
 from eve.user.models import Character
 from eve.lib.formatting import make_nav
@@ -19,6 +20,20 @@ pos_profit_nav = make_nav('Profits', '/pos/profit/', '06_03',
                           'Profits and costs for all of your POSes')
 pos_monkey_nav = make_nav('POS Helpers', '/pos/helpers/','02_16',
                           'Allow others to see POS status.')
+
+DELEGATE_NAV = make_nav('Delegate access to this POS', '/pos/%d/delegations/', '02_16',
+                        'Allow other people to see this specific POS.'
+                        )
+REFUEL_NAV = make_nav('Update Fuel Quantities', '/pos/%d/refuel/', '10_07',
+                      'The EVE Widget automatically refreshes all POS data every 6 hours. '
+                      + 'Click here to update quantities if you have just refueled the tower and do not wish '
+                      + 'to wait.')
+REACTION_NAV = make_nav('Configure Reactions', '/pos/%d/reactions/', '50_04',
+                        'Update what mining/reactions this POS is running.')
+PROFIT_NAV = make_nav('View Profit & Loss', '/pos/%d/profit/', '06_03',
+                      'View the profit/loss for this POS.')
+
+DEFAULT_DAYS = 30
 
 def get_poses(request):
     corps = {}
@@ -57,7 +72,7 @@ def check_rights(request, pos):
     raise Http404
 
 @login_required
-def list(request):
+def pos_list(request):
     d = {}
     d['nav'] = [pos_nav]
     
@@ -68,51 +83,104 @@ def list(request):
 
 
 @login_required
-def detail(request, station_id, days=14):
+def fuel_detail(request, station_id, days=DEFAULT_DAYS):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
-    profile = request.user.get_profile()
     
     d = {}
     d['nav'] = [pos_nav, pos]
     d['pos'] = pos
     d['days'] = days
+    d['id'] = pos.id # Used by the inline nav function.
+    fuels = []
+    for f in pos.fuel.all():
+        fuels.append({'need':f.need(days=days),
+                      'run_time':f.time_remaining,
+                      'type':f.type,
+                      'fuel':f})
+        
+    fuels.sort(key=lambda x:x['type'].name)
+    d['fuels'] = fuels
+    
+
+    nav = []
+    # Build of the nav options for the POS.
+    for x in (REFUEL_NAV, REACTION_NAV, PROFIT_NAV):
+        x.id = pos.id
+        nav.append(x)
+    
+    if is_director_of(request.user, pos):
+        x = DELEGATE_NAV
+        x.id = pos.id
+        nav.append(x)
+
+    d['inline_nav'] = nav
+    
+    return render_to_response('pos_fuel_detail.html', d,
+                              context_instance=RequestContext(request))
+
+@login_required
+def profit_detail(request, station_id):
+    pos = get_object_or_404(PlayerStation, id=station_id)
+    check_rights(request, pos)
+    profile = request.user.get_profile()
+    
+    d = {}
+    d['nav'] = [pos_nav, pos_profit_nav, pos]
+    d['pos'] = pos
     cost = 0
     fuels = []
     for f in pos.fuel.all():
-        if f.purpose == 'Reinforce':
-            continue
-                
         price = profile.get_buy_price(f.type)
-        weekly = f.consumption * 24 * 7
-        weekly_cost = price * weekly
-        cost += weekly_cost
-        fuels.append({'price':price,'weekly':weekly,'weekly_cost':weekly_cost,'type':f.type,'fuel':f})
+        
+        weekly = 0
+        if f.purpose != 'Reinforce':
+            weekly = f.consumption * 24 * 7
+            weekly_cost = price * weekly
+            cost += weekly_cost
+                
+        fuels.append({'price':price,
+                      'weekly':weekly,
+                      'weekly_cost':weekly_cost,
+                      'type':f.type,
+                      'fuel':f})
         
     fuels.sort(key=lambda x:x['type'].name)
     d['weekly_cost'] = cost
     d['fuels'] = fuels
+    d['reactions'] = list( pos.reactions.all() )
+    d['reactions'].sort(key=lambda x:'%d-%s' % (x.is_reaction, x.type.name))
     
+    reaction_values = []
+    weekly_value = 0
+    for type, quantity in pos.reacted_quantities():
+        r = {}
+        r['weekly'] = 24 * 7 * quantity
+        r['sell'] = profile.get_sell_price(type)
+        r['weekly_value'] = r['sell'] * r['weekly']
+        r['type'] = type
+        reaction_values.append(r)
+        weekly_value += r['weekly_value']
+    reaction_values.sort(key=lambda x:x['type'].id)
+    d['reaction_values'] = reaction_values
+    d['weekly_value'] = weekly_value
+    d['weekly_total'] = weekly_value - cost
+    d['profitable'] = d['weekly_total'] > 0 
+    nav = []
     # Build of the nav options for the POS.
-    refuel_nav = make_nav('Update Fuel Quantities', '/pos/%d/refuel/' % pos.id, '10_07',
-                               'The EVE Widget automatically refreshes all POS data every 6 hours. '
-                               + 'Click here to update quantities if you have just refueled the tower and do not wish '
-                               + 'to wait.')
-    delegate_nav = make_nav('Delegate access to this POS', '/pos/%s/delegations/' % pos.id, '02_16',
-                                 'Allow other people to see this specific POS. Used for personal POSes usually.'
-                                 )
-    d['inline_nav'] = [refuel_nav]
-    if is_director_of(request.user, pos):
-        d['inline_nav'].append(delegate_nav)
+    for x in (REACTION_NAV,):
+        x.id = pos.id
+        nav.append(x)
+    d['inline_nav'] = nav
     
-    return render_to_response('pos_detail.html', d, context_instance=RequestContext(request))
-
+    return render_to_response('pos_profit_detail.html', d,
+                              context_instance=RequestContext(request))
+    
 @login_required
-def consumption(request, days=14):
+def consumption(request, days=DEFAULT_DAYS):
     d = {}
     d['nav'] = [pos_nav, pos_consumption_nav]
     
-    hours = days * 24 # Hours.
     profile = request.user.get_profile()
     
     corps = []
@@ -125,14 +193,10 @@ def consumption(request, days=14):
         pos_costs = []
         for pos in pos_list['pos']:
             for fuel in pos.fuel.all():
-                if fuel.purpose == 'Reinforce':
-                    continue
-                
                 if not needs.has_key(fuel.type.id):
                     needs[fuel.type.id] = {
                                            'purpose':fuel.purpose,
                                            'quantity':0,
-                                           'ideal_quantity':0,
                                            'consumption':0,
                                            'weekly':0,
                                            'needed':0,
@@ -142,10 +206,10 @@ def consumption(request, days=14):
                 
                 f = needs[fuel.type.id]
                 f['quantity'] += fuel.quantity
-                f['consumption'] += fuel.consumption
-                f['ideal_quantity'] += fuel.consumption * hours
-                f['weekly'] += fuel.consumption * 24 * 7
                 f['needed'] += fuel.need(days=days)
+                if fuel.purpose != 'Reinforce':
+                    f['consumption'] += fuel.consumption
+                    f['weekly'] += fuel.consumption * 24 * 7
           
         fuels = needs.values()
         for f in fuels:
@@ -168,7 +232,7 @@ def consumption(request, days=14):
     return render_to_response('pos_consumption.html', d, context_instance=RequestContext(request))
 
 @login_required
-def profit(request):
+def profit_list(request):
     d = {}
     d['nav'] = [pos_nav, pos_profit_nav]
     
@@ -180,30 +244,103 @@ def profit(request):
         corp_name = pos_list['name']
         prices = {}
         cost_weekly = 0
-        pos_costs = []
+        income_weekly = 0
+        m3_weekly = 0
+        poses = []
         for pos in pos_list['pos']:
             pos_weekly_cost = 0
+            pos_weekly_value = 0
+            m3 = 0
             for fuel in pos.fuel.all():
                 if fuel.purpose == 'Reinforce':
                     continue
                 if not prices.has_key(fuel.type.id):
-                    buy_price = profile.get_buy_price(fuel.type)
-                    prices[fuel.type.id] = buy_price
-
-                
+                    prices[fuel.type.id] = profile.get_buy_price(fuel.type)
                 pos_weekly_cost += fuel.consumption * 24 * 7 * prices[fuel.type.id]
-            pos_costs.append({'pos':pos, 'cost':pos_weekly_cost})
+                
+            for type, quantity in pos.reacted_quantities():
+                if not prices.has_key(type.id):
+                    prices[type.id] = profile.get_sell_price(type)
+                pos_weekly_value += prices[type.id] * 24 * 7 * quantity
+                m3 += type.volume * 24 * 7 * quantity
+            profit = pos_weekly_value - pos_weekly_cost
+            poses.append({'pos':pos, 
+                          'cost':pos_weekly_cost, 
+                          'value':pos_weekly_value,
+                          'profit':profit,
+                          'm3':m3,
+                          'is_profitable': profit > 0,
+                          })
             cost_weekly += pos_weekly_cost
+            income_weekly += pos_weekly_value
+            m3_weekly += m3
         corps.append({'name':corp_name,
                       'cost_weekly':cost_weekly,
-                      'poses':pos_costs,
+                      'income_weekly':income_weekly,
+                      'profit_weekly': income_weekly - cost_weekly,
+                      'm3_weekly':m3_weekly,
+                      'poses':poses,
                       })
         
     d['fuels'] = corps
     return render_to_response('pos_profits.html', d, context_instance=RequestContext(request))
 
+class ReactionForm(forms.Form):
+    q = Q(group__name__in=['Moon Materials', 'Intermediate Materials',
+                           'Composite']) 
+    q = q & Q(published=True)
+    reactions = [('', 'None')] + [(x.slug, x.name) for x in Item.objects.filter(q)]
+    reactions.sort(key=lambda x:x[0])
+    
+    r1 = forms.ChoiceField(label='1', choices=reactions, required=False)
+    r2 = forms.ChoiceField(label='2', choices=reactions, required=False)
+    r3 = forms.ChoiceField(label='3', choices=reactions, required=False)
+    r4 = forms.ChoiceField(label='4', choices=reactions, required=False)
+    r5 = forms.ChoiceField(label='5', choices=reactions, required=False)
+    r6 = forms.ChoiceField(label='6', choices=reactions, required=False)
+    r7 = forms.ChoiceField(label='7', choices=reactions, required=False)
+    r8 = forms.ChoiceField(label='8', choices=reactions, required=False)
+    r9 = forms.ChoiceField(label='9', choices=reactions, required=False)
+    r10 = forms.ChoiceField(label='10', choices=reactions, required=False)
+
 @login_required
-def refuel(request, station_id, days=14):
+def setup_reactions(request, station_id):
+    template = 'pos_edit_reactions.html'
+    pos = get_object_or_404(PlayerStation, id=station_id)
+    check_rights(request, pos)
+    
+    d = {}
+    d['pos'] = pos
+    d['nav'] = [pos_nav, pos_profit_nav, pos]
+    
+    if request.method == 'POST':
+        form = ReactionForm(request.POST)
+        if not form.is_valid():
+            render_to_response(template, d,
+                              context_instance=RequestContext(request))
+        else:
+            pos.reactions.all().delete()
+            for slug in form.cleaned_data.values():
+                if slug == '':
+                    continue
+                type = Item.objects.get(slug=slug)
+                pos.reactions.create(station=pos, type=type).save()
+            return HttpResponseRedirect( pos.get_profit_url() )
+    else:
+        index = 1
+        reactions = {}
+        for r in pos.reactions.all():
+            key = "r%d" % index
+            reactions[key] = r.type.slug
+            index += 1
+        
+        d['form'] = ReactionForm(reactions)
+        return render_to_response(template, d,
+                                  context_instance=RequestContext(request))
+
+
+@login_required
+def refuel(request, station_id, days=DEFAULT_DAYS):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
     if request.method == 'POST':
@@ -247,7 +384,7 @@ def monkey_list(request):
 
 def is_director_of(me, you):
     '''Security check to make sure that profile 'me' has a director role that would allow
-    them to alter user 'you'. The 'you' involved may be a charcter, or a pos. (Or anything
+    them to alter user 'you'. The 'you' involved may be a character, or a pos. (Or anything
     with a corporation_id really.)'''
     
     profile = me.get_profile()

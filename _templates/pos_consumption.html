@@ -30,8 +30,8 @@
 	<tr><th>Total cost:</th><td colspan="3">{{ corp.cost_total|floatformat:0|comma }} ISK</td></tr>
 </table>
 	
-<p>At the moment, Strontium is not included, as it is not yet possible to determine the 'ideal' quantity
-to keep on hand.</p>
+<p>Strontium need is based on the assumption that you wish to completely
+fill the Strontium bay on the towers.</p>
 
 <p>This table only takes into account those fuels within the control
 towers. Remember to subtract any fuel you may have in a hangar or fuel
@@ -55,12 +55,14 @@ well-balanced fuel supply.</p>
     	<th class="number">Week</th>
     </tr>
 	{% for fuel in corp.fuel %}{% spaceless %}
+	{% if fuel.weekly %}
 	<tr>
 	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
 	  <td>{{ fuel.quantity|comma }}</td>
 	  <td>{{ fuel.consumption|comma }}</td>
 	  <td>{{ fuel.weekly|comma }}</td>
 	</tr>
+	{% endif %}
 	{% endspaceless %}
 	{% endfor %}
 	<tr><th>Weekly cost:</th><td colspan="4">{{ corp.cost_weekly|floatformat:0|comma }} ISK</td></tr>

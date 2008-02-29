@@ -24,10 +24,11 @@ TRANSACTION_CUTOFF = timedelta(days=30)
 STALE_ACCOUNT = timedelta(days=14)
 
 class UserProfile(models.Model):
-    #url = models.URLField() 
-    #home_address = models.TextField() 
-    #phone_numer = models.PhoneNumberField() 
     user = models.ForeignKey(User, unique=True)
+    pos_days = models.IntegerField("Days of POS fuel desired", default=30)
+    pos_shipping_cost = models.DecimalField("ISK per m3 to assume for freight",
+                                            max_digits=10, decimal_places=2)
+    
 
     class Meta:
         ordering = ('user',)
@@ -300,6 +301,7 @@ class Account(models.Model):
 
         except eveapi.Error, e:
             if e.message in ('Authentication failure',
+                             'Invalid accountKey provided',
                              'Failed getting user information', 
                              'Cached API key authentication failure'): 
                 m.append("This account has an invalid API key. Deleted.")

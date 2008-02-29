@@ -13,6 +13,10 @@ from eve.trade.sources import QtcIndustries, EveCentral
 from datetime import date
 from sys import exit
 
+def text(node):
+    '''XML is so annoying to deal with.'''
+    return node[0].firstChild.data
+
 def find_mineral(node):
     pass
 
@@ -94,55 +98,93 @@ def fetch_url(url, id=None):
     
     response = http.getresponse()
     if response.status != 200:
-        raise RuntimeError("'%s' request failed (%d %s)" % (path, response.status, response.reason))
+        raise RuntimeError("'%s' request failed (%d %s)" % (path,
+                                                            response.status,
+                                                            response.reason))
     
     return response
 
 def update_evecentral():
-    for r in  EveCentral['regions']:
-        region = r['name']
-        region = Region.objects.get(name=region)
-        d = {'region':region.name, 'region_id':region.id}
+    indexes = {}
+    group_filter = Q(published=True, marketgroup__isnull=False)
+    
+    for x in EveCentral['systems']:
+        system = SolarSystem.objects.get(name=x['name'])
+        d = {'system':system.name, }
         name = EveCentral['name'] % d
         index, created = MarketIndex.objects.get_or_create(name=name)
         index.url = EveCentral['url']
         index.note = EveCentral['description'] % d
-        index.priority = r['priority']
+        index.priority = x['priority']
         index.save()
-        print "Starting: %s" % name
+        indexes[system.name] = index
+        print "Updated index: %s" % index
         
-        for cat_name in EveCentral['categories']:
-            #print "Category: %s" % cat_name
-            cat = Category.objects.get(name=cat_name)
-            for group in cat.groups.all():
-                for item in group.items.filter(published=True,marketgroup__isnull=False):
-                    #print "%s/%s: %s[%s]" % (cat_name, group.name, item.name, item.id)
-                    try:
-                        response = fetch_url(EveCentral['feed'] % {'region_id':region.id,
-                                                                    'item_id':item.id})
-                        doc = xml.dom.minidom.parse(response)
-                        #print doc.getElementsByTagName('avg_buy_price')[0].localName
-                        buy = float(doc.getElementsByTagName('max_buy_price')[0].firstChild.data)
-                        buy = Decimal("%0.2f" % buy)
-                        sell = float(doc.getElementsByTagName('min_sell_price')[0].firstChild.data)
-                        sell = Decimal("%0.2f" % sell)
-                        
-                        node = doc.getElementsByTagName('total_buy_volume')[0].firstChild
-                        if node is not None:
-                            buy_qty = Decimal(node.data)
-                        else:
-                            buy_qty = Decimal(0)
-                            
-                        node = doc.getElementsByTagName('total_sell_volume')[0].firstChild
-                        if node is not None:
-                            sell_qty = Decimal(node.data)
-                        else:
-                            sell_qty = Decimal(0)
-                        
-                        v = index.set_value(item, buy=buy, sell=sell, buy_qty=buy_qty, sell_qty=sell_qty)
-                        print "%s: %s = %s/%s" % (index.name, item, buy, sell)
-                    except Exception, e:
-                        print "Error loading EVE Central for item. [%s]" % e
+    # Build the list of items to query.
+    items = {}
+    for cat_name in EveCentral['categories']:
+        cat = Category.objects.get(name=cat_name)
+        for group in cat.groups.all():
+            for item in group.items.filter(group_filter):
+                items[item.id] = item
+    
+    stations = {}
+    for id in items.keys():
+        item = items[id]
+        print "Looking up: %s[%d]" % (item.name, item.id)
+        
+        prices = {}
+        for x in indexes.keys():
+            prices[x] = { 'buy': Decimal(0), 'sell': Decimal(0) }
+            
+        try:
+            response = fetch_url(EveCentral['feed'] % {'item_id':item.id})
+            doc = xml.dom.minidom.parse(response)
+            for node in doc.getElementsByTagName('order'):
+                station = text(node.getElementsByTagName('station'))
+                #print "Station: %s" % station
+                
+                # Handle new stations.
+                if not stations.has_key(station):
+                    system = Station.objects.get(id=station).solarsystem
+                    if system.name in indexes.keys():
+                        is_wanted = True
+                    else:
+                        is_wanted = False
+                    stations[station] = {'system': system,
+                                         'is_wanted': is_wanted }
+                else:
+                    system = stations[station]['system']
+                #print "Is located in: %s" % stations[station]['system']
+                
+                # Skip the useless.
+                #print "Is wanted? %s" % stations[station]['is_wanted']
+                if not stations[station]['is_wanted']:
+                    continue
+                
+                local = prices[system.name]
+                
+                price = text(node.getElementsByTagName('price'))
+                price = price.replace(',','')
+                price = Decimal(price)
+                #print "Price: %s" % price
+
+                if node.parentNode.nodeName == 'sell_orders':
+                    #print "Is a sell order."
+                    if local['sell'] == 0 or price < local['sell']:
+                        local['sell'] = price
+                else:
+                    #print "Is a buy order."
+                    if price > local['buy']:
+                        local['buy'] = price
+                    
+            for x in indexes.keys():
+                buy = prices[x]['buy']
+                sell = prices[x]['sell']
+                print "Best %s prices: %s/%s" % (x, buy, sell)
+                indexes[x].set_value(item, buy=buy, sell=sell)
+        except Exception, e:
+            print "Error loading EVE Central for item. [%s]" % e
 
 def update_qtc():
     name = QtcIndustries['name']     

@@ -28,27 +28,26 @@ have just changed the fuel supply in this tower.</p>
 	  <img src="{{ f.type.icon16 }}"> {{ f.type }}</a></th>
 	  <td>{{ f.fuel.quantity|comma }}</td>
 	  <td>{{ f.fuel.consumption|comma }}</td>
-	  {% expr f['fuel'].need(days=days) as need %}
-	  <td>{{ need|comma }}</td>
-	  {% expr f['fuel'].time_remaining as remaining %}
-	  {% expr remaining.days as days_remaining %}
-	  <td class="remaining remaining-{{days_remaining}}">{{ remaining|time }}</td>
+	  <td>{{ f.need|comma }}</td>
+	  <td class="remaining remaining-{{f.run_time.days}}">{{ f.run_time|time }}</td>
 	</tr>
 	{% endspaceless %}{% endfor %}
   <tr><th class="name" colspan=2>Remaining runtime</th>
   <th class="number" colspan="3">{{ pos.time_remaining|time }}</th></tr>
   </table>
-  <p>'Need' is defined as the additional quantity needed for a {{ days }}-day runtime.</p> 
-  
-  {% ifequal pos.sov_level 'Constellation' %}
+<p>'Need' is defined as the additional quantity needed for a {{ days }}-day
+runtime. (Except for Strontium, where the 'need' is the quantity
+required to completely fill the Strontium bay.)</p>
+
+{% ifequal pos.sov_level 'Constellation' %}
   <p class="warning">NOTE: This tower is anchored in a system where your
 alliance holds constellation sovereignty. There is a known bug where the
 manage screen for a tower will not include the constellation discount in
 the display, even though it does actually include the discount in
 consumption rates. As such, the numbers in-game will appear higher than
 what is listed here. However, these are the correct numbers.</p>
-  {% endifequal %}
-		
+{% endifequal %}
+
 <h4>Actions</h4>
 {% include "include_inlinenav.html" %}
 		
@@ -79,7 +78,7 @@ what is listed here. However, these are the correct numbers.</p>
 	</ul>
 <h4>Facts</h4>
 <p>{{ pos.note }}</p>
-	<table class="pos">
+<table class="pos">
 	<tr><th>Owning corporation</th><td>{{ pos.corporation }}</td></tr>
 	<tr><th>Depot</th><td>{{ pos.depot }}</td></tr>
 	<tr><th>Online time</th><td>{{ pos.online_time }}</td></tr>
@@ -91,34 +90,10 @@ what is listed here. However, these are the correct numbers.</p>
 	<tr><th>Cached until</th><td>{{ pos.cached_until }}</td></tr>
 	<tr><th>CPU utilization</th><td>{{ pos.cpu_percent }} % (Estimated)</td></tr>
 	<tr><th>Power utilization</th><td>{{ pos.power_percent }} % (Estimated)</td></tr>
-	</table>
-	
+</table>
 
-<H4>Weekly Fuel Costs</H4>
-<table class="pos-fuel">
-	<tr>
-   		<th>Fuel</th>
-    	<th class="number">Qty</th>
-    	<th class="number">Price</th>
-    	<th class="number">Total</th>
-    </tr>
-	{% for fuel in fuels %}
-	{% spaceless %}<tr>
-	<th><a href="{{ fuel.type.get_absolute_url }}">
-	  <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
-	  <td>{{ fuel.weekly|comma }}</td>
-	  <td>{{ fuel.price|floatformat:2|comma }}</td>
-	  <td>{{ fuel.weekly_cost|isk }}</td>
-	</tr>
-	{% endspaceless %}{% endfor %}
-  <tr><th class="runtime" colspan=2>Weekly cost</th>
-  <th class="number" colspan="3">{{ weekly_cost|floatformat:2|comma }} ISK</th></tr>
-  </table>
-  
-  
-
-	<H4>Settings</H4>
-	<table class="pos">
+<H4>Settings</H4>
+<table class="pos">
 	<tr><th>Corporation use</th>
 		{% if pos.corporation_use %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
 	<tr><th>Alliance use</th>
@@ -135,6 +110,6 @@ what is listed here. However, these are the correct numbers.</p>
 		{% if pos.attack_aggression %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
 	<tr><th>Deployment flag</th><td>{{ pos.deploy_flags }}</td></tr>
 	<tr><th>Usage flag</th><td>{{ pos.usage_flags }}</td></tr>
-	</table>  
+</table>
 
 {% endblock %}

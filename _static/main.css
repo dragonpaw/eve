@@ -62,7 +62,7 @@ p {
 
 div.flot {
 	width: 90%;
-	height: 300px;
+	height: 180px;
 	margin: 5%;
 }
 
@@ -126,6 +126,10 @@ h5 {
 	font-size: 1.3em;
 	clear: both;
 	xmargin: 0 10px;
+}
+
+.right {
+    text-align: right;
 }
 
 /* Table Elements *****************************************************************/
@@ -549,18 +553,27 @@ li.character a {
 
 .pos-cost .moon {
 	text-align: left;
+	font-size: 1.2em;
 }
 
 .pos-cost .cost {
 	color: red;
+	font-size: 1.1em;
 }
 
 .pos-cost .profit {
 	color: green;
+	font-size: 1.1em;
 }
 
 .pos-cost .total {
 	font-weight: bold;
+}
+
+.pos-cost .no-mining {
+	color: orange;
+	font-weight: normal;
+    font-size: 1em;
 }
 
 .index .items {

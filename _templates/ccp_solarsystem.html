@@ -20,9 +20,11 @@
         <tr><th>Constelation:</th>
         <td><a href="{{ item.constellation.get_absolute_url }}">{{ item.constellation }}</a></td></tr>
         <tr><th>Soverignity:</th>
-        <td>{% if item.alliance %}{{ item.alliance }}, Sov: {{ item.sov }}{% else %}Unclaimed{% endif %}</td>
+        <td>{% if item.alliance %}{{ item.alliance }}, Sov: {{ item.sov }}
+            {% else %}Unclaimed{% endif %}</td>
         <tr><th>Asteroid Belts:</th><td>{{ item.belts.count }}</td></tr>
         <tr><th>Moons:</th><td>{{ item.moons.count }}</td></tr>
+        <tr><th>Security Class:</th><td>{{ item.securityclass }}</td></tr>
     </table>
     
   	{% include "include_stations.html" %}
