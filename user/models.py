@@ -27,7 +27,8 @@ class UserProfile(models.Model):
     user = models.ForeignKey(User, unique=True)
     pos_days = models.IntegerField("Days of POS fuel desired", default=30)
     pos_shipping_cost = models.DecimalField("ISK per m3 to assume for freight",
-                                            max_digits=10, decimal_places=2)
+                                            max_digits=10, decimal_places=2,
+                                            default=0)
     
 
     class Meta:
