@@ -84,12 +84,12 @@ def title(nav):
     return " &laquo; ".join(temp)
         
 class NavigationElement:
-    def __init__(self, name, url, icon=None, note=None, id=None):
+    def __init__(self, name, url, icon, note=None, id=None):
         from eve.ccp.models import get_graphic
-        if icon is not None:
-            graphic = get_graphic(icon)
+        if icon is None:
+            graphic = get_graphic('09_14')
         else:
-            graphic = None
+            graphic = get_graphic(icon)
             
         self.url = url
         self.name = name
@@ -108,6 +108,9 @@ class NavigationElement:
             return None
         else:
             return self.graphic.icon32
+        
+    def __getitem__(self, key):
+        return getattr(self, key)()
 
 def make_nav(name, url, icon, note=None):
     return NavigationElement(name, url, icon, note=note, id=None)
