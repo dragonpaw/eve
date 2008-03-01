@@ -102,7 +102,7 @@ def blueprint_edit(request, slug):
 
     if request.POST.has_key('delete'):
         blueprint.delete()
-        return HttpResponseRedirect(blueprint_nav.get_absolute_url)
+        return HttpResponseRedirect(blueprint_nav.get_absolute_url() )
 
     form = BlueprintOwnedForm(request.POST, instance=blueprint)
     d['form'] = form
@@ -111,7 +111,7 @@ def blueprint_edit(request, slug):
         return render_to_response(template, d)
     else:
         form.save()
-        return HttpResponseRedirect(blueprint_nav.get_absolute_url) 
+        return HttpResponseRedirect(blueprint_nav.get_absolute_url() ) 
 
 @login_required
 def blueprint_add(request):
