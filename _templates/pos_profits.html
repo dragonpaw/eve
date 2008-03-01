@@ -13,7 +13,7 @@
 	<li class="pos-cost">
 	<a href="{{ pos.pos.get_profit_url }}">
 	<img src="{{ pos.pos.icon32 }}">
-	<span class="moon">{{ pos.pos.moon }}</span>
+	<span class="name">{{ pos.pos.moon }}</span>
 	{% if pos.is_profitable %}
 	<span class="right profit">+ {{ pos.profit|floatformat:0|comma }}</span>
 	{% else %}

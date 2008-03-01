@@ -102,7 +102,7 @@ def blueprint_edit(request, slug):
 
     if request.POST.has_key('delete'):
         blueprint.delete()
-        return HttpResponseRedirect(blueprint_nav['get_absolute_url'])
+        return HttpResponseRedirect(blueprint_nav.get_absolute_url)
 
     form = BlueprintOwnedForm(request.POST, instance=blueprint)
     d['form'] = form
@@ -111,7 +111,7 @@ def blueprint_edit(request, slug):
         return render_to_response(template, d)
     else:
         form.save()
-        return HttpResponseRedirect(blueprint_nav['get_absolute_url']) 
+        return HttpResponseRedirect(blueprint_nav.get_absolute_url) 
 
 @login_required
 def blueprint_add(request):
@@ -131,7 +131,8 @@ def market_index_list(request):
     d['indexes'] = MarketIndex.objects.filter(q).select_related().order_by('-trade_marketindex.priority')
     
     
-    return render_to_response('trade_indexes.html', d, context_instance=RequestContext(request))
+    return render_to_response('trade_indexes.html', d, 
+                              context_instance=RequestContext(request))
 
 def market_index_detail(request, name):
     if request.user.is_anonymous() == False:
@@ -147,7 +148,8 @@ def market_index_detail(request, name):
     d['index'] = index
     d['values'] = index.items.select_related().order_by('ccp_item.name')
     
-    return render_to_response('trade_index_detail.html', d, context_instance=RequestContext(request))
+    return render_to_response('trade_index_detail.html', d, 
+                              context_instance=RequestContext(request))
 
 class FixedPriceForm(forms.Form):
     buy_price = forms.DecimalField(label='Buy Price', initial=0)
@@ -186,7 +188,8 @@ def fixed_price_update(request, id):
     
         d['form'] = FixedPriceForm(initial={'buy_price':buy_price,'sell_price':sell_price})
     
-    return render_to_response('trade_index_update.html', d, context_instance=RequestContext(request))
+    return render_to_response('trade_index_update.html', d, 
+                              context_instance=RequestContext(request))
 
 
 def salvage(request):
@@ -195,7 +198,8 @@ def salvage(request):
     d['nav'] = [salvage_nav]
     
     if request.method != 'POST':
-        return render_to_response('trade_salvage.html', d, context_instance=RequestContext(request))
+        return render_to_response('trade_salvage.html', d, 
+                                  context_instance=RequestContext(request))
 
     assert(request.method=='POST')
 
@@ -217,9 +221,10 @@ def salvage(request):
         qty = int(request.POST[key])
         bits[id] = qty
         
+    q = Q(material__group__name='Salvaged Materials')
     rigs = {}
     for rig in Item.objects.filter(marketgroup__parent__id='955'):
-        for m in rig.materials(activity='Manufacturing').filter(material__group__name='Salvaged Materials'):
+        for m in rig.materials(activity='Manufacturing').filter(q):
             id = m.material.id
             can_make = int(bits[id] / m.quantity)
             if rigs.has_key(rig.id):
@@ -248,4 +253,5 @@ def salvage(request):
                         'sell':sell,
                         })
     objects.sort(key=lambda x:x['item'].name)
-    return render_to_response('ccp_item_list.html', d, context_instance=RequestContext(request))
+    return render_to_response('ccp_item_list.html', d, 
+                              context_instance=RequestContext(request))
