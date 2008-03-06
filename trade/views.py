@@ -6,6 +6,8 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q, QNot
 
+import re
+
 from decimal import Decimal
 #from datetime import date
 
@@ -213,13 +215,19 @@ def salvage(request):
     d['nav'].append({'name':'Rigs you can make'})
 
     # Make a lookup table out of the salvage available.
+    digits = re.compile(r'\d+')
+    
     for key in request.POST.keys():
+        
         id = int(key)
         if not id > 0:
             continue
             
-        qty = int(request.POST[key])
-        bits[id] = qty
+        match = digits.search(request.POST[key])
+        if not match:
+            bits[id] = 0
+        else:
+            bits[id] = int(match.group(0))
         
     q = Q(material__group__name='Salvaged Materials')
     rigs = {}
