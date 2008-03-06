@@ -69,10 +69,11 @@ EveCentral = {
     'description': "Min/max sell/buy prices from %(system)s.",
     'name': "EVE Central: %(system)s",
     'systems': (
-                 {'name':'Amarr',      'priority':151}, # Amarr: Amarr
-                 {'name':'Rens',       'priority':152}, # Minmatar: Rens
-                 {'name':'Oursulaert', 'priority':153}, # Gallente: Oursalert
-                 {'name':'Jita',       'priority':154}, # Caldari: Jita
+                 {'name':'Amarr',      'priority':151}, # Amarr
+                 {'name':'Rens',       'priority':152}, # Minmatar
+                 {'name':'Oursulaert', 'priority':153}, # Gallente
+                 {'name':'Jita',       'priority':154}, # Caldari
                 ),
-    'categories': ('Charge','Drone','Commodity','Material','Implant','Ship'),
+    'categories': ('Charge','Drone','Commodity','Material','Implant','Ship',
+                   'Module'),
 }

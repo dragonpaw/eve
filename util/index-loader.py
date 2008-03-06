@@ -12,6 +12,8 @@ from xml.dom.minidom import Node
 from eve.trade.sources import QtcIndustries, EveCentral
 from datetime import date
 from sys import exit
+import socket
+socket.setdefaulttimeout(10)
 
 def text(node):
     '''XML is so annoying to deal with.'''
