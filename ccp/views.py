@@ -3,12 +3,14 @@
 #from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
+from django.db.models.query import Q, QNot
+
 from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute
 from eve.trade.models import BlueprintOwned
 from eve.lib.formatting import make_nav
+
 from datetime import datetime, timedelta
 from decimal import Decimal
-from django.db.models.query import Q, QNot
 
 item_nav = make_nav("Items", "/items/", '24_05', note='All items in the game.')
 region_nav = make_nav("Regions", "/regions/", '17_03', note='The universe, and everything in it.')

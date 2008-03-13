@@ -22,14 +22,35 @@ SKILLS = Item.objects.filter(group__category__name__exact='Skill')
 CHARACTER_CACHE_TIME = timedelta(hours=1)
 TRANSACTION_CUTOFF = timedelta(days=30)
 STALE_ACCOUNT = timedelta(days=14)
+ACCOUNT_LOST_EXPIRATION = timedelta(days=1)
 
 class UserProfile(models.Model):
+    '''
+    A profile to extend the built-in Django User class.
+    
+    # Create a user.
+    >>> user = User(username='test', email='ash-test@dragonpaw.org')
+    >>> user.save()
+    >>> user.username
+    'test'
+    
+    # Should have an ID now.
+    >>> user.id is None
+    False
+    
+    # And it should have automatically made a profile
+    >>> profile = user.get_profile()
+    >>> profile.id is None
+    False
+    '''
+    
     user = models.ForeignKey(User, unique=True)
     pos_days = models.IntegerField("Days of POS fuel desired", default=30)
     pos_shipping_cost = models.DecimalField("ISK per m3 to assume for freight",
                                             max_digits=10, decimal_places=2,
                                             default=0)
-    
+    lost_password_key = models.CharField(max_length=50, blank=True)
+    lost_password_time = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         ordering = ('user',)
@@ -47,6 +68,49 @@ class UserProfile(models.Model):
     @property
     def is_stale(self):
         return self.user.last_login < (datetime.utcnow() - STALE_ACCOUNT)
+    
+    def is_lost_password_expired(self):
+        return self.lost_password_time + ACCOUNT_LOST_EXPIRATION < datetime.utcnow()
+    
+    def lost_password(self):
+        '''Setup the account for password recovery.'''
+        
+        # Already setup.
+        if self.lost_password_key and not self.is_lost_password_expired():
+            self.send_lost_password()
+            return
+        
+        while True:
+            key = User.objects.make_random_password(50)
+            try:
+                UserProfile.objects.get(lost_password_key=key)
+            except UserProfile.DoesNotExist:
+                self.lost_password_key = key
+                self.lost_password_time = datetime.utcnow()
+                self.save()
+                self.send_lost_password()
+                return
+
+    def send_lost_password(self):
+        self.email('user_password_lost.txt', subject='Password recovery link')
+    
+    def email(self, template, subject=None, account=None):
+        if self.user.email is None:
+            return
+        
+        d = {}
+        if account:
+            d['account'] = account
+        d['profile'] = self
+        d['user'] = self.user
+        
+        if subject:
+            subject = "EVE Magic Widget: " + subject + "."
+        else:
+            subject = "EVE Magic Widget" 
+        
+        body = render_to_string(template, d)
+        self.user.email_user(subject, body)
     
     def max_skill_level(self, name):
         q = SkillLevel.objects.filter(
@@ -325,19 +389,7 @@ class Account(models.Model):
         return messages
     
     def email(self, template, subject=None):
-        if self.user.user.email is None:
-            return
-        
-        d = {}
-        d['account'] = self
-        if subject:
-            subject = "EVE Magic Widget: " + subject + "."
-        else:
-            subject = "EVE Magic Widget" 
-        
-        body = render_to_string(template, d)
-        self.user.user.email_user(subject, body)
-
+        return self.user.email(template, subject=subject, account=self)
         
 class Character(models.Model):
     id = models.IntegerField(primary_key=True, core=True)

@@ -1,11 +1,21 @@
-# This is an auto-generated Django model module.
-# You'll have to do the following manually to clean this up:
-#     * Rearrange models' order
-#     * Make sure each model has one field with primary_key=True
-# Feel free to rename the models, but don't rename db_table values or field names.
-#
-# Also note: You'll have to insert the output of 'django-admin.py sqlcustom [appname]'
-# into your database.
+'''
+# Copy all data from production DB.
+>>> from django.db import connection
+>>> cursor = connection.cursor()
+>>> _ = cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+>>> _ = cursor.execute("INSERT ccp_race SELECT * FROM eve.ccp_race")
+>>> _ = cursor.execute("INSERT ccp_graphic SELECT * FROM eve.ccp_graphic")
+>>> _ = cursor.execute("INSERT ccp_category SELECT * FROM eve.ccp_category")
+>>> _ = cursor.execute("INSERT ccp_group SELECT * FROM eve.ccp_group")
+>>> _ = cursor.execute("INSERT ccp_marketgroup SELECT * FROM eve.ccp_marketgroup")
+>>> _ = cursor.execute("INSERT ccp_item SELECT * FROM eve.ccp_item")
+>>> _ = cursor.execute("INSERT ccp_attribute SELECT * FROM eve.ccp_attribute")
+>>> _ = cursor.execute("INSERT ccp_material SELECT * FROM eve.ccp_material")
+>>> _ = cursor.execute("INSERT ccp_blueprintdetail SELECT * FROM eve.ccp_blueprintdetail")
+>>> _ = cursor.execute("CREATE TABLE ccp_typeattribute SELECT * FROM eve.ccp_typeattribute")
+>>> _ = cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+>>> _ = cursor.execute("COMMIT")
+'''
 
 from decimal import Decimal
 from django.db import models
@@ -617,17 +627,17 @@ class Attribute(models.Model):
     Attribute: 120: weaponRangeMultiplier
     """
     id = models.IntegerField(primary_key=True, db_column='attributeid')
-    unit = models.ForeignKey('Unit', null=True, blank=True, db_column='unitid')
-    attributename = models.CharField(max_length=300)
-    displayname = models.CharField(max_length=300, blank=True)
+    attributename = models.CharField(max_length=100)
     attributecategory = models.IntegerField()
-    description = models.TextField()
+    description = models.CharField(max_length=1000)
     maxattributeid = models.IntegerField(null=True, blank=True)
     attributeidx = models.IntegerField(null=True, blank=True)
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     chargerechargetimeid = models.IntegerField(null=True, blank=True)
     defaultvalue = models.FloatField()
     published = models.BooleanField()
+    displayname = models.CharField(max_length=300, blank=True)
+    unit = models.ForeignKey('Unit', null=True, blank=True, db_column='unitid')
     stackable = models.BooleanField()
     highisgood = models.BooleanField()
     
@@ -796,9 +806,8 @@ class Graphic(models.Model):
     url3d = models.CharField(max_length=300, null=True, blank=True)
     urlweb = models.CharField(max_length=300, null=True, blank=True)
     description = models.TextField(null=True, blank=True, default='Automatically added by Django')
-    # Everythign in the dump is published.
-    #published = models.CharField(max_length=15, choices=TRUE_FALSE)
-    obsolete = models.BooleanField(default=False)
+    published = models.BooleanField(default=False, null=True)
+    obsolete = models.BooleanField(default=False, null=True)
     icon = models.CharField(max_length=300)
     urlsound = models.CharField(max_length=300, null=True, blank=True)
     explosionid = models.IntegerField(null=True, blank=True)
@@ -877,7 +886,6 @@ def get_graphic(icon):
 
 class Unit(models.Model):
     id = models.IntegerField(primary_key=True, db_column='unitid')
-    unitname = models.CharField(blank=True, max_length=300)
     name = models.CharField(blank=True, max_length=60, db_column='unitname')
     displayname = models.CharField(blank=True, max_length=60)
     description = models.CharField(blank=True, max_length=300)
@@ -886,7 +894,7 @@ class Unit(models.Model):
 
     class Admin:
         search_fields = ('id',)
-        list_display = ('id', 'unitname', 'name', 'description') 
+        list_display = ('id', 'name', 'description') 
         
     def __str__(self):
         return self.displayname
@@ -921,6 +929,8 @@ class Category(models.Model):
     graphic = models.ForeignKey('Graphic', null=True, blank=True, 
                                   db_column='graphicid', 
                                   raw_id_admin=True,)
+    published = models.BooleanField()
+    
     class Meta:
 
         ordering = ('name',)
@@ -939,15 +949,17 @@ class Group(models.Model):
     It also contains non-item groups like 'Alliance'."""
     id = models.IntegerField(primary_key=True, db_column='groupid')
     category = models.ForeignKey(Category, db_column='categoryid', related_name='groups')
-    name = models.CharField(max_length=300, db_column='groupname')
-    description = models.TextField()
+    name = models.CharField(max_length=100, db_column='groupname')
+    description = models.CharField(max_length=3000, null=True)
     graphic = models.ForeignKey(Graphic, null=True, blank=True, db_column='graphicid')
     usebaseprice = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
     allowmanufacture = models.CharField("Manafacturable?", max_length=15, choices=TRUE_FALSE, radio_admin=True)
     allowrecycler = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
     anchored = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
     anchorable = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
-#    fittablenonsingleton = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
+    fittablenonsingleton = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
+    published = models.BooleanField(default=True, null=True)
+    
     class Meta:
 
         ordering = ('name',)
@@ -979,8 +991,9 @@ class BlueprintDetail(models.Model):
                            related_name='blueprint_details_qs', 
                            raw_id_admin=True, 
                            limit_choices_to = {'group__category__name__exact': 'Blueprint'})
+    parent = models.IntegerField(db_column='patentBlueprintTypeID', null=True)
     # blueprint = models.IntegerField(db_column='blueprinttypeid', primary_key=True)
-    makes = models.ForeignKey('Item', unique=True, db_column='producttypeid', 
+    makes = models.ForeignKey('Item', db_column='producttypeid', 
                               related_name='blueprint_madeby_qs', 
                               raw_id_admin=True, 
                               limit_choices_to = {
@@ -1008,6 +1021,7 @@ class BlueprintDetail(models.Model):
     wastefactor = models.IntegerField()
     chanceofreverseengineering = models.FloatField()
     maxproductionlimit = models.IntegerField()
+    
     class Meta:
         ordering = ('id',)
 
@@ -1019,6 +1033,9 @@ class BlueprintDetail(models.Model):
     #    return self.id.name
         
 class Material(models.Model):
+    """
+    All the 'stuff' to make other 'stuff'.
+    """
     item = models.ForeignKey('Item', 
                              null=True, 
                              blank=True, 
@@ -1036,6 +1053,7 @@ class Material(models.Model):
                                  raw_id_admin=True)
     quantity = models.IntegerField(null=True, blank=True)
     damageperjob = models.FloatField(null=True, blank=True)
+    id = models.IntegerField(primary_key=True)
 
     class Meta:
         pass
@@ -1076,36 +1094,40 @@ class Item(models.Model):
     """This table contains information about each item that you can aquire in
     EVE. Weapons, Ammo, etc...
     
-    # Find an object: (Scorch M, T2 frequency crystal.)
-    >>> item = Item.objects.find(id=12818)
-    >>> item.name
-    'Scorch M'
-    >>> item.group
-    '?'
+    # Find some objects.
+    >>> scorch = Item.objects.get(name='Scorch M')
+    >>> myrm = Item.objects.get(name='Myrmidon')
+    >>> dcm = Item.objects.get(name='Deep Core Mining')
     
+    >>> scorch.group.name
+    u'Advanced Pulse Laser Crystal'
+    
+    >>> scorch.graphic.id
+    1141L
     
     """
+    
+    # DON'T REORDER!!! (Breaks the test copy above.)
     id = models.IntegerField(primary_key=True, db_column='typeid')
     group = models.ForeignKey('Group', db_column='groupid', related_name='items')
+    name = models.CharField(max_length=300)
+    real_description = models.TextField(db_column='description')
     graphic = models.ForeignKey('Graphic', null=True, blank=True, 
                                 raw_id_admin=True, 
                                 db_column='graphicid')
-    race = models.ForeignKey(Race, null=True, blank=True, db_column='raceid')
-    marketgroup = models.ForeignKey('MarketGroup', null=True, blank=True, 
-                                    db_column='marketgroupid')
-    name = models.CharField(max_length=300)
-    real_description = models.TextField(db_column='description')
     radius = models.FloatField()
     mass = models.FloatField()
     volume = models.FloatField()
     capacity = models.FloatField()
     portionsize = models.IntegerField()
+    race = models.ForeignKey(Race, null=True, blank=True, db_column='raceid')
     baseprice = models.FloatField()
     published = models.BooleanField()
+    marketgroup = models.ForeignKey('MarketGroup', null=True, blank=True, 
+                                    db_column='marketgroupid')
     chanceofduplicating = models.FloatField()
-    objects = models.Manager()
     slug = models.SlugField(max_length=100)
-    #is_pos_fuel = models.BooleanField()
+    objects = models.Manager()
     
     class Meta:
 
@@ -1133,9 +1155,9 @@ class Item(models.Model):
     def __str__(self):
         return self.name
         
-    def get_category(self):
+    @property
+    def category(self):
         return self.group.category.name
-    category = property(get_category)
         
     def get_absolute_url(self):
         return "/item/%s/" % self.slug
@@ -1152,21 +1174,36 @@ class Item(models.Model):
             return self.real_description
 
     # All things iconic.
+    def get_icon(self, size):
+        '''
+        Get icons for all of the items.
+        # Find some objects.
+        >>> Item.objects.get(name='Myrmidon').icon32
+        '/static/ccp-icons/shiptypes/32_32/24700.png'
+        
+        >>> Item.objects.get(name='Scorch M').icon16
+        u'/static/ccp-icons/white/16_16/icon08_04.png'
+        
+        >>> Item.objects.get(name='Deep Core Mining').icon128
+        u'/static/ccp-icons/white/128_128/icon50_11.png'
+        '''
+        return self.graphic.get_icon(size, item=self)
+
     @property
     def icon16(self):
-        return self.graphic.get_icon(16, item=self)
+        return self.get_icon(16)
         
     @property
     def icon32(self):
-        return self.graphic.get_icon(32, item=self)
+        return self.get_icon(32)
 
     @property
     def icon64(self):
-        return self.graphic.get_icon(64, item=self)
+        return self.get_icon(64)
 
     @property
     def icon128(self):
-        return self.graphic.get_icon(128, item=self)
+        return self.get_icon(128)
 
     # Fancy way to get the attributes and their values.    
     def attributes(self):
@@ -1230,6 +1267,15 @@ class Item(models.Model):
     # Skill-orientated methods
     @property
     def is_skill(self):
+        '''
+        Is the goven object a skill?
+        
+        >>> dcm.is_skill
+        True
+    
+        >>> myrm.is_skill
+        False
+        '''
         if self.category == 'Skill':
             return True
         else:
@@ -1237,11 +1283,20 @@ class Item(models.Model):
     
     @property
     def skill_rank(self):
+        '''
+        Return int of the skill rank for a skill. (Training time multiplier.)
+        
+        >>> dcm.skill_rank
+        6
+        
+        >>> myrm.skill_rank
+        None
+        '''
         if self.is_skill is False:
             return None
         else:
-            rank = self.attributes().get(attributename='skillTimeConstant')
-            return rank.value
+            rank = self.attribute_by_name('skillTimeConstant')
+            return int(rank.value)
     
     # Allows for a search for just skills.
     skill_objects = ItemSkillManager()
@@ -1256,6 +1311,13 @@ class Item(models.Model):
 
     @property
     def blueprint_details(self):
+        '''
+        The record of the details of a blueprint.
+        Returns a BlueprintDetail instance.
+        
+        >>> myrm.blueprint.blueprint_details.techlevel
+        1L
+        '''
         item = self
         if self.is_blueprint is False:
             item = self.blueprint
@@ -1264,6 +1326,20 @@ class Item(models.Model):
     
     @property
     def blueprint(self):
+        '''
+        Returns the Item of the published blueprint for self if one exists.
+        Returns None otherwise.
+        
+        >>> myrm.blueprint.name
+        u'Myrmidon Blueprint'
+        
+        >>> myrm.blueprint.id
+        24701L
+        
+        >>> dcm.blueprint
+        None
+        
+        '''
         if self.is_blueprint:
             return self
         elif self.blueprint_madeby_qs.count() > 0:
@@ -1284,13 +1360,26 @@ class Item(models.Model):
             return self.blueprint_details.makes
     
     def materials(self, activity=None):
+        """
+        >>> myrm = Item.objects.get(name='Myrmidon')
+        >>> for m in myrm.materials():
+        ...     print "%s: %s" % (m.material, m.quantity)
+        Tritanium: 2885176
+        Pyerite: 642378
+        Mexallon: 215466
+        Nocxium: 13483
+        Zydrine: 2523
+        Megacyte: 1236
+        """
+
         # If it can't be made, then it has no mats.
         filter = Q(quantity__gt=0)
         if activity:
             filter = filter & Q(activity__name=activity)
 
         if self.blueprint:
-            filter = filter & (Q(item=self) | Q(item=self.blueprint))
+            # filter = filter & (Q(item=self) | Q(item=self.blueprint))
+            filter = filter & (Q(item=self.blueprint))
         else:
             filter = filter & Q(item=self)
             
@@ -1329,10 +1418,10 @@ class MarketGroup(models.Model):
     within this table.'''
     
     id = models.IntegerField(primary_key=True, db_column='marketgroupid')
-    name = models.CharField(max_length=300, db_column='marketgroupname')
     parent = models.ForeignKey('MarketGroup', null=True, blank=True, db_column='parentgroupid')
+    name = models.CharField(max_length=100, db_column='marketgroupname')
+    description = models.CharField(max_length=3000, null=True)
     graphic = models.ForeignKey(Graphic, null=True, blank=True, db_column='graphicid')
-    description = models.TextField()
     hastypes = models.CharField(max_length=15, choices=TRUE_FALSE, radio_admin=True)
     slug = models.SlugField(max_length=50)
     objects = models.Manager()

@@ -14,4 +14,8 @@ urlpatterns = patterns('',
     (r'^account/(\d+)/refresh/$', 'eve.user.views.account_refresh'),
     
     (r'^create/$', 'eve.user.views.user_creation'),
+    
+    # The built-in one doesn't offer a reset key.
+    (r'lost/$', 'eve.user.views.account_password_lost'),
+    (r'recover/(?P<key>\w+)/$', 'eve.user.views.account_password_found'),
 )

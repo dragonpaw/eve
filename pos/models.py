@@ -218,7 +218,8 @@ class PlayerStation(models.Model):
     #    return StationResource.objects.filter(tower=self.tower)
 
 class PlayerStationModule(models.Model):
-    q = Q(group__category__name='Structure', published=True) & QNot(Q(group__name='Control Tower'))
+    q = Q(group__category__name='Structure', published=True) 
+    q &= QNot( Q(group__name='Control Tower') )
     
     item = models.ForeignKey(Item, limit_choices_to = q)
     station = models.ForeignKey(PlayerStation)
