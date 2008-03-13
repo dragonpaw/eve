@@ -4,7 +4,6 @@ import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'eve.settings'
 
 import httplib
-import urllib
 from eve.trade.models import *
 from eve.ccp.models import *
 import xml.dom.minidom

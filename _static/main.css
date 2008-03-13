@@ -3,7 +3,6 @@ body {
 	font-family: Helvetica;
 	background: #fff;
 	color: #000;
-	xoverflow: hidden;
 	-webkit-text-size-adjust: none;
 	font-size: 1.5ex;
 }
@@ -68,7 +67,6 @@ div.flot {
 
 div.flot table,
 div.flot td {
-	align: left;
 	text-align: left;
 	width: auto;
 	border: none;
@@ -125,7 +123,6 @@ h5 {
 	margin: 0 10px 0px 10px;
 	font-size: 1.3em;
 	clear: both;
-	xmargin: 0 10px;
 }
 
 .right {
@@ -146,7 +143,7 @@ td {
 	border-top: 1px solid #999;
 	border-bottom: 1px solid #999;
 	text-align: right;
-	padding: 2;
+	padding: 2px;
 }
 
 td.name {
@@ -168,7 +165,7 @@ th {
 	text-align: left;
 	border-top: 1px solid #999;
 	border-bottom: 1px solid #999;
-	padding: 2;
+	padding: 2px;
 }
 
 th.number {
@@ -212,7 +209,7 @@ input[type='submit'], input[type='text'],input[type='password'],select {
 }
 
 .item .skill {
-	color: grey;
+	color: gray;
 }
 
 .index-buy {
@@ -301,7 +298,7 @@ li.character a {
 .character .skill,
 .character .skill-completion,
 .character .corporation {
-	color: grey;
+	color: gray;
 	font-weight: normal;
 	font-size: 1.1em;
 }
@@ -322,7 +319,7 @@ li.character a {
 }
 
 .account .api-key {
-	color: grey;
+	color: gray;
 	font-size: 1.3em;
 	font-weight: normal;
 	font-family: monospace;
@@ -348,7 +345,7 @@ li.character a {
 }
 
 .stations .solarsystem {
-	color: grey;
+	color: gray;
 	font-weight: normal;
 }
 
@@ -358,7 +355,7 @@ li.character a {
 
 .quantity {
 	font-weight: bold;
-	color: grey;
+	color: gray;
 }
 
 .transaction .bought {
@@ -372,7 +369,7 @@ li.character a {
 .transaction .character,.transaction .system {
 	font-weight: normal;
 	font-size: 0.9em;
-	color: grey;
+	color: gray;
 }
 
 .stations .security,.constellation .security {
@@ -390,11 +387,11 @@ li.character a {
 }
 
 .constellation .belts {
-	color: grey;
+	color: gray;
 }
 
 .constellation .moons {
-	color: grey;
+	color: gray;
 	position: absolute;
 	left: 95px;
 }
@@ -410,7 +407,7 @@ li.character a {
 }
 
 .region .systems {
-	color: grey;
+	color: gray;
 }
 
 .region span.stations {
@@ -431,7 +428,7 @@ li.character a {
 
 .blueprint .is_original {
 	font-size: 1em;
-	font-wight: bold;
+	font-weight: bold;
 }
 
 .blueprint .pe,.blueprint .me,.blueprint .cost {
@@ -446,12 +443,12 @@ li.character a {
 }
 
 .blueprint .me {
-	color: grey;
+	color: gray;
 	left: 50px;
 }
 
 .blueprint .cost {
-	color: grey;
+	color: gray;
 	position: absolute;
 	right: 25%;
 	text-align: right;
@@ -492,11 +489,11 @@ li.character a {
 }
 
 .pos .disabled {
-	color: grey;
+	color: gray;
 }
 
 .pos .type {
-	color: grey;
+	color: gray;
 	font-weight: normal;
 	font-size: 1.0em;
 }
@@ -513,7 +510,7 @@ li.character a {
 }
 
 .pos .runtime-1 {
-	color: orange;
+	color: rgb(255, 74, 0);
 }
 
 .pos-fuel .remaining-0 {
@@ -523,11 +520,11 @@ li.character a {
 
 .pos-fuel .remaining-1,.pos-fuel .remaining-2 {
 	font-weight: bold;
-	color: orange;
+	color: rgb(255, 74, 0);
 }
 
 .pos-fuel .remaining-3 {
-	color: orange;
+	color: rgb(255, 74, 0);
 }
 
 .pos-cost .moon {
@@ -550,18 +547,18 @@ li.character a {
 }
 
 .pos-cost .no-mining {
-	color: orange;
+	color: rgb(255, 74, 0);
 	font-weight: normal;
     font-size: 1em;
 }
 
 .index .items {
-	color: grey;
+	color: gray;
 	font-size: 1.0em;
 }
 
 .index .url {
-	color: grey;
+	color: gray;
 	font-weight: normal;
 }
 

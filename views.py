@@ -3,14 +3,14 @@ from django.template import RequestContext
 from eve.trade.views import blueprint_nav, index_nav, transaction_nav, salvage_nav
 from eve.ccp.views import region_nav, item_nav, sov_nav
 from eve.pos.views import pos_nav
-from eve.user.views import user_nav, user_create_nav
+from eve.user.views import user_nav, user_create_nav, login_nav
 from eve.lib.formatting import make_nav
 from eve.tracker.views import changelog_nav
 from eve.debug.views import debug_nav
+from eve.status.views import status_nav
 
 about_nav = make_nav("About", "/about/", '07_15', note='The origins of the Widget.')
 admin_nav = make_nav('Admin', '/admin/', '09_08', note='Thou art God.')
-login_nav = make_nav('Login', '/login/', '09_06', note='Log yourself in for full use.')
 logout_nav = make_nav('Logout', '/logout/', '07_07', 
                       note='Log out if you like. (Or if you share your computer.)')
 ship_fit_nav = make_nav('Ship Fitting', '/fitting/', '09_05',
@@ -27,6 +27,7 @@ def home(request):
                region_nav, item_nav,
                index_nav, sov_nav, 
                features_nav, salvage_nav,
+               status_nav,
     ]
     
     if user.is_authenticated() and user.username in ('ash', 'Ductape'):

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h4>Tranquility</h4>
+<table>
+  <tr>
+    <th>Status</th><td>{{ server.status }}</td>
+  </tr><tr>
+    <th>Players</th><td>{{ server.users }}</td>
+  </tr>
+  <tr>
+    <th>MOTD</th><td class="left">{{ server.motd|safe }}</td>
+  </tr>
+</table>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h4>Account creation</h4>
+<ul class="links">
+{% include "include_inlinenav.html" %}
+</ul>
+
+<h4>Login</h4>
+<form method="post" action=".">
+    <table>
+       {{ form }}
+    </table>
+    <fieldset>
+        <input type="submit" value="Login to the Widget"/>
+    </fieldset>
+</form> 
+{% endblock %}

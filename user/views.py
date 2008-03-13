@@ -1,20 +1,29 @@
 # $Id$
+import datetime
+
 from django import newforms as forms
-from django.contrib.auth import authenticate, login
+from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 
-from eve.user.models import Character, Account
+from eve.user.models import Character, Account, UserProfile
 
 from eve.lib.formatting import make_nav
 
 user_nav = make_nav("Characters", "/user/", '34_12', 'Your characters and accounts.')
-user_create_nav = make_nav("Create Login", "/user/create/", '07_03', 'Register with the widget.')
-account_add_nav = make_nav('Add API Key', '/user/add/', '12_02', 'Add a new account/API key. (Yes, you can have ALL of your accounts on a single Widget login.)')
-log_nav = make_nav('Refresh Log', '/user/api-log/', '22_42', 'View API refresh log.')
+user_create_nav = make_nav("Create Login", "/user/create/", '07_03', 
+                           'Register with the widget. Tap here if it is your first time.')
+account_add_nav = make_nav('Add API Key', '/user/add/', '12_02', 
+                           'Add a new account/API key. (Yes, you can have ALL of your accounts on a single Widget login.)')
+log_nav = make_nav('Refresh Log', '/user/api-log/', '22_42', 
+                   'View API refresh log.')
+lost_password_nav = make_nav('Lost Password', '/user/lost/', '04_16',
+                             'Recover a lost password.')
+login_nav = make_nav('Login', '/login/', '09_06', 
+                     'Log yourself in for full use.')
 
 @login_required
 def main(request):
@@ -154,22 +163,118 @@ def account_edit(request, id=None):
     
     return HttpResponseRedirect( account.get_refresh_warning_url() )
 
-class UserCreationForm(forms.Form):
-    username = forms.CharField(label="Desired Username", max_length=30)
-    email = forms.EmailField(label="Email Address")
+def account_password_lost(request):
+    d = {}
+    d['nav'] = [ lost_password_nav ]
+    
+    if request.method == 'POST':
+        try:
+            user = User.objects.get(username=request.POST['username'])
+            profile = user.get_profile()
+            profile.lost_password()
+            
+            message = 'Email sent'
+        except User.DoesNotExist:
+            message = 'Unknown user'
+    else:
+        message = ''
+
+    d['message'] = message
+    return render_to_response('user_password_lost.html', d,
+                              context_instance=RequestContext(request))
+
+class PasswordResetForm(forms.Form):
     password = forms.CharField(label='Password', min_length=5, widget=forms.PasswordInput, 
                                help_text='NOT your eve password. Pick a new one.')
     password2 = forms.CharField(label='Password, again', min_length=5, widget=forms.PasswordInput)
+    key = forms.CharField(widget=forms.HiddenInput, min_length=50, max_length=50)
+    
+    def clean_password2(self):
+        if self.cleaned_data['password'] != self.cleaned_data['password2']:
+            raise forms.ValidationError('Passwords do not match.')
+           
+    def clean_key(self):
+        try:
+            key = self.cleaned_data['key']
+            profile = UserProfile.objects.get(lost_password_key=key)
+            if profile.is_lost_password_expired():
+                profile.lost_password()
+                raise forms.ValidationError('Key has expired. New one has been sent.')
+        except UserProfile.DoesNotExist:
+            raise forms.ValidationError('Key is not a valid reset key.')
+
+def account_password_found(request, key):
+    d = {}
+    d['nav'] = [ lost_password_nav ]
+    template = 'user_password_found.html'
+    
+    profile = get_object_or_404(UserProfile, lost_password_key=key)
+    d['profile'] = profile
+
+    if request.method == 'POST':
+        form = PasswordResetForm(request.POST)
+        if not form.is_valid():
+            d['form'] = form
+            return render_to_response(template, d,
+                              context_instance=RequestContext(request))
+            
+        user = profile.user
+        password = form.cleaned_data['password']
+        
+        user.set_password(password)
+        user.save()
+        profile.lost_password_key = ''
+        profile.lost_password_time = None
+        profile.save()
+        
+        user = auth.authenticate(username=user.username, password=password)
+        auth.login(request, user)
+        return HttpResponseRedirect('/')
+    else:
+        assert(request.method == 'GET')
+        d['form'] = PasswordResetForm(initial={'key':key})
+        
+        return render_to_response(template, d,
+                                  context_instance=RequestContext(request))
+
+class UserCreationForm(forms.Form):
+    username = forms.CharField(label="Desired Username", max_length=30)
+    email = forms.EmailField(label="Email Address")
+    password = forms.CharField(label='Password', min_length=5, 
+                               widget=forms.PasswordInput, 
+                               help_text='NOT your eve password. Pick a new one.')
+    password2 = forms.CharField(label='Password, again', min_length=5, 
+                                widget=forms.PasswordInput)
     eve_user_id = forms.IntegerField(label='EVE API User ID',
                                      help_text='See above for link to get this.')
-    eve_api_key = forms.CharField(label='EVE API Key, FULL', min_length=64, max_length=64)
+    eve_api_key = forms.CharField(label='EVE API Key, FULL', 
+                                  min_length=64, max_length=64)
+    
+    def clean(self):
+        if self.cleaned_data['password'] != self.cleaned_data['password2']:
+            raise forms.ValidationError('Passwords do not match.')
+        return self.cleaned_data
+           
+    def clean_username(self):
+        c = User.objects.filter(username=self.cleaned_data['username']).count()
+        if c > 0:
+            raise forms.ValidationError("That user name is already registered.")
+        else:
+            return self.cleaned_data['username']
+
+    def clean_eve_user_id(self):
+        c = Account.objects.filter(id=self.cleaned_data['eve_user_id']).count()
+        if c > 0:
+            raise forms.ValidationError("That EVE user ID is already registered to a different account.")
+        else:
+            return self.cleaned_data['eve_user_id']
+            
 
 def user_creation(request):
     d = {}
     
     errors = []
     d['errors'] = errors
-    
     d['nav'] = [ user_create_nav ]  
 
     if request.method == 'GET':
@@ -184,17 +289,6 @@ def user_creation(request):
         for field in form.fields:
             for error in form[field].errors:
                 errors.append('%s: %s' % (form[field].label, error))
-    else:
-        if form.cleaned_data['password'] != form.cleaned_data['password2']:
-            errors.append("The passwords did not match.")
-    
-        if Account.objects.filter(id=form.cleaned_data['eve_user_id']).count() > 0:
-            errors.append("That EVE user ID is already registered to a different account.")
-        
-        if User.objects.filter(username=form.cleaned_data['username']).count() > 0:
-            errors.append("That user name is already registered.")
-            
-    if errors:
         return render_to_response('user_account_edit.html', d,
                                    context_instance=RequestContext(request))
         
@@ -212,7 +306,54 @@ def user_creation(request):
     account = Account(user=profile, api_key=eve_api_key, id=eve_user_id)
     account.save()
     
-    user = authenticate(username=username, password=password)
-    login(request, user)
+    user = auth.authenticate(username=username, password=password)
+    auth.login(request, user)
     
     return HttpResponseRedirect( account.get_refresh_warning_url() )
+
+
+class UserLoginForm(forms.Form):
+    username = forms.CharField(label="Username", max_length=30)
+    password = forms.CharField(label='Password', min_length=5, 
+                               widget=forms.PasswordInput)
+    next = forms.CharField(widget=forms.HiddenInput)
+    
+    def clean_username(self):
+        try:
+            _ = User.objects.get(username=self.cleaned_data['username'])
+            return self.cleaned_data['username']
+        except User.DoesNotExist:
+            raise forms.ValidationError('That is not your username.')
+        
+    def clean(self):
+        username = self.cleaned_data['username']
+        password = self.cleaned_data['password']
+        
+        if username is None:
+            raise forms.ValidationError('The username is not set.')
+        
+        user = auth.authenticate(username=username, password=password)
+        if user is not None:
+            self.user = user
+        else:
+            print "user: %s, pass: %s" % (username, password)
+            raise forms.ValidationError('That is not your password.')
+        return self.cleaned_data
+        
+def login(request):
+    d = {}
+    d['nav'] = [ login_nav ]
+    d['inline_nav'] = [ user_create_nav, lost_password_nav ]
+    
+    if request.method == 'POST':
+        form = UserLoginForm(request.POST)
+        if form.is_valid():
+            auth.login(request, form.user)
+            return HttpResponseRedirect(form.cleaned_data['next'])
+        else:
+            d['form'] = form
+    else:
+        d['form'] = UserLoginForm(initial={'next': '/'})
+            
+    return render_to_response('user_login.html', d,
+                              context_instance=RequestContext(request))
