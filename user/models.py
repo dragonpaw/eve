@@ -19,7 +19,7 @@ from eve.settings import DEBUG
 API = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)
 SKILLS = Item.objects.filter(group__category__name__exact='Skill')
 
-CHARACTER_CACHE_TIME = timedelta(hours=1)
+#CHARACTER_CACHE_TIME = timedelta(hours=1)
 TRANSACTION_CUTOFF = timedelta(days=30)
 STALE_ACCOUNT = timedelta(days=14)
 ACCOUNT_LOST_EXPIRATION = timedelta(days=1)
@@ -541,13 +541,21 @@ class Character(models.Model):
                 self.is_director = False
                 messages.append("Not Director.")
             else:
-                raise e
+                raise
+        except RuntimeError, e:
+            if str(e) == "Invalid API response: expected 'eveapi', got html":
+                self.is_director = True
+                messages.append('Director. EVE POS API still broken. Freaking CCP...')
+            else:
+                raise
+
     
         # We set the account earlier in update_account. Now just make sure it matches.
         # Usernames can not change, but a character might move between accounts.
         self.user = self.account.user
         self.last_refreshed = datetime.utcnow()
-        self.cached_until = datetime.utcnow() + CHARACTER_CACHE_TIME
+        #self.cached_until = datetime.utcnow() + CHARACTER_CACHE_TIME
+        self.cached_until = datetime.utcfromtimestamp(character_sheet._meta.cachedUntil)
         self.save()
         
         messages.extend( self.refresh_wallet() )
@@ -721,16 +729,22 @@ class Character(models.Model):
         corp = self.corporation
         messages = []
     
-        ids = []
-        for record in api.StarbaseList().starbases:
-            ids.append(record.itemID)
-            messages.extend( self.refresh_pos_detail(record, force=force) )
-        
-        # Look for POSes that got taken down.
-        for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
-            messages.append("Removed POS: %s will be purged." % pos.moon)
-            pos.delete()
+        try:
+            ids = []
+            for record in api.StarbaseList().starbases:
+                ids.append(record.itemID)
+                messages.extend( self.refresh_pos_detail(record, force=force) )
             
+            # Look for POSes that got taken down.
+            for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
+                messages.append("Removed POS: %s will be purged." % pos.moon)
+                pos.delete()
+        except RuntimeError, e:
+            if str(e) == "Invalid API response: expected 'eveapi', got html":
+                messages.append('EVE POS API still broken. complain to CCP, not me.')
+            else:
+                raise
+                
         return messages
         
     def refresh_pos_detail(self, record, force=False):

@@ -222,9 +222,9 @@ else:
     
 for account in accounts:
     try:
-        messages = account.refresh(force=options.force)
         output( "-" * 78 )
         output ("Account: %s(%s)" % (account.user, account.id))
+        messages = account.refresh(force=options.force)
         for x in messages:
             output("-- %s" % x['name'])
             output("  " +("\n  ".join(x['messages'])))
