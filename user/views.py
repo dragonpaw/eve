@@ -1,6 +1,4 @@
 # $Id$
-import datetime
-
 from django import newforms as forms
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required

@@ -6,6 +6,8 @@ class ChangeLogMiddleware:
     def process_request(self, request):
         if request.user.is_anonymous():
             return None
+        if ChangeLog.objects.count() == 0:
+            return None
     
         newest_changelog = ChangeLog.objects.order_by('-date')[0].date
     

@@ -12,7 +12,14 @@
 >>> _ = cursor.execute("INSERT ccp_attribute SELECT * FROM eve.ccp_attribute")
 >>> _ = cursor.execute("INSERT ccp_material SELECT * FROM eve.ccp_material")
 >>> _ = cursor.execute("INSERT ccp_blueprintdetail SELECT * FROM eve.ccp_blueprintdetail")
+>>> _ = cursor.execute("INSERT ccp_station SELECT * FROM eve.ccp_station")
+>>> _ = cursor.execute("INSERT ccp_region SELECT * FROM eve.ccp_region")
+>>> _ = cursor.execute("INSERT ccp_solarsystem SELECT * FROM eve.ccp_solarsystem")
+>>> _ = cursor.execute("INSERT ccp_constellation SELECT * FROM eve.ccp_constellation")
+>>> _ = cursor.execute("INSERT ccp_faction SELECT * FROM eve.ccp_faction")
 >>> _ = cursor.execute("CREATE TABLE ccp_typeattribute SELECT * FROM eve.ccp_typeattribute")
+>>> _ = cursor.execute("INSERT trade_journalentrytype SELECT * FROM eve.trade_journalentrytype")
+
 >>> _ = cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 >>> _ = cursor.execute("COMMIT")
 '''
@@ -121,7 +128,7 @@ class Alliance(models.Model):
     def delete(self):
         # Break the links to the alliance, so they are clean, and don't 
         # get cascade deleted.
-        print "Brakign all links for alliance '%s'." % self.name
+        print "Braking all links for alliance '%s'." % self.name
         print "Unlinking executor corp."
         self.executor = None
         self.save()
@@ -314,8 +321,8 @@ class Faction(models.Model):
     ...
     Thukker Tribe"""
     id = models.IntegerField(primary_key=True, db_column='factionid')
-    name = models.CharField(max_length=300, db_column='factionname')
-    description = models.TextField()
+    name = models.CharField(max_length=100, db_column='factionname')
+    description = models.CharField(max_length=1000, null=True)
     raceids = models.IntegerField(null=True, blank=True)
     solarsystem = models.ForeignKey('SolarSystem', null=True, blank=True, 
                                     db_column='solarsystemid', related_name='home_system')
@@ -502,7 +509,7 @@ class Corporation(models.Model):
 #    enemy = models.ForeignKey('Name', null=True, blank=True,
 #                              db_column='enemyid', related_name='enemies',
 #                              raw_id_admin=True)
-    publicshares = models.IntegerField()
+    publicshares = models.IntegerField(default=0)
     #initialprice = models.IntegerField()
     #minsecurity = models.FloatField()
     #scattered = models.CharField(max_length=15)
@@ -516,8 +523,8 @@ class Corporation(models.Model):
     #stationcount = models.IntegerField()
     #stationsystemcount = models.IntegerField()
     alliance = models.ForeignKey(Alliance, null=True, related_name='corporations')
-    last_updated = models.DateTimeField(blank=True)
-    cached_until = models.DateTimeField(blank=True)
+    last_updated = models.DateTimeField(blank=True, null=True)
+    cached_until = models.DateTimeField(blank=True, null=True)
     
     class Meta:
 
@@ -1548,20 +1555,19 @@ class Reaction(models.Model):
         
 class Region(models.Model):
     id = models.IntegerField(primary_key=True, db_column='regionid')
-    name = models.CharField(max_length=300, db_column='regionname')
+    name = models.CharField(max_length=100, db_column='regionname')
+    x = models.FloatField(null=True)
+    y = models.FloatField(null=True)
+    z = models.FloatField(null=True)
+    xmin = models.FloatField(null=True)
+    xmax = models.FloatField(null=True)
+    ymin = models.FloatField(null=True)
+    ymax = models.FloatField(null=True)
+    zmin = models.FloatField(null=True)
+    zmax = models.FloatField(null=True)
     faction = models.ForeignKey(Faction, null=True, blank=True, db_column='factionid')
-    x = models.FloatField()
-    y = models.FloatField()
-    z = models.FloatField()
-    xmin = models.FloatField()
-    xmax = models.FloatField()
-    ymin = models.FloatField()
-    ymax = models.FloatField()
-    zmin = models.FloatField()
-    zmax = models.FloatField()
-    radius = models.FloatField()
+    radius = models.FloatField(null=True)
     slug = models.SlugField(max_length=50)
-    objects = models.Manager()
     
     class Meta:
         ordering = ('name',)
@@ -1623,28 +1629,30 @@ class Region(models.Model):
         raise 'ERROR: Tried to remove an immutable.'
 
 class Constellation(models.Model):
-    id = models.IntegerField(primary_key=True, db_column='constellationid')
-    name = models.CharField(max_length=300, db_column='constellationname', 
-                            core=True)
     region = models.ForeignKey(Region, db_column='regionid', 
                                edit_inline=models.TABULAR,
                                related_name='constellations')
+    id = models.IntegerField(primary_key=True, db_column='constellationid')
+    name = models.CharField(max_length=300, db_column='constellationname', 
+                            core=True)
+    x = models.FloatField(null=True)
+    y = models.FloatField(null=True)
+    z = models.FloatField(null=True)
+    xmin = models.FloatField(null=True)
+    xmax = models.FloatField(null=True)
+    ymin = models.FloatField(null=True)
+    ymax = models.FloatField(null=True)
+    zmin = models.FloatField(null=True)
+    zmax = models.FloatField(null=True)
     faction = models.ForeignKey(Faction, null=True, blank=True, 
                                 db_column='factionid')
-    x = models.FloatField()
-    y = models.FloatField()
-    z = models.FloatField()
-    xmin = models.FloatField()
-    xmax = models.FloatField()
-    ymin = models.FloatField()
-    ymax = models.FloatField()
-    zmin = models.FloatField()
-    zmax = models.FloatField()
-    radius = models.FloatField()
+    radius = models.FloatField(null=True)
+    sov_time = models.DateTimeField(null=True, blank=True, 
+                                    db_column='sovereigntyDateTime')
     alliance = models.ForeignKey(Alliance, null=True, blank=True,
                                  db_column='allianceID',
                                  related_name='constellations')
-    sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDateTime')
+    grace_date_time = models.DateTimeField(null=True, db_column='graceDateTime')
     
     class Meta:
         ordering = ('name',)
@@ -1703,38 +1711,38 @@ class SolarSystem(models.Model):
     constellation = models.ForeignKey(Constellation, db_column='constellationid', raw_id_admin=True, 
                                       related_name='solarsystems')
     id = models.IntegerField(primary_key=True, db_column='solarsystemid')
-    name = models.CharField(max_length=300, db_column='solarsystemname')
-    x = models.FloatField()
-    y = models.FloatField()
-    z = models.FloatField()
-    xmin = models.FloatField()
-    xmax = models.FloatField()
-    ymin = models.FloatField()
-    ymax = models.FloatField()
-    zmin = models.FloatField()
-    zmax = models.FloatField()
-    luminosity = models.FloatField()
-    border = models.CharField(max_length=15)
-    fringe = models.CharField(max_length=15)
-    corridor = models.CharField(max_length=15)
-    hub = models.CharField(max_length=15)
-    international = models.CharField(max_length=15)
-    regional = models.CharField(max_length=15)
-    #constellation = models.CharField(max_length=15)
-    security = models.FloatField()
+    name = models.CharField(max_length=100, db_column='solarsystemname')
+    x = models.FloatField(null=True)
+    y = models.FloatField(null=True)
+    z = models.FloatField(null=True)
+    xmin = models.FloatField(null=True)
+    xmax = models.FloatField(null=True)
+    ymin = models.FloatField(null=True)
+    ymax = models.FloatField(null=True)
+    zmin = models.FloatField(null=True)
+    zmax = models.FloatField(null=True)
+    luminosity = models.FloatField(null=True)
+    border = models.IntegerField(null=True)
+    fringe = models.IntegerField(null=True)
+    corridor = models.IntegerField(null=True)
+    hub = models.IntegerField(null=True)
+    international = models.IntegerField(null=True)
+    regional = models.IntegerField(null=True)
+    constellation2 = models.IntegerField(null=True, db_column='constellation')
+    security = models.FloatField(null=True)
     faction = models.ForeignKey(Faction, null=True, blank=True,
                                 db_column='factionid', 
                                 related_name='solarsystems')
     radius = models.FloatField()
     suntypeid = models.IntegerField(null=True, blank=True)
-    securityclass = models.CharField(blank=True, max_length=6)
+    securityclass = models.CharField(blank=True, max_length=2, null=True)
     alliance = models.ForeignKey(Alliance, null=True, blank=True, 
                                  db_column='allianceid',
                                   related_name='solarsystems')
-    alliance_old = models.ForeignKey(Alliance, null=True, blank=True, 
-                                     related_name='solarsystems_lost')
     sov = models.IntegerField(null=True, blank=True, db_column='sovereigntyLevel')
     sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDateTime')
+    alliance_old = models.ForeignKey(Alliance, null=True, blank=True, 
+                                     related_name='solarsystems_lost')
     
     class Meta:
         ordering = ('name',)
@@ -1987,7 +1995,13 @@ class RamActivity(models.Model):
 
 class Station(models.Model):
     id = models.IntegerField(primary_key=True, db_column='stationid')
-    name = models.CharField(max_length=300, db_column='stationname')
+    security = models.IntegerField(null=True)
+    dockingcostpervolume = models.FloatField('Docking', null=True)
+    maxshipvolumedockable = models.FloatField('Max Dockable', null=True)
+    officerentalcost = models.IntegerField('Office Rental', null=True)
+    operationid = models.IntegerField(null=True, blank=True)
+    type = models.ForeignKey(Item, null=True, blank=True, 
+                             db_column='stationtypeid', related_name='staitons')
     corporation = models.ForeignKey(Corporation, null=True, blank=True, db_column='corporationid')
     solarsystem = models.ForeignKey(SolarSystem, null=True, blank=True, db_column='solarsystemid', 
                                     related_name='stations', raw_id_admin=True)
@@ -1995,19 +2009,21 @@ class Station(models.Model):
                                        related_name='stations', 
                                        raw_id_admin=True)
     region = models.ForeignKey(Region, null=True, blank=True, db_column='regionid', related_name='stations')
-    security = models.IntegerField()
-    dockingcostpervolume = models.FloatField('Docking')
-    maxshipvolumedockable = models.FloatField('Max Dockable')
-    officerentalcost = models.IntegerField('Office Rental')
-    operationid = models.IntegerField(null=True, blank=True)
-    type = models.ForeignKey(Item, null=True, blank=True, 
-                             db_column='stationtypeid', related_name='staitons')
-    x = models.FloatField()
-    y = models.FloatField()
-    z = models.FloatField()
-    reprocessingefficiency = models.FloatField('%')
-    reprocessingstationstake = models.FloatField('Take')
-    reprocessinghangarflag = models.IntegerField('Hangar?')
+    name = models.CharField(max_length=100, db_column='stationname')
+    x = models.FloatField(null=True)
+    y = models.FloatField(null=True)
+    z = models.FloatField(null=True)
+    reprocessingefficiency = models.FloatField('%', null=True)
+    reprocessingstationstake = models.FloatField('Take', null=True)
+    reprocessinghangarflag = models.IntegerField('Hangar?', null=True)
+    capital_station = models.DateTimeField('Made Capital', null=True,
+                                           db_column='capitalStation')
+    ownership_date = models.DateTimeField('Ownership Date', null=True,
+                                           db_column='ownershipDateTime')
+    upgrade_level = models.IntegerField(null=True, db_column='upgradeLevel')
+    custom_service_mask = models.IntegerField('Service Mask', null=True,
+                                               db_column='customServiceMask')
+    
     class Meta:
         ordering = ('name',)
 
