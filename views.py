@@ -29,6 +29,7 @@ def home(request):
                features_nav, salvage_nav,
                status_nav,
     ]
+    d['inline_nav'] = objects
     
     if user.is_authenticated() and user.username in ('ash', 'Ductape'):
         objects.append(ship_fit_nav)
@@ -49,6 +50,4 @@ def home(request):
     
     objects.sort(key=lambda x: x.name)
     
-    d['inline_nav'] = objects
-    d['title'] = "EVE Tool"
     return render_to_response('generic_menu.html', d, context_instance=RequestContext(request))    

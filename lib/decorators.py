@@ -1,8 +1,8 @@
-from django.http import HttpResponseRedirect
+#from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 
-from eve.lib.browser_id import what_browser
+from eve.lib.context_processors import what_browser
 
 def require_igb (function):
     def wrapper (request):
