@@ -44,12 +44,12 @@ class Tranquility:
             # How many people are logged in?
             length_code = ord(data[19]) 
             if length_code == 4:
-                self.users = (   ord(data[20]) * 256**3 
-                               + ord(data[21]) * 256**2
-                               + ord(data[22]) * 256 
-                               + ord(data[23]) )
+                self.users = (   ord(data[23]) * 256**3 
+                               + ord(data[22]) * 256**2
+                               + ord(data[21]) * 256 
+                               + ord(data[20]) )
             elif length_code == 5:
-                self.users = ( ord(data[20]) * 256 + ord(data[21]) )
+                self.users = ( ord(data[21]) * 256 + ord(data[20]) )
             elif length_code == 6:
                 self.status = 'Online (Questionable)'
                 self.users = ord(data[20])
