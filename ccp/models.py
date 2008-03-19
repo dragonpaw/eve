@@ -998,7 +998,7 @@ class BlueprintDetail(models.Model):
                            related_name='blueprint_details_qs', 
                            raw_id_admin=True, 
                            limit_choices_to = {'group__category__name__exact': 'Blueprint'})
-    parent = models.IntegerField(db_column='patentBlueprintTypeID', null=True)
+    parent = models.IntegerField(db_column='parentBlueprintTypeID', null=True)
     # blueprint = models.IntegerField(db_column='blueprinttypeid', primary_key=True)
     makes = models.ForeignKey('Item', db_column='producttypeid', 
                               related_name='blueprint_madeby_qs', 

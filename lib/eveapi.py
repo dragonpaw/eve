@@ -296,7 +296,7 @@ class _Parser(object):
 				p.Parse(data, True)
 			return self.root
 		except RuntimeError, e:
-			print data
+			#print data
 			raise RuntimeError(e)
 		
 
