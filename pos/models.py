@@ -71,7 +71,7 @@ class PlayerStation(models.Model):
     usage_flags = models.IntegerField(blank=True)
     claim = models.BooleanField()
     
-    attack_standing_flag = models.BooleanField()
+    #attack_standing_flag = models.BooleanField()
     attack_standing_value = models.FloatField()
     attack_aggression = models.BooleanField()
     attack_atwar = models.BooleanField()
@@ -96,12 +96,17 @@ class PlayerStation(models.Model):
                              'classes': 'collapse'}),
                   ('Location', {'fields': ('solarsystem','constellation','region'),
                                 'classes': 'collapse'}),
-                  ('General Settings', {'fields': ('corporation_use','alliance_use',
-                                           'deploy_flags','usage_flags',
-                                           'claim'), 'classes': 'collapse'}),
-                  ('Combat Settings', {'fields': ('attack_standing_flag','attack_standing_value',
-                                                  'attack_aggression', 'attack_atwar',
-                                                  'attack_secstatus_flag', 'attack_secstatus_value'),
+                  ('General Settings', {'fields': ('corporation_use',
+                                                   'alliance_use',
+                                                   'deploy_flags',
+                                                   'usage_flags',
+                                                   'claim'),
+                                        'classes': 'collapse'}),
+                  ('Combat Settings', {'fields': ('attack_standing_value',
+                                                  'attack_aggression', 
+                                                  'attack_atwar',
+                                                  'attack_secstatus_flag', 
+                                                  'attack_secstatus_value'),
                                        'classes': 'collapse'}),
                   )
 
