@@ -798,7 +798,7 @@ class Character(models.Model):
         station.attack_atwar= detail.combatSettings.onCorporationWar.enabled == 1
         station.attack_secstatus_flag = detail.combatSettings.onStatusDrop.enabled == 1
         station.attack_secstatus_value = detail.combatSettings.onStatusDrop.standing / 100.0
-        station.attack_standing_flag = detail.combatSettings.onStandingDrop.enabled == 1
+        #station.attack_standing_flag = detail.combatSettings.onStandingDrop.enabled == 1
         station.attack_standing_value = detail.combatSettings.onStandingDrop.standing / 100.0
     
         station.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)

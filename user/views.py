@@ -316,19 +316,15 @@ class UserLoginForm(forms.Form):
                                widget=forms.PasswordInput)
     next = forms.CharField(widget=forms.HiddenInput)
     
-    def clean_username(self):
-        try:
-            _ = User.objects.get(username=self.cleaned_data['username'])
-            return self.cleaned_data['username']
-        except User.DoesNotExist:
-            raise forms.ValidationError('That is not your username.')
-        
     def clean(self):
         username = self.cleaned_data['username']
         password = self.cleaned_data['password']
         
         if username is None:
             raise forms.ValidationError('The username is not set.')
+
+        if User.objects.filter(username=username).count() == 0:
+            raise forms.ValidationError('That is not your username.')
         
         user = auth.authenticate(username=username, password=password)
         if user is not None:
