@@ -12,7 +12,7 @@ from django.dispatch import dispatcher
 
 from eve.lib.cachehandler import MyCacheHandler
 from eve.lib import eveapi
-from eve.ccp.models import Item, Corporation, Station, MapDenormalize, SolarSystem
+from eve.ccp.models import Item, Corporation, Station
 from eve.lib.formatting import comma
 from eve.settings import DEBUG
 
@@ -733,7 +733,12 @@ class Character(models.Model):
             ids = []
             for record in api.StarbaseList().starbases:
                 ids.append(record.itemID)
-                messages.extend( self.refresh_pos_detail(record, force=force) )
+                try:
+                    station = PlayerStation.objects.get(pk=record.itemID)
+                except PlayerStation.DoesNotExist:
+                    station = PlayerStation(id=record.itemID)
+
+                messages.extend( station.refresh(record, api, force=force) )
             
             # Look for POSes that got taken down.
             for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
@@ -745,89 +750,6 @@ class Character(models.Model):
             else:
                 raise
                 
-        return messages
-        
-    def refresh_pos_detail(self, record, force=False):
-        from eve.pos.models import PlayerStation, PlayerStationFuelSupply
-        api = self.api_corporation()
-        messages = []
-        
-        try:
-            station = PlayerStation.objects.get(pk=record.itemID)
-        except PlayerStation.DoesNotExist:
-            station = PlayerStation(id=record.itemID)
-            station.depot = ""
-
-        moon = MapDenormalize.objects.get(id=record.moonID)
-        solarsystem = SolarSystem.objects.get(id=record.locationID)
-        tower = Item.objects.get(pk=record.typeID)
-    
-        if not force and station.cached_until and station.cached_until > datetime.utcnow():
-            messages.append("Cached: POS: %s at %s." % (tower, moon))
-            return messages
-        
-        messages.append("Reloading: POS: %s at %s." % (tower, moon))
-    
-        detail = api.StarbaseDetail(itemID=record.itemID)
-    
-        station.tower = tower
-        station.corporation = self.corporation
-        station.moon = moon
-        station.solarsystem = solarsystem
-        station.constellation = station.moon.constellation        
-        station.region = station.moon.region
-        
-        state_time = datetime(*time.gmtime(record.stateTimestamp)[0:5])
-        online_time = datetime(*time.gmtime(record.onlineTimestamp)[0:5])
-        hours_since_update = 0
-        if station.state_time:
-            hours_since_update = state_time - station.state_time
-            hours_since_update = hours_since_update.seconds / 60**2
-        
-        station.state = record.state
-        station.online_time = online_time
-        station.state_time = state_time
-        
-        station.corporation_use = detail.generalSettings.allowCorporationMembers == 1
-        station.alliance_use = detail.generalSettings.allowAllianceMembers == 1
-        station.claim = detail.generalSettings.claimSovereignty == 1
-        station.usage_flags = detail.generalSettings.usageFlags
-        station.deploy_flags = detail.generalSettings.deployFlags
-        
-        station.attack_aggression = detail.combatSettings.onAggression.enabled == 1
-        station.attack_atwar= detail.combatSettings.onCorporationWar.enabled == 1
-        station.attack_secstatus_flag = detail.combatSettings.onStatusDrop.enabled == 1
-        station.attack_secstatus_value = detail.combatSettings.onStatusDrop.standing / 100.0
-        #station.attack_standing_flag = detail.combatSettings.onStandingDrop.enabled == 1
-        station.attack_standing_value = detail.combatSettings.onStandingDrop.standing / 100.0
-    
-        station.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)
-        station.last_updated = datetime.utcnow()
-    
-        station.save()
-        station.setup_fuel_supply()
-        
-        # Now, the fuel.
-        for fuel_type in detail.fuel:
-            type = Item.objects.get(id=fuel_type.typeID)
-            fuel = PlayerStationFuelSupply.objects.get(type=type, station=station)
-            
-            purpose = fuel.purpose
-            consumed = (fuel.quantity - fuel_type.quantity)
-            max = Decimal(fuel.max_consumption)
-            if (purpose == 'CPU' or purpose == 'Power') and hours_since_update > 0:
-                consumed /= hours_since_update
-                if consumed > 0 and consumed < max:
-                    if purpose == 'CPU':
-                        station.cpu_utilization = consumed / max
-                        messages.append("Calculated: CPU Utilization: %0.2f" % station.cpu_utilization)
-                    else:
-                        station.power_utilization = consumed / max
-                        messages.append("Calculated: Power Utilization: %0.2f" % station.power_utilization)
-                    station.save()
-            
-            fuel.quantity=fuel_type.quantity
-            fuel.save()
         return messages
         
     def purge_old_data(self):
