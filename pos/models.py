@@ -1,8 +1,10 @@
 from django.db import models
 from django.db.models.query import Q, QNot
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 import math
+import time
 
 from eve.ccp.models import (MapDenormalize, Item, SolarSystem, Region, Constellation, Corporation)
 from eve.user.models import Character
@@ -55,10 +57,10 @@ class PlayerStation(models.Model):
     constellation = models.ForeignKey(Constellation, raw_id_admin=True, )
     region = models.ForeignKey(Region, raw_id_admin=True, )
     tower = models.ForeignKey(Item, limit_choices_to = q)
-    depot = models.ForeignKey(FuelDepot, blank=True, null=True)
+    depot = models.ForeignKey(FuelDepot, blank=True, null=True, default='')
     state = models.IntegerField(choices=POS_STATES)
-    state_time = models.DateTimeField(blank=True)
-    online_time = models.DateTimeField(blank=True)
+    state_time = models.DateTimeField(blank=True, default='0000-00-00 00:00:00')
+    online_time = models.DateTimeField(blank=True, default='0000-00-00 00:00:00')
     cached_until = models.DateTimeField(blank=True)
     last_updated = models.DateTimeField(blank=True)
     corporation = models.ForeignKey(Corporation, related_name='pos',
@@ -218,10 +220,93 @@ class PlayerStation(models.Model):
                     d[item.id] = { 'quantity': quantity, 'item': item }
         return [(x['item'], x['quantity']) for x in d.values()]
     
-    #@property
-    #def fuel(self):
-    #    return StationResource.objects.filter(tower=self.tower)
-
+    def refresh(self, record, api, force=False):
+        messages = []
+        
+        moon = MapDenormalize.objects.get(id=record.moonID)
+        solarsystem = SolarSystem.objects.get(id=record.locationID)
+        tower = Item.objects.get(pk=record.typeID)
+    
+        if not force and self.cached_until and self.cached_until > datetime.utcnow():
+            messages.append("Cached: POS: %s at %s." % (tower, moon))
+            return messages
+        
+        messages.append("Reloading: POS: %s at %s." % (tower, moon))
+    
+        detail = api.StarbaseDetail(itemID=record.itemID)
+    
+        self.tower = tower
+        self.corporation = self.corporation
+        self.moon = moon
+        self.solarsystem = solarsystem
+        self.constellation = self.moon.constellation        
+        self.region = self.moon.region
+        
+        print "Time, state: %s, online: %s" % (record.stateTimestamp, 
+                                               record.onlineTimestamp)
+        
+        if record.stateTimestamp > 0:
+            state_time = datetime(*time.gmtime(record.stateTimestamp)[0:5])
+        else:
+            state_time = None
+        if record.onlineTimestamp > 0:
+            online_time = datetime(*time.gmtime(record.onlineTimestamp)[0:5])
+        else:
+            online_time = None
+            
+        hours_since_update = 0
+        if self.state_time and state_time:
+            hours_since_update = state_time - self.state_time
+            hours_since_update = hours_since_update.seconds / 60**2
+        
+        self.state = record.state
+        self.online_time = online_time or '0000-00-00 00:00:00'
+        self.state_time = state_time or '0000-00-00 00:00:00'
+        
+        self.corporation_use = detail.generalSettings.allowCorporationMembers == 1
+        self.alliance_use = detail.generalSettings.allowAllianceMembers == 1
+        self.claim = detail.generalSettings.claimSovereignty == 1
+        self.usage_flags = detail.generalSettings.usageFlags
+        self.deploy_flags = detail.generalSettings.deployFlags
+        
+        self.attack_aggression = detail.combatSettings.onAggression.enabled == 1
+        self.attack_atwar= detail.combatSettings.onCorporationWar.enabled == 1
+        self.attack_secstatus_flag = detail.combatSettings.onStatusDrop.enabled == 1
+        self.attack_secstatus_value = detail.combatSettings.onStatusDrop.standing / 100.0
+        self.attack_standing_value = detail.combatSettings.onStandingDrop.standing / 100.0
+    
+        self.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)
+        self.last_updated = datetime.utcnow()
+        
+        self.save()
+        self.setup_fuel_supply()
+        
+        # Now, the fuel.
+        for fuel_type in detail.fuel:
+            type = Item.objects.get(id=fuel_type.typeID)
+            fuel = self.fuel.get(type=type)
+            purpose = fuel.purpose
+            
+            if (purpose == 'CPU' or purpose == 'Power') and hours_since_update > 0:
+                consumed = (fuel.quantity - fuel_type.quantity) / hours_since_update
+                max = Decimal(fuel.max_consumption)
+                if consumed < 0:
+                    continue
+                if consumed > max:
+                    continue
+                
+                if purpose == 'CPU':
+                    self.cpu_utilization = consumed / max
+                    messages.append("Calculated: CPU Utilization: %0.2f" % self.cpu_utilization)
+                else:
+                    self.power_utilization = consumed / max
+                    messages.append("Calculated: Power Utilization: %0.2f" % self.power_utilization)
+                self.save()
+        
+            fuel.quantity=fuel_type.quantity
+            fuel.save()
+        return messages
+    
 class PlayerStationModule(models.Model):
     q = Q(group__category__name='Structure', published=True) 
     q &= QNot( Q(group__name='Control Tower') )
