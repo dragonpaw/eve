@@ -242,9 +242,6 @@ class PlayerStation(models.Model):
         self.constellation = self.moon.constellation        
         self.region = self.moon.region
         
-        print "Time, state: %s, online: %s" % (record.stateTimestamp, 
-                                               record.onlineTimestamp)
-        
         if record.stateTimestamp > 0:
             state_time = datetime(*time.gmtime(record.stateTimestamp)[0:5])
         else:
@@ -398,7 +395,10 @@ class PlayerStationFuelSupply(models.Model):
 
     @property
     def hours_of_fuel(self):
-        return int(self.quantity / self.consumption)
+        if self.consumption == 0:
+            return 0
+        else: 
+            return int(self.quantity / self.consumption)
     
     @property
     def time_remaining(self):
