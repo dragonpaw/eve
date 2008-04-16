@@ -559,16 +559,16 @@ class Corporation(models.Model):
         i = Item.objects.get(name='Corporation')
                 
         record = None        
-        try:
-            if character:
-                api = character.api_corporation()
-                record = api.CorporationSheet(corporationID=self.id)
-            else:
-                api = API
-                record = api.corp.CorporationSheet(corporationID=self.id)
-            name = record.corporationName
-        except eveapi.Error:
-            pass
+        #try:
+        if character:
+            api = character.api_corporation()
+            record = api.CorporationSheet(corporationID=self.id)
+        else:
+            api = API
+            record = api.corp.CorporationSheet(corporationID=self.id)
+        name = record.corporationName
+        #except eveapi.Error, e:
+        #    return "EVE API ERROR on corp refresh: %s", e.mess
                 
         if name == None:
             messages.append("Unable to refresh corporation '%s', no name available." % self.id)

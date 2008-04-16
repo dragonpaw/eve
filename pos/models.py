@@ -59,8 +59,8 @@ class PlayerStation(models.Model):
     tower = models.ForeignKey(Item, limit_choices_to = q)
     depot = models.ForeignKey(FuelDepot, blank=True, null=True, default='')
     state = models.IntegerField(choices=POS_STATES)
-    state_time = models.DateTimeField(blank=True, default='0000-00-00 00:00:00')
-    online_time = models.DateTimeField(blank=True, default='0000-00-00 00:00:00')
+    state_time = models.DateTimeField(blank=True, null=True)
+    online_time = models.DateTimeField(blank=True, null=True)
     cached_until = models.DateTimeField(blank=True)
     last_updated = models.DateTimeField(blank=True)
     corporation = models.ForeignKey(Corporation, related_name='pos',
@@ -192,6 +192,7 @@ class PlayerStation(models.Model):
                     continue
                 elif self.solarsystem.security < fuel.minsecuritylevel:
                     continue
+            #print "My corp is:", self.corporation, "ID:", self.corporation.id
             PlayerStationFuelSupply.objects.get_or_create(station=self,
                                                           type=fuel.type,
                                                           defaults={'quantity':0,
@@ -220,7 +221,7 @@ class PlayerStation(models.Model):
                     d[item.id] = { 'quantity': quantity, 'item': item }
         return [(x['item'], x['quantity']) for x in d.values()]
     
-    def refresh(self, record, api, force=False):
+    def refresh(self, record, api, corp=None, force=False):
         messages = []
         
         moon = MapDenormalize.objects.get(id=record.moonID)
@@ -236,7 +237,7 @@ class PlayerStation(models.Model):
         detail = api.StarbaseDetail(itemID=record.itemID)
     
         self.tower = tower
-        self.corporation = self.corporation
+        self.corporation = corp
         self.moon = moon
         self.solarsystem = solarsystem
         self.constellation = self.moon.constellation        
@@ -253,12 +254,15 @@ class PlayerStation(models.Model):
             
         hours_since_update = 0
         if self.state_time and state_time:
+            assert isinstance(state_time, datetime)
+            assert isinstance(self.state_time, datetime)
+            #print "ID:", self.id, "s.st:", self.state_time, "st", state_time
             hours_since_update = state_time - self.state_time
             hours_since_update = hours_since_update.seconds / 60**2
         
         self.state = record.state
-        self.online_time = online_time or '0000-00-00 00:00:00'
-        self.state_time = state_time or '0000-00-00 00:00:00'
+        self.online_time = online_time
+        self.state_time = state_time
         
         self.corporation_use = detail.generalSettings.allowCorporationMembers == 1
         self.alliance_use = detail.generalSettings.allowAllianceMembers == 1

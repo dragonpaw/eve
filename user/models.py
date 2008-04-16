@@ -526,6 +526,7 @@ class Character(models.Model):
             corporation = Corporation(id=character_sheet.corporationID)
         messages.extend( corporation.refresh(character=self, name=character_sheet.corporationName) )
         self.corporation = corporation
+        #print "Corp:", self.corporation, "ID:", self.corporation.id
 
         messages.append("Starting Character: %s (%d)" % (self.name, self.id))
         #corp = update_corporation(character_sheet.corporationID, name=character_sheet.corporationName)
@@ -738,7 +739,7 @@ class Character(models.Model):
                 except PlayerStation.DoesNotExist:
                     station = PlayerStation(id=record.itemID)
 
-                messages.extend( station.refresh(record, api, force=force) )
+                messages.extend( station.refresh(record, api, corp=corp, force=force) )
             
             # Look for POSes that got taken down.
             for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
