@@ -11,6 +11,7 @@ from eve.lib import eveapi
 import time
 import pprint
 import sys
+import traceback
 
 from eve.ccp.models import Alliance, Station, Corporation, Item, SolarSystem, Faction
 from eve.user.models import Account
@@ -221,17 +222,21 @@ else:
     accounts = Account.objects.all()
     
 for account in accounts:
+    error = False
     try:
-        output( "-" * 78 )
-        output ("Account: %s(%s)" % (account.user, account.id))
         messages = account.refresh(force=options.force)
-        for x in messages:
-            output("-- %s" % x['name'])
-            output("  " +("\n  ".join(x['messages'])))
     except Exception, e:
-        output ("Failed! [%s]" % e)
+        error = traceback.format_exc()
         exit_code = 1
-        if DEBUG:
-            raise
+        
+    if options.debug or options.verbose or error:
+        print  "-" * 78
+        print "Account: %s(%s)" % (account.user, account.id)
+        for x in messages:
+            print "-- %s" % x['name']
+            print "  " +("\n  ".join(x['messages']))
+    if error:
+        print "Fatal error occured."
+        print error
    
 exit()
