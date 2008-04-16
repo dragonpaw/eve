@@ -223,6 +223,7 @@ else:
     
 for account in accounts:
     error = False
+    messages = []
     try:
         messages = account.refresh(force=options.force)
     except Exception, e:
