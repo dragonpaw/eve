@@ -41,10 +41,14 @@ class MyCacheHandler(object):
 			# it wasn't cached in memory, but it might be on disk.
 			cacheFile = join(self.tempdir, str(key) + ".cache")
 			if exists(cacheFile):
-				self.log("%s: retrieving from disk" % full_path)
-				f = open(cacheFile, "rb")
-				cached = self.cache[key] = cPickle.loads(zlib.decompress(f.read()))
-				f.close()
+				try:
+					self.log("%s: retrieving from disk" % full_path)
+					f = open(cacheFile, "rb")
+					cached = self.cache[key] = cPickle.loads(zlib.decompress(f.read()))
+					f.close()
+				except:
+					self.log("%s: error reading cache. Unlinking." % full_path)
+					os.unlink(cacheFile)
 
 		if cached:
 			# check if the cached doc is fresh enough
