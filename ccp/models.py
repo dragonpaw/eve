@@ -1116,7 +1116,7 @@ class Item(models.Model):
     # DON'T REORDER!!! (Breaks the test copy above.)
     id = models.IntegerField(primary_key=True, db_column='typeid')
     group = models.ForeignKey('Group', db_column='groupid', related_name='items')
-    name = models.CharField(max_length=300, db_column='typeName')
+    name = models.CharField(max_length=300)
     real_description = models.TextField(db_column='description')
     graphic = models.ForeignKey('Graphic', null=True, blank=True, 
                                 raw_id_admin=True, 
@@ -1139,7 +1139,7 @@ class Item(models.Model):
         pass
         # If I use 'name' instead of 'typename', then the BlueprintDetails model dies
         # in the admin list view. Like this, the list works, but not the detail.
-        #ordering = ['typeName', ]
+        ordering = ['name', ]
 
     class Admin:
         search_fields = ('name', 'id')
