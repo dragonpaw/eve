@@ -161,6 +161,9 @@ class PlayerStation(models.Model):
 
     @property
     def time_remaining(self):
+        if self.state_time is None:
+            return None
+
         remaining = timedelta(hours=self.hours_of_fuel) 
         #remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
         remaining += self.state_time

@@ -1,67 +1,94 @@
-RENAME TABLE agtagents TO ccp_agent;
-RENAME TABLE agtagenttypes TO ccp_agenttype;
-RENAME TABLE agtconfig TO ccp_agentconfig;
-RENAME TABLE agtofferdetails TO ccp_agentoffer;
-RENAME TABLE chrancestries TO ccp_characterancestry;
-RENAME TABLE chrattributes TO ccp_characterattribute;
-RENAME TABLE chrbloodlines TO ccp_characterbloodline;
-RENAME TABLE chrcareers TO ccp_charactercareer;
-RENAME TABLE chrcareerskills TO ccp_charactercareerskills;
-RENAME TABLE chrcareerspecialities TO ccp_charactercareerspeciality;
-RENAME TABLE chrcareerspecialityskills TO ccp_charactercareerspecialityskill;
-RENAME TABLE chrfactions TO ccp_faction;
-RENAME TABLE chrraces TO ccp_races;
-RENAME TABLE chrraceskills TO ccp_raceskill;
-RENAME TABLE chrschoolagents TO ccp_schoolagent;
-RENAME TABLE chrschools TO ccp_school;
-RENAME TABLE crpactivities TO ccp_corporationactivity;
-RENAME TABLE crpnpccorporationdivisions TO ccp_crpnpccorporationdivisions;
-RENAME TABLE crpnpccorporationresearchfields TO ccp_crpnpccorporationresearchfields;
-RENAME TABLE crpnpccorporations TO ccp_corporation;
-RENAME TABLE crpnpccorporationtrades TO ccp_corporationtrade;
-RENAME TABLE crpnpcdivisions TO ccp_corporationdivision;
-RENAME TABLE dgmattributetypes TO ccp_attribute;
-RENAME TABLE dgmeffects TO ccp_effect;
-RENAME TABLE dgmtypeattributes TO ccp_typeattribute;
-RENAME TABLE dgmtypeeffects TO ccp_typeeffect;
-RENAME TABLE evegraphics TO ccp_graphic;
-RENAME TABLE evenames TO ccp_name;
-RENAME TABLE eveunits TO ccp_unit;
-RENAME TABLE invblueprinttypes TO ccp_blueprintdetail;
-RENAME TABLE invcategories TO ccp_category;
-RENAME TABLE invcontrabandtypes TO ccp_contrabandtype;
-RENAME TABLE invcontroltowerresourcepurposes TO ccp_controltowerresourcepurpose;
-RENAME TABLE invcontroltowerresources TO ccp_controltowerresource;
-RENAME TABLE invflags TO ccp_flag;
-RENAME TABLE invgroups TO ccp_group;
-RENAME TABLE invmarketgroups TO ccp_marketgroup;
-RENAME TABLE invmetagroups TO ccp_invmetagroups;
-RENAME TABLE invmetatypes TO ccp_invmetatypes;
-RENAME TABLE invtypereactions TO ccp_typereaction;
-RENAME TABLE invtypes TO ccp_item;
-RENAME TABLE mapcelestialstatistics TO ccp_mapcelestialstatistics;
-RENAME TABLE mapconstellationjumps TO ccp_mapconstellationjumps;
-RENAME TABLE mapconstellations TO ccp_mapconstellations;
-RENAME TABLE mapdenormalize TO ccp_mapdenormalize;
-RENAME TABLE mapjumps TO ccp_mapjumps;
-RENAME TABLE maplandmarks TO ccp_maplandmarks;
-RENAME TABLE mapregionjumps TO ccp_mapregionjumps;
-RENAME TABLE mapregions TO ccp_mapregions;
-RENAME TABLE mapsolarsystemjumps TO ccp_mapsolarsystemjumps;
-RENAME TABLE mapsolarsystems TO ccp_mapsolarsystems;
-RENAME TABLE mapuniverse TO ccp_mapuniverse;
-RENAME TABLE ramactivities TO ccp_ramactivities;
-RENAME TABLE ramassemblylines TO ccp_ramassemblyline;
-RENAME TABLE ramassemblylinestationcostlogs TO ccp_ramassemblylinestationcostlog;
-RENAME TABLE ramassemblylinestations TO ccp_ramassemblylinestation;
-RENAME TABLE ramassemblylinetypedetailpercategory TO ccp_ramassemblylinetypedetailpercategory;
-RENAME TABLE ramassemblylinetypedetailpergroup TO ccp_ramassemblylinetypedetailpergroup;
-RENAME TABLE ramassemblylinetypes TO ccp_ramassemblylinetype;
-RENAME TABLE ramcompletedstatuses TO ccp_ramcompletedstatus;
-RENAME TABLE raminstallationtypedefaultcontents TO ccp_raminstallationtypedefaultcontent;
-RENAME TABLE staoperations TO ccp_stationoperation;
-RENAME TABLE staoperationservices TO ccp_stationoperationservice;
-RENAME TABLE staservices TO ccp_stationservice;
-RENAME TABLE stastations TO ccp_station;
-RENAME TABLE stastationtypes TO ccp_stationtype;
-RENAME TABLE tl2materialsfortypewithactivity TO ccp_material;
+RENAME TABLE agtagents TO ccp_agent,
+             agtagenttypes TO ccp_agenttype,
+             agtconfig TO ccp_agentconfig,
+#             agtofferdetails TO ccp_agentoffer,
+#             agtResearchAgents to ccp_agentresearch,
+             chrancestries TO ccp_characterancestry,
+             chrattributes TO ccp_characterattribute,
+             chrbloodlines TO ccp_characterbloodline,
+             chrcareers TO ccp_charactercareer,
+             chrcareerskills TO ccp_charactercareerskills,
+             chrcareerspecialities TO ccp_charactercareerspeciality,
+             chrcareerspecialityskills TO ccp_charactercareerspecialityskill,
+             chrfactions TO ccp_faction,
+             chrraces TO ccp_race,
+             chrraceskills TO ccp_raceskill,
+             chrschoolagents TO ccp_schoolagent,
+             chrschools TO ccp_school,
+             crpactivities TO ccp_corporationactivity,
+             crpnpccorporationdivisions TO ccp_crpnpccorporationdivisions,
+             crpnpccorporationresearchfields TO ccp_crpnpccorporationresearchfields,
+             crpnpccorporations TO ccp_corporation,
+             crpnpcdivisions TO ccp_corporationdivision,
+             dgmattributetypes TO ccp_attribute,
+             dgmeffects TO ccp_effect,
+             dgmtypeattributes TO ccp_typeattribute,
+             dgmtypeeffects TO ccp_typeeffect,
+             evegraphics TO ccp_graphic,
+             evenames TO ccp_name,
+             eveunits TO ccp_unit,
+             invblueprinttypes TO ccp_blueprintdetail,
+             invcategories TO ccp_category,
+             invcontrabandtypes TO ccp_contrabandtype,
+             invcontroltowerresourcepurposes TO ccp_stationresourcepurpose,
+             invcontroltowerresources TO ccp_stationresource,
+             invflags TO ccp_flag,
+             invgroups TO ccp_group,
+             invmarketgroups TO ccp_marketgroup,
+             invmetagroups TO ccp_inventorymetagroup,
+             invmetatypes TO ccp_inventorymetatype,
+             invtypereactions TO ccp_reaction,
+             invtypes TO ccp_item,
+             mapcelestialstatistics TO ccp_mapcelestialstatistics,
+             mapconstellationjumps TO ccp_constellationjumps,
+             mapconstellations TO ccp_constellation,
+             mapdenormalize TO ccp_mapdenormalize,
+             mapjumps TO ccp_jumps,
+             maplandmarks TO ccp_landmarks,
+             mapregionjumps TO ccp_regionjumps,
+             mapregions TO ccp_region,
+             mapsolarsystemjumps TO ccp_solarsystemjumps,
+             mapsolarsystems TO ccp_solarsystem,
+             mapuniverse TO ccp_mapuniverse,
+             ramactivities TO ccp_ramactivity,
+             ramassemblylines TO ccp_ramassemblyline,
+             ramassemblylinestationcostlogs TO ccp_ramassemblylinestationcostlog,
+             ramassemblylinestations TO ccp_ramassemblylinestation,
+             ramassemblylinetypedetailpercategory TO ccp_ramassemblylinetypedetailpercategory,
+             ramassemblylinetypedetailpergroup TO ccp_ramassemblylinetypedetailpergroup,
+             ramassemblylinetypes TO ccp_ramassemblylinetype,
+             ramcompletedstatuses TO ccp_ramcompletedstatus,
+             raminstallationtypedefaultcontents TO ccp_raminstallationtypedefaultcontent,
+             staoperations TO ccp_stationoperation,
+             staoperationservices TO ccp_stationoperationservice,
+             staservices TO ccp_stationservice,
+             stastations TO ccp_station,
+             stastationtypes TO ccp_stationtype,
+             tl2materialsfortypewithactivity TO ccp_material;
+
+ALTER TABLE `eve`.`ccp_item` DROP COLUMN `slug`;
+ALTER TABLE `eve`.`ccp_marketgroup` DROP COLUMN `slug`;
+ALTER TABLE `eve`.`ccp_region` DROP COLUMN `slug`;
+
+ALTER TABLE `eve`.`ccp_item` ADD COLUMN `slug` VARCHAR(100) NOT NULL;
+ALTER TABLE `eve`.`ccp_marketgroup` ADD COLUMN `slug` VARCHAR(100) NOT NULL;
+ALTER TABLE `eve`.`ccp_region` ADD COLUMN `slug` VARCHAR(50) NOT NULL;
+
+ALTER TABLE `eve`.`ccp_item` ADD UNIQUE INDEX `slug`(`slug`);
+ALTER TABLE `eve`.`ccp_marketgroup` ADD UNIQUE INDEX `slug`(`slug`);
+ALTER TABLE `eve`.`ccp_region` ADD UNIQUE INDEX `slug`(`slug`);
+
+ALTER TABLE `eve`.`ccp_corporation` ADD COLUMN `alliance_id` INT;
+ALTER TABLE `eve`.`ccp_corporation` ADD COLUMN `last_updated` DATETIME;
+ALTER TABLE `eve`.`ccp_corporation` ADD COLUMN `cached_until` DATETIME;
+
+ALTER TABLE `eve`.`ccp_solarsystem` ADD COLUMN `alliance_old_id` INT;
+
+ALTER TABLE `eve`.`ccp_material` ADD COLUMN `id` INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT,
+ ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `eve`.`ccp_reaction` ADD COLUMN `id` INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT,
+ ADD PRIMARY KEY (`id`);
+
+ALTER TABLE `eve`.`ccp_stationresource` ADD COLUMN `id` INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT,
+ ADD PRIMARY KEY (`id`);
