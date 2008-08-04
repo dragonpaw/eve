@@ -317,6 +317,11 @@ class UserLoginForm(forms.Form):
     next = forms.CharField(widget=forms.HiddenInput)
     
     def clean(self):
+        if self._errors.has_key('username'):
+            return 
+        if self._errors.has_key('password'):
+            return
+        
         username = self.cleaned_data['username']
         password = self.cleaned_data['password']
         

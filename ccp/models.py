@@ -437,7 +437,6 @@ class School(models.Model):
                                  db_column='newagentid', 
                                  related_name='charactershool_new_set', 
                                  raw_id_admin=True)
-    tutorialcontentid = models.IntegerField(null=True, blank=True)
     career = models.ForeignKey('CharacterCareer', null=True, blank=True, related_name='schools', 
                                 db_column='careerid')
     class Meta:
@@ -1117,7 +1116,7 @@ class Item(models.Model):
     # DON'T REORDER!!! (Breaks the test copy above.)
     id = models.IntegerField(primary_key=True, db_column='typeid')
     group = models.ForeignKey('Group', db_column='groupid', related_name='items')
-    name = models.CharField(max_length=300)
+    name = models.CharField(max_length=300, db_column='typeName')
     real_description = models.TextField(db_column='description')
     graphic = models.ForeignKey('Graphic', null=True, blank=True, 
                                 raw_id_admin=True, 
@@ -1137,17 +1136,17 @@ class Item(models.Model):
     objects = models.Manager()
     
     class Meta:
-
+        pass
         # If I use 'name' instead of 'typename', then the BlueprintDetails model dies
         # in the admin list view. Like this, the list works, but not the detail.
-        ordering = ['name', ]
+        #ordering = ['typeName', ]
 
     class Admin:
         search_fields = ('name', 'id')
         list_display = ('name', 'id', 'group', 'category', 'graphic') 
         fields = (
             (None, {
-                'fields': ('id', 'name', 'group', 'marketgroup', 'description', 
+                'fields': ('id', 'name', 'group', 'marketgroup', 'real_description', 
                            'graphic', 'race'), 
             }), 
             ('Physics', {
@@ -1513,8 +1512,8 @@ class Reaction(models.Model):
     class Admin:
         pass
     
-    class Meta:
-        ordering = ['reaction', 'input']
+    #class Meta:
+        #ordering = ['reaction', 'input']
 
     def __str__(self):
         arrow = '=>'
@@ -1733,7 +1732,7 @@ class SolarSystem(models.Model):
     faction = models.ForeignKey(Faction, null=True, blank=True,
                                 db_column='factionid', 
                                 related_name='solarsystems')
-    radius = models.FloatField()
+    radius = models.FloatField(default=0.0)
     suntypeid = models.IntegerField(null=True, blank=True)
     securityclass = models.CharField(blank=True, max_length=2, null=True)
     alliance = models.ForeignKey(Alliance, null=True, blank=True, 
