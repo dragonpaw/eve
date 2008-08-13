@@ -649,7 +649,7 @@ class Character(models.Model):
                 except Transaction.DoesNotExist:
                     pass
             
-                self.update_transactions_single(t)
+                messages.extend( self.update_transactions_single(t) )
                 last_id = t.transactionID
                 last_time = t.transactionDateTime
                 qty+=1
@@ -669,7 +669,11 @@ class Character(models.Model):
             sold = True
 
         item = Item.objects.get(pk=t.typeID)
-        station = Station.objects.get(id=t.stationID)
+        try:
+            station = Station.objects.get(id=t.stationID)
+        except Station.DoesNotExist:
+            return ["ERROR: Station ID: '%s' not found in DB." % t.stationID]
+            
                 
         obj = Transaction(character = self,
                           transaction_id = t.transactionID,
@@ -683,6 +687,7 @@ class Character(models.Model):
                           client = t.clientName,
                           )
         obj.save()
+        return []
 
     def refresh_journal(self):
         from eve.trade.models import JournalEntry
