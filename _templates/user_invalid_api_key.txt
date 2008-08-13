@@ -1,9 +1,10 @@
 When you registered your account with the EVE Magic widget, you provided an
 API key for the account numbered {{ account.id }}.
 
-Unfortunately, the key was refused when the Widget tried to gather your data
-the key was rejected as being incorrect. Either you changed it recently, or
-there was a typo in entering it in the Widget.
+Unfortunately, the key was refused when the Widget tried to gather your data.
+As the key was rejected as being incorrect. Either you changed it recently, or
+there was a typo in entering it in the Widget. (Or something is FUBAR in the 
+EVE API itself.)
 
 In either case, the invalid key and all account data related to it has been
 purged from the Widget. You will need to re-enter the correct API key in
