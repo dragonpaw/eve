@@ -221,6 +221,9 @@ if options.user:
 else:
     accounts = Account.objects.all()
     
+if options.force:
+    print "Forcing reload, cache times will be ignored."
+
 for account in accounts:
     error = False
     messages = []
