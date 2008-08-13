@@ -423,15 +423,18 @@ class Character(models.Model):
         return "/user/character/%d/" % self.id
     
     def save( self ):
+        messages = []
         try:
             old = Character.objects.get( pk = self._get_pk_val() )
             if self.corporation_id != old.corporation_id:
-                print "Corporation changed. Purging delegations and rights."
+                messages.append("Corporation changed. Purging delegations and rights.")
                 self.pos_delegations.all().delete()
                 self.is_pos_monkey = False
         except Character.DoesNotExist:
             pass
         super( Character, self ).save()
+        
+        return messages
 
     def refresh_messages_list(self):
         if self.refresh_messages:
@@ -574,7 +577,7 @@ class Character(models.Model):
             messages.append('Transactions changed, updated personal index.')
 
         self.refresh_messages = pickle.dumps(messages)
-        self.save()
+        messages.extend( self.save() )
 
         return messages
     

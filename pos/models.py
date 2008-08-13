@@ -408,6 +408,9 @@ class PlayerStationFuelSupply(models.Model):
     
     @property
     def time_remaining(self):
+        if self.station.state_time is None:
+            return None
+
         remaining = timedelta(hours=self.hours_of_fuel)
         #remaining = max(remaining, 0) # Don't show negative values.
         now = datetime.utcnow()
