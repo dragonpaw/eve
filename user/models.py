@@ -334,7 +334,7 @@ class Account(models.Model):
         char_messages = []
         auth = self.api_auth()
         messages = [{'name':'Account', 'messages':m}]      
-        if self.user.is_stale:
+        if self.user.is_stale and not force:
             m.append('This account has not been accessed recently, so refresh is disabled.')
             return messages
         
