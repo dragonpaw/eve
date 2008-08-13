@@ -1996,10 +1996,10 @@ class RamActivity(models.Model):
 class Station(models.Model):
     id = models.IntegerField(primary_key=True, db_column='stationid')
     security = models.IntegerField(null=True)
-    dockingcostpervolume = models.FloatField('Docking', null=True)
-    maxshipvolumedockable = models.FloatField('Max Dockable', null=True)
-    officerentalcost = models.IntegerField('Office Rental', null=True)
-    operationid = models.IntegerField(null=True, blank=True)
+    dockingcostpervolume = models.FloatField('Docking', default=0)
+    maxshipvolumedockable = models.FloatField('Max Dockable', default=0)
+    officerentalcost = models.IntegerField('Office Rental', default=0)
+    operationid = models.IntegerField(null=True, default=0)
     type = models.ForeignKey(Item, null=True, blank=True, 
                              db_column='stationtypeid', related_name='staitons')
     corporation = models.ForeignKey(Corporation, null=True, blank=True, db_column='corporationid')
@@ -2010,12 +2010,12 @@ class Station(models.Model):
                                        raw_id_admin=True)
     region = models.ForeignKey(Region, null=True, blank=True, db_column='regionid', related_name='stations')
     name = models.CharField(max_length=100, db_column='stationname')
-    x = models.FloatField(null=True)
-    y = models.FloatField(null=True)
-    z = models.FloatField(null=True)
-    reprocessingefficiency = models.FloatField('%', null=True)
-    reprocessingstationstake = models.FloatField('Take', null=True)
-    reprocessinghangarflag = models.IntegerField('Hangar?', null=True)
+    x = models.FloatField(default=0)
+    y = models.FloatField(default=0)
+    z = models.FloatField(default=0)
+    reprocessingefficiency = models.FloatField('%', default=0)
+    reprocessingstationstake = models.FloatField('Take', default=0)
+    reprocessinghangarflag = models.IntegerField('Hangar?', default=0)
     capital_station = models.DateTimeField('Made Capital', null=True,
                                            db_column='capitalStation')
     ownership_date = models.DateTimeField('Ownership Date', null=True,
