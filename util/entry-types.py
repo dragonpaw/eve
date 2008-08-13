@@ -6,9 +6,8 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'eve.settings'
 from eve.trade.models import *
 import sys
 
-from cachehandler import MyCacheHandler
-
-import eveapi
+from eve.lib.cachehandler import MyCacheHandler
+from eve.lib import eveapi
 import pprint
 
 import os
