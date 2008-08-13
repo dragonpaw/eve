@@ -23,8 +23,13 @@
     		{% endif %}
     		<br>
     		<span class="note">{{ pos.tower }}</span>
-    		{% expr int(pos.time_remaining.days) as days %}
-    		<span class="runtime runtime-{{ days }} right">{{ pos.time_remaining|time }}</span>
+        {% expr pos.time_remaining as tr %}
+        {% if tr %}
+    		{% expr int(tr.days) as days %}
+    		  <span class="runtime runtime-{{ days }} right">{{ tr|time }}</span>
+        {% else %}
+          <span class="runtime runtime-0 right">&emdash;</span>
+        {% endif %}
     		</a>
     	</li>{% endspaceless %}
 	{% endfor %}

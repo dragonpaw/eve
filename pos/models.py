@@ -165,7 +165,6 @@ class PlayerStation(models.Model):
             return None
 
         remaining = timedelta(hours=self.hours_of_fuel) 
-        #remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
         remaining += self.state_time
         remaining -= datetime.utcnow()
         return max(remaining, timedelta(0))
