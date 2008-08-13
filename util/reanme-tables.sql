@@ -95,3 +95,34 @@ ALTER TABLE `eve`.`ccp_stationresource` ADD COLUMN `id` INTEGER UNSIGNED NOT NUL
  ADD PRIMARY KEY (`id`);
  
 ALTER TABLE `eve`.`ccp_item` CHANGE COLUMN `typeName` `name`;
+
+ALTER TABLE `ccp_corporation` CHANGE `mainActivityID` `mainActivityID` INT(11) NULL,
+                              CHANGE `secondaryActivityID` `secondaryActivityID` INT(11) NULL DEFAULT NULL,
+                              CHANGE `size` `size` TINYTEXT CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL, 
+                              CHANGE `extent` `extent` TINYTEXT CHARACTER SET latin1 COLLATE latin1_swedish_ci NULL, 
+                              CHANGE `solarSystemID` `solarSystemID` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `investorID1` `investorID1` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `investorShares1` `investorShares1` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `investorID2` `investorID2` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `investorShares2` `investorShares2` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `investorID3` `investorID3` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `investorShares3` `investorShares3` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `investorID4` `investorID4` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `investorShares4` `investorShares4` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `friendID` `friendID` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `enemyID` `enemyID` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `publicShares` `publicShares` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `initialPrice` `initialPrice` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `minSecurity` `minSecurity` DOUBLE NOT NULL DEFAULT '0', 
+                              CHANGE `scattered` `scattered` INT(11) NOT NULL DEFAULT '0', C
+                              HANGE `fringe` `fringe` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `corridor` `corridor` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `hub` `hub` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `border` `border` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `factionID` `factionID` INT(11) NULL, 
+                              CHANGE `sizeFactor` `sizeFactor` DOUBLE NULL, 
+                              CHANGE `stationCount` `stationCount` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `stationSystemCount` `stationSystemCount` INT(11) NOT NULL DEFAULT '0', 
+                              CHANGE `alliance_id` `alliance_id` INT(11) NULL DEFAULT NULL, 
+                              CHANGE `last_updated` `last_updated` DATETIME NULL DEFAULT NULL, 
+                              CHANGE `cached_until` `cached_until` DATETIME NULL DEFAULT NULL;
