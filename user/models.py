@@ -725,10 +725,17 @@ class Character(models.Model):
         
     def refresh_poses(self, force=False):
         from eve.pos.models import PlayerStation
+        messages = []
 
         api = self.api_corporation()
-        corp = self.corporation
-        messages = []
+        try:
+            corp = self.corporation
+        except Corporation.DoesNotExist:
+            # This is a workaround for a CCP bug where corporations give 'not 
+            # in alliance error' and prevent themselves from being visable even 
+            # when they should be.
+            messages.append('Corporation not available. Unable to check for POSes.')
+            return messages
     
         try:
             ids = []
