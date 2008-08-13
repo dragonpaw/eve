@@ -1044,22 +1044,16 @@ class Material(models.Model):
     All the 'stuff' to make other 'stuff'.
     """
     item = models.ForeignKey('Item', 
-                             null=True, 
-                             blank=True, 
                              db_column='typeid', 
                              raw_id_admin=True)
     activity = models.ForeignKey('RamActivity', 
-                                 #null=True,
-                                 #blank=True,
                                  db_column='activity')
     material = models.ForeignKey('Item', 
-                                 null=True, 
-                                 blank=True, 
                                  db_column='requiredtypeid', 
                                  related_name='helps_make', 
                                  raw_id_admin=True)
-    quantity = models.IntegerField(null=True, blank=True)
-    damageperjob = models.FloatField(null=True, blank=True)
+    quantity = models.IntegerField()
+    damageperjob = models.FloatField(default=1)
     id = models.IntegerField(primary_key=True)
 
     class Meta:
