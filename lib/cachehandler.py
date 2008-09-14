@@ -59,7 +59,7 @@ class MyCacheHandler(object):
 			# it's stale. purge it.
 			self.log("%s: cache expired, purging!" % full_path)
 			del self.cache[key]
-			if cacheFile:
+			if cacheFile and exists(cacheFile):
 				os.remove(cacheFile)
 
 		self.log("%s: not cached, fetching from server..." % full_path)
