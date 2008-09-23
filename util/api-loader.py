@@ -125,6 +125,7 @@ def update_map():
             constellation_sov = s.constellationSovereignty
 
         old = datetime.utcnow() - timedelta(days=7)
+        old = old.date()
                 
         if system.alliance_id != alliance:
             output ("Differing: %s Old: %s, current: %s, new: %s" % (system.name, system.alliance_old_id,
