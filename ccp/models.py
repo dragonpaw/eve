@@ -567,7 +567,7 @@ class Corporation(models.Model):
                 record = api.corp.CorporationSheet(corporationID=self.id)
             name = record.corporationName
         except eveapi.Error, e:
-            messages.append("EVE API ERROR on corp refresh: %s" % e)
+            messages.append("EVE API ERROR on corp (%s) refresh: %s" % (self.id, e))
             return messages
                 
         if name == None:
