@@ -249,6 +249,11 @@ class UserCreationForm(forms.Form):
                                   min_length=64, max_length=64)
     
     def clean(self):
+        if self._errors.has_key('password'):
+            return
+        if self._errors.has_key('password2'):
+            return
+        
         if self.cleaned_data['password'] != self.cleaned_data['password2']:
             raise forms.ValidationError('Passwords do not match.')
         return self.cleaned_data

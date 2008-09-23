@@ -2,10 +2,11 @@ from decimal import Decimal
 import time
 from datetime import datetime, timedelta
 import pickle
+import socket
 
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
-from django.db.models.query import Q, QNot
+from django.db.models.query import Q
 from django.db import models
 from django.db.models import signals
 from django.dispatch import dispatcher
@@ -380,6 +381,8 @@ class Account(models.Model):
                 return messages
             else:
                 m.append('EVE API error: %s' % e)
+        except socket.error, e:
+            m.append('EVE API error(socket): %s' % e)
         
         messages += char_messages
         self.refresh_messages = pickle.dumps(m)

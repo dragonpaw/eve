@@ -1,7 +1,7 @@
 #-----------------------------------------------------------------------------
 # eveapi - EVE Online API access
 #
-# Copyright (c)2007 Jamie "Entity" van den Berge <jamie@hlekkir.com>
+# Copyright (c)2007 Jamie "Entity" van den Berge <entity@vapor.com>
 # 
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -25,6 +25,15 @@
 # OTHER DEALINGS IN THE SOFTWARE
 #
 #-----------------------------------------------------------------------------
+# Version: 1.0.6 - 18 July 2008
+# - Enabled expat text buffering to avoid content breaking up [BigWhale]
+#
+# Version: 1.0.5 - 03 February 2008
+# - Added workaround to make broken XML responses (like the "row:name" bug in
+#   eve/CharacterID) work as intended.
+# - Bogus datestamps before the epoch in XML responses are now set to 0 to
+#   avoid breaking certain date/time functions. [Anathema Matou]
+#
 # Version: 1.0.4 - 23 December 2007
 # - Changed _autocast() to use timegm() instead of mktime(). [Invisible Hand]
 # - Fixed missing attributes of elements inside rows. [Elandra Tenari]
@@ -269,7 +278,7 @@ def _autocast(s):
 	if len(s) == 19 and s[10] == ' ':
 		# it could be a date string
 		try:
-			return int(timegm(strptime(s, "%Y-%m-%d %H:%M:%S")))
+			return max(0, int(timegm(strptime(s, "%Y-%m-%d %H:%M:%S"))))
 		except OverflowError:
 			pass
 		except ValueError:
@@ -288,19 +297,24 @@ class _Parser(object):
 		p.CharacterDataHandler = self.tag_cdata
 		p.EndElementHandler = self.tag_end
 		p.ordered_attributes = True
+		p.buffer_text = True
 
-		try:
-			if isStream:
-				p.ParseFile(data)
-			else:
-				p.Parse(data, True)
-			return self.root
-		except RuntimeError, e:
-			#print data
-			raise RuntimeError(e)
+		if isStream:
+			p.ParseFile(data)
+		else:
+			p.Parse(data, True)
+		return self.root
 		
 
 	def tag_start(self, name, attributes):
+		# <hack>
+		# If there's a colon in the tag name, cut off the name from the colon
+		# onward. This is a workaround to make certain bugged XML responses
+		# (such as eve/CharacterID.xml.aspx) work.
+		if ":" in name:
+			name = name[:name.index(":")]
+		# </hack>
+
 		if name == "rowset":
 			# for rowsets, use the given name
 			columns = attributes[attributes.index('columns')+1].split(",")
