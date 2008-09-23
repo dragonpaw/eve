@@ -1862,8 +1862,24 @@ class MapUniverse(models.Model):
 
 
 class RamActivity(models.Model):
+    """
+    mysql> desc ccp_ramactivity;
+    +--------------+----------+------+-----+---------+-------+
+    | Field        | Type     | Null | Key | Default | Extra |
+    +--------------+----------+------+-----+---------+-------+
+    | activityID   | int(11)  | NO   | PRI | NULL    |       | 
+    | activityName | tinytext | NO   |     | NULL    |       | 
+    | iconNo       | tinytext | YES  |     | NULL    |       | 
+    | description  | text     | NO   |     | NULL    |       | 
+    | published    | int(11)  | NO   |     | NULL    |       | 
+    +--------------+----------+------+-----+---------+-------+
+    5 rows in set (0.00 sec)
+    """
     id = models.IntegerField(primary_key=True, db_column='activityid')
     name = models.CharField(max_length=300, db_column='activityname')
+    description = models.TextField(default="")
+    iconNo = models.CharField(max_length=300, blank=True, null=True, default="")
+    published = models.IntegerField(default=0)
 
     class Admin:
         pass
