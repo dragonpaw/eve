@@ -7,7 +7,7 @@ from django.db.models.query import Q, QNot
 
 from datetime import datetime
 
-from eve.ccp.models import Item
+from eve.ccp.models import Item, Corporation
 from eve.pos.models import PlayerStation
 from eve.user.models import Character
 from eve.lib.formatting import make_nav
@@ -38,6 +38,12 @@ DEFAULT_DAYS = 30
 def get_poses(request):
     corps = {}
     for c in request.user.get_profile().characters.all():
+        # Workaround CCP bug as of 2008-09-23. Some corps not queryable by members.
+        try:
+            c.corporation
+        except Corporation.DoesNotExist:
+            continue
+        
         poses = []
         for pos in c.corporation.pos.all():
             if not(c.is_director or c.is_pos_monkey
