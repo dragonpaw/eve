@@ -40,6 +40,10 @@ parser.add_option('-d', '--debug', action='store_true', default=DEBUG,
 
 (options, args) = parser.parse_args()
 
+# Debug is also verbose.
+if options.debug:
+    options.verbose = True
+
 sp = [0, 250, 1414, 8000, 45255, 256000]
 
 skills = Item.skill_objects.all()
@@ -52,12 +56,12 @@ character_security_timeout = timedelta(hours=12)
 def output(msg):
     global message
     message += msg + '\n'
-    if options.debug or options.verbose:
+    if options.verbose:
         print msg
     
 def exit():
     output("Runtime: %s" % (datetime.utcnow() - start_time))
-    if exit_code != 0 and not (options.debug or options.verbose):
+    if exit_code != 0 and not options.verbose:
         print message
     sys.exit(exit_code)
     
@@ -233,7 +237,7 @@ for account in accounts:
         error = traceback.format_exc()
         exit_code = 1
         
-    if options.debug or options.verbose or error:
+    if options.verbose or error:
         print  "-" * 78
         print "Account: %s(%s)" % (account.user, account.id)
         for x in messages:
