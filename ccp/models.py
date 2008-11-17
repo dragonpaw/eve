@@ -561,7 +561,7 @@ class Corporation(models.Model):
         try:
             if character:
                 api = character.api_corporation()
-                record = api.CorporationSheet(corporationID=self.id)
+                record = api.CorporationSheet() # Adding corpid triggers an API bug.
             else:
                 api = API
                 record = api.corp.CorporationSheet(corporationID=self.id)
