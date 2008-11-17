@@ -25,6 +25,12 @@
 # OTHER DEALINGS IN THE SOFTWARE
 #
 #-----------------------------------------------------------------------------
+# Version: 1.0.7 - 14 November 2008
+# - Added workaround for rowsets that are missing the (required!) columns
+#   attribute. If missing, it will use the columns found in the first row.
+#   Note that this is will still break when expecting columns, if the rowset
+#   is empty [Flux/Entity]
+#
 # Version: 1.0.6 - 18 July 2008
 # - Enabled expat text buffering to avoid content breaking up [BigWhale]
 #
@@ -317,12 +323,19 @@ class _Parser(object):
 
 		if name == "rowset":
 			# for rowsets, use the given name
-			columns = attributes[attributes.index('columns')+1].split(",")
+			try:
+				columns = attributes[attributes.index('columns')+1].split(",")
+			except ValueError:
+				# rowset did not have columns tag set (this is a bug in API)
+				# columns will be extracted from first row instead.
+				columns = []
+
 			try:
 				priKey = attributes[attributes.index('key')+1]
 				this = IndexRowset(cols=columns, key=priKey)
 			except ValueError:
 				this = Rowset(cols=columns)
+
 
 			this._name = attributes[attributes.index('name')+1]
 			this.__catch = "row" # tag to auto-add to rowset.
@@ -336,10 +349,14 @@ class _Parser(object):
 			# We're at the root. The first tag has to be "eveapi" or we can't
 			# really assume the rest of the xml is going to be what we expect.
 			if name != "eveapi":
-				raise RuntimeError("Invalid API response: expected 'eveapi', got %s" % name) 
+				raise RuntimeError("Invalid API response: expected 'eveapi', got %s" % name)
 			self.root = this
 
 		if isinstance(self.container, Rowset) and (self.container.__catch == this._name):
+			# check for missing columns attribute (see above)
+			if not self.container._cols:
+				self.container._cols = attributes[0::2]
+
 			self.container.append([_autocast(attributes[i]) for i in range(1, len(attributes), 2)])
 			this._isrow = True
 			this._attributes = None
@@ -446,6 +463,7 @@ class _Parser(object):
 #-----------------------------------------------------------------------------
 
 class Element(object):
+
 	# Element is a namespace for attributes and nested tags
 	def __str__(self):
 		return "<Element '%s'>" % self._name
