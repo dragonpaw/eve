@@ -16,7 +16,8 @@
 {% for nav in inline_nav %}
     {% spaceless %}<li>
         <a href="{{ nav.get_absolute_url }}">
-            <img src="{{ nav.icon32 }}"><span class="name">{{ nav.name }}</span>
+	    {% if nav.icon32 %}<img src="{{ nav.icon32 }}">{% else %}<img>{% endif %}
+            <span class="name">{{ nav.name }}</span>
             {% if nav.note %}<br><span class="note">{{ nav.note }}</span>{% endif %}
         </a>
     </li>

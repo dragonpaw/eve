@@ -10,8 +10,11 @@
 {% for corp in poses %}
 <!-- corp: {{ corp|pprint }} -->
 <h4>{{ corp.name }}</h4>
+{% regroup corp.pos by owner as owner_list %}
+{% for owner in owner_list %}
+<h5>{% ifequal owner.grouper None %}Corporate Use{% else %}{{ owner.grouper }}{% endifequal %}</h5>
 	<ul class="links">
-	{% for pos in corp.pos %}
+	{% for pos in owner.list %}
 		<li class="pos">{% spaceless %}
 			<a href="{{ pos.get_absolute_url }}">
 			<img src="{{ pos.tower.icon32 }}">
@@ -34,6 +37,7 @@
     	</li>{% endspaceless %}
 	{% endfor %}
 	</ul>
+{% endfor %}
 {% endfor %}
 {% else %}
 <p>You are not director in any corporation owning a station.</p>

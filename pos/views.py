@@ -1,9 +1,9 @@
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from django import newforms as forms
+from django import forms
 from django.http import HttpResponseRedirect, Http404
-from django.db.models.query import Q, QNot
+from django.db.models import Q
 
 from datetime import datetime
 
@@ -19,10 +19,10 @@ pos_consumption_nav = make_nav('Consumption', '/pos/consumption/', '10_07',
 pos_profit_nav = make_nav('Profits', '/pos/profit/', '06_03', 
                           'Profits and costs for all of your POSes')
 pos_monkey_nav = make_nav('POS Helpers', '/pos/helpers/','02_16',
-                          'Allow others to see POS status.')
+                          'Check who is able to see POS status.')
 
-DELEGATE_NAV = make_nav('Delegate access to this POS', '/pos/%d/delegations/', '02_16',
-                        'Allow other people to see this specific POS.'
+DELEGATE_NAV = make_nav('Configure Ownership', '/pos/%d/owner/', '02_16',
+                        'Setup a player in the corporation as owner of this POS.'
                         )
 REFUEL_NAV = make_nav('Update Fuel Quantities', '/pos/%d/refuel/', '10_07',
                       'The EVE Widget automatically refreshes all POS data every 6 hours. '
@@ -58,9 +58,12 @@ def get_poses(request):
             poses.append(pos)
             
         if len(poses) > 0:
-            poses.sort(key=lambda x:"%s/%s/%s" % (x.solarsystem.name, 
-                                                  x.moon.celestialindex, 
-                                                  x.moon.orbitindex))
+            poses.sort(key=lambda x:"%s/%s/%03d/%03d" % (
+                x.owner,
+                x.solarsystem.name, 
+                x.moon.celestialindex, 
+                x.moon.orbitindex)
+            )
     
     return corps.values()
 
@@ -308,7 +311,7 @@ class ReactionForm(forms.Form):
     r8 = forms.ChoiceField(label='8', choices=reactions, required=False)
     r9 = forms.ChoiceField(label='9', choices=reactions, required=False)
     r10 = forms.ChoiceField(label='10', choices=reactions, required=False)
-
+    
 @login_required
 def setup_reactions(request, station_id):
     template = 'pos_edit_reactions.html'
@@ -408,40 +411,20 @@ def is_director_of_or_404(me, you):
         raise Http404
 
 @login_required
-def monkey_grant(request, grant=None, revoke=None):
-    if grant:
-        char = grant
-        monkey = True
-    elif revoke:
-        char = revoke
-        monkey = False
-    
-    char = get_object_or_404(Character, name=char)
-    is_director_of_or_404(request.user, char)
-    char.is_pos_monkey = monkey
-    char.save()
-    return HttpResponseRedirect( pos_monkey_nav['get_absolute_url'] )
-
-@login_required
-def delegate_add(request, station_id, character_name):
+def owner_set(request, station_id, character_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
-    character = get_object_or_404(Character, name=character_name)
     check_rights(request, pos)
-    is_director_of_or_404(request.user, character)
-    pos.delegates.get_or_create(character=character, station=pos)
-    return HttpResponseRedirect( '/pos/%s/delegations/' % pos.id )
+    if character_id == '0':
+        pos.owner = None    
+    else:
+        character = get_object_or_404(Character, id=character_id)
+        is_director_of_or_404(request.user, character)
+        pos.owner = character
+    pos.save()
+    return HttpResponseRedirect( '/pos/%s/fuel/' % pos.id )
 
 @login_required
-def delegate_delete(request, station_id, character_name):
-    pos = get_object_or_404(PlayerStation, id=station_id)
-    character = get_object_or_404(Character, name=character_name)
-    check_rights(request, pos)
-    is_director_of_or_404(request.user, character)
-    pos.delegates.filter(character=character).delete()
-    return HttpResponseRedirect( '/pos/%s/delegations/' % pos.id )
-
-@login_required
-def delegate_list(request, station_id):
+def owner(request, station_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
     

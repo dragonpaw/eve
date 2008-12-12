@@ -98,6 +98,8 @@ what is listed here. However, these are the correct numbers.</p>
 		{% if pos.corporation_use %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
 	<tr><th>Alliance use</th>
 		{% if pos.alliance_use %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
+        <tr><th>Owner</th>
+                {% if pos.owner %}<td class="enabled">{{ pos.owner }}</td>{% else %}<td class="disabled">None</td>{% endif %}</tr>
 	<tr><th>Claiming Sovereignty</th>
 		{% if pos.claim %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>
 	<tr><th>Attack standing below</th>

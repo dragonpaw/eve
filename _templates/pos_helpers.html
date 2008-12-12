@@ -4,9 +4,9 @@
 
 {% block content %}
 {% if corporations %}
-<p>Use this setting to designate someone within your corporation as a
-POS Helper, who will be able to view and update status on all POSes
-within their corporation.</p>
+<p>The following users are able to view POS information via the Widget, based
+off of their in-game roles within the corporation. To grant or revoke global
+access, use the in-game title and role mechanics.</p>
 
 <p>If you want to designate a single person as the owner of a
 personal POS, then do <strong>not</strong> use this page to do that. Go
@@ -20,25 +20,19 @@ ownership tool there.</p>
 
 <ul class="links">
 {% for char in c.characters.all %}
-{% if char.is_director %}
+<a>
 <li class="pos-access no-link">
 <img src="{{ char.icon64 }}" style="width: 32px; height: 32px">
-<a>
+{% if char.is_director %}
 <span class="director">{{ char.name }}</span><br>
 <span class="note">This character is a director. They will always see POS status.</span>
 {% else %}
 {% if char.is_pos_monkey %}
-<li class="pos-access">
-<img src="{{ char.icon64 }}" style="width: 32px; height: 32px">
-<a href="/pos/revoke/{{ char.name }}/">
 <span class="granted">{{ char.name }}</span><br>
-<span class="note">Click to revoke POS status access for all corporation towers.</span>
+<span class="note">This character as the 'Starbase Caretaker' role granted within EVE.</span>
 {% else %}
-<li class="pos-access">
-<img src="{{ char.icon64 }}" style="width: 32px; height: 32px">
-<a href="/pos/grant/{{ char.name }}/">
 <span class="denied">{{ char.name }}</span><br>
-<span class="note">Click to grant POS view access.</span>
+<span class="note">This character has no roles.</span>
 {% endif %}{% endif %}
 </a></li>
 {% endfor %}

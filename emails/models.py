@@ -1,5 +1,4 @@
 from django.db import models
-from eve.user.models import UserProfile
 from email.MIMEText import MIMEText
 import smtplib
 
@@ -12,7 +11,7 @@ SERVER = 'mail.dragonpaw.org'
 class Message(models.Model):
     """This table contains the individual email messages."""
         
-    profile = models.ForeignKey(UserProfile)
+    profile = models.ForeignKey('user.UserProfile')
     body = models.TextField()
     subject = models.CharField(blank=True, max_length=100)
     date = models.DateTimeField(auto_now_add=True)
@@ -28,7 +27,7 @@ class Message(models.Model):
         search_fields = ('subject',)
         list_display = ('profile', 'subject',) 
         
-    def __str__(self):
+    def __unicode__(self):
         return self.subject
 
     def send_to(self, to):

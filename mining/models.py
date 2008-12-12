@@ -9,17 +9,11 @@ class MiningOp(models.Model):
     created_by = models.ForeignKey(User)
     hours = models.FloatField(editable=False, default=0)
     
-    class Admin:
-        list_display = ['id', 'description', 'hours']
-    
-    class Meta:
-        pass
-    
-    def __str__(self):
+    def __unicode__(self):
         if self.description:
-            return "%s: %s" % (self.datetime, self.description)
+            return u"%s: %s" % (self.datetime, self.description)
         else:
-            return "Mining Op #%s: %s" % (self.id, self.datetime)
+            return u"Mining Op #%s: %s" % (self.id, self.datetime)
         
     @property
     def name(self):
@@ -34,19 +28,12 @@ class MiningOp(models.Model):
         return dict([ (x['type'], x['quantity']/self.shares) for x in self.ores.all() ])
     
 class MinerOnOp(models.Model):
-    op = models.ForeignKey(MiningOp, related_name='miners',
-                              min_num_in_admin = 10,
-                              num_extra_on_change = 4, 
-                              edit_inline = models.TABULAR)
-    name = models.CharField(max_length=100, core=True)
+    op = models.ForeignKey(MiningOp, related_name='miners')
+    name = models.CharField(max_length=100)
     multiplier = models.FloatField(default=1.0)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
 
-    class Admin:
-        list_display = ['id', 'op', 'name', 'multiplier', 'hours', 'percent']
-        ordering = ['phase']
-    
     def hours(self):
         x = self.end_time - self.start_time
         return (x.days * 24) + (x.seconds / 60.0**2)
@@ -55,8 +42,8 @@ class MinerOnOp(models.Model):
         total_hours = self.op.hours
         return (self.hours() * self.multiplier) / total_hours
     
-    def __str__(self):
-        return "%s [%1.2f]" % (self.name, self.hours())
+    def __unicode__(self):
+        return u"%s [%1.2f]" % (self.name, self.hours())
     
     def save(self):
         super(MinerOnOp, self).save() # Call the "real" save() method.
@@ -70,16 +57,12 @@ class MinerOnOp(models.Model):
         self.op.save()
     
 class MiningOpMineral(models.Model):
-    op = models.ForeignKey(MiningOp, related_name='minerals',
-                              num_extra_on_change = 4,
-                              min_num_in_admin = 6,
-                              edit_inline = models.TABULAR)
-    type = models.ForeignKey(Item, limit_choices_to = {'group__name':'Mineral', 'published':True},
-                             core=True)
+    op = models.ForeignKey(MiningOp, related_name='minerals')
+    type = models.ForeignKey(Item, limit_choices_to = {'group__name':'Mineral', 'published':True})
     quantity = models.IntegerField()
     
     class Admin:
         list_display = ['id', 'op', 'type', 'quantity']
         
-    def __str__(self):
-        return "%s: %s x%d" % (self.op, self.type, self.quantity)
+    def __unicode__(self):
+        return u"%s: %s x%d" % (self.op, self.type, self.quantity)
