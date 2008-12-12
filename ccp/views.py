@@ -1,9 +1,8 @@
 # Create your views here.
-#from django import newforms as forms
 #from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from django.db.models.query import Q, QNot
+from django.db.models import Q
 
 from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute
 from eve.trade.models import BlueprintOwned
@@ -85,11 +84,14 @@ def region_list(request):
     d = {}
     d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
 
-    q1 = Q(faction__isnull=True)
-    q2 = QNot(Q(faction__name='Jove Empire'))
+    #q1 = Q(faction__isnull=True)
+    #q2 = ~Q(faction__name='Jove Empire')
 
-    regions = list(Region.objects.filter(q1)) + list(Region.objects.filter(q2))
-    regions.sort(key=lambda x:x.name)
+    #regions = list(Region.objects.filter(q1)) + list(Region.objects.filter(q2))
+    #regions.sort(key=lambda x:x.name)
+    
+    q = Q(faction__isnull=True) | ~Q(faction__name='Jove Empire')
+    regions = Region.objects.filter(q)
     
     d['inline_nav'] = regions
     

@@ -1,41 +1,39 @@
 from django.db import models
-from django.db.models.query import Q, QNot
+from django.db.models import Q
 
 from datetime import datetime, timedelta
 from decimal import Decimal
 import math
 import time
 
-from eve.ccp.models import (MapDenormalize, Item, SolarSystem, Region, Constellation, Corporation)
-from eve.user.models import Character
+from eve.ccp.models import MapDenormalize, SolarSystem, Item
 
-class FuelDepot(models.Model):
-    location = models.ForeignKey(SolarSystem)
-    note = models.TextField()
-    
-    def __str__(self):
-        if (self.note == ""):
-            return self.locaiton
-        else:
-            return "%s (%s)" % (self.location, self.note)
-        
-    class Admin:
-        list_display = ('location', 'note')
+#class FuelDepot(models.Model):
+#    location = models.ForeignKey('ccp.SolarSystem')
+#    note = models.TextField()
+#    
+#    def __unicode__(self):
+#        if (self.note == ""):
+#            return self.locaiton
+#        else:
+#            return u"%s (%s)" % (self.location, self.note)
+#        
+#    class Admin:
+#        list_display = ('location', 'note')
 
-class FuelSupply(models.Model):
-    depot = models.ForeignKey(FuelDepot)
-    type = models.ForeignKey(Item, raw_id_admin=True)
-    #                              limit_choices_to = {'is_pos_fuel': True})
-    quantity = models.IntegerField()
-    
-    def __str__(self):
-        return "%s: %s" % (self.depot.location, self.type)
-
-    class Admin:
-        list_display = ('depot', 'type', 'quantity')
-        
-    class Meta:
-        ordering = ['type']
+#class FuelSupply(models.Model):
+#    depot = models.ForeignKey(FuelDepot)
+#    type = models.ForeignKey('ccp.Item')
+#    quantity = models.IntegerField()
+#    
+#    def __unicode__(self):
+#        return u"%s: %s" % (self.depot.location, self.type)
+#
+#    class Admin:
+#        list_display = ('depot', 'type', 'quantity')
+#        
+#    class Meta:
+#        ordering = ['type']
         
 # Create your models here.
 class PlayerStation(models.Model):
@@ -52,20 +50,17 @@ class PlayerStation(models.Model):
               (1, 'Yes'),
               )
     
-    moon = models.ForeignKey(MapDenormalize, raw_id_admin=True)
-    solarsystem = models.ForeignKey(SolarSystem, raw_id_admin=True, )
-    constellation = models.ForeignKey(Constellation, raw_id_admin=True, )
-    region = models.ForeignKey(Region, raw_id_admin=True, )
-    tower = models.ForeignKey(Item, limit_choices_to = q)
-    depot = models.ForeignKey(FuelDepot, blank=True, null=True, default='')
+    moon = models.ForeignKey('ccp.MapDenormalize')
+    solarsystem = models.ForeignKey('ccp.SolarSystem')
+    constellation = models.ForeignKey('ccp.Constellation')
+    region = models.ForeignKey('ccp.Region')
+    tower = models.ForeignKey('ccp.Item', limit_choices_to = q)
     state = models.IntegerField(choices=POS_STATES)
     state_time = models.DateTimeField(blank=True, null=True)
     online_time = models.DateTimeField(blank=True, null=True)
     cached_until = models.DateTimeField(blank=True)
     last_updated = models.DateTimeField(blank=True)
-    corporation = models.ForeignKey(Corporation, related_name='pos',
-                                    raw_id_admin=True, )
-    #corp = models.ForeignKey(PlayerCorp)
+    corporation = models.ForeignKey('ccp.Corporation', related_name='pos')
     
     corporation_use = models.BooleanField()
     alliance_use = models.BooleanField()
@@ -73,7 +68,6 @@ class PlayerStation(models.Model):
     usage_flags = models.IntegerField(blank=True)
     claim = models.BooleanField()
     
-    #attack_standing_flag = models.BooleanField()
     attack_standing_value = models.FloatField()
     attack_aggression = models.BooleanField()
     attack_atwar = models.BooleanField()
@@ -84,36 +78,13 @@ class PlayerStation(models.Model):
     power_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
     
     note = models.CharField(max_length=500, blank=True)
-    is_personal_pos = models.BooleanField(default=False)
-    owner = models.CharField("Owner/Maintainer", max_length=100, blank=True)
+    owner = models.ForeignKey('user.Character', blank=True, null=True)
     
     class Meta:
         ordering = ['moon']
     
-    class Admin:
-        list_display = ('moon', 'corporation', 'depot', 'state')
-        fields = (
-                  (None, {'fields': ('corporation','moon','tower','depot','state')}),
-                  ('Times', {'fields': ('state_time','online_time','cached_until','last_updated'),
-                             'classes': 'collapse'}),
-                  ('Location', {'fields': ('solarsystem','constellation','region'),
-                                'classes': 'collapse'}),
-                  ('General Settings', {'fields': ('corporation_use',
-                                                   'alliance_use',
-                                                   'deploy_flags',
-                                                   'usage_flags',
-                                                   'claim'),
-                                        'classes': 'collapse'}),
-                  ('Combat Settings', {'fields': ('attack_standing_value',
-                                                  'attack_aggression', 
-                                                  'attack_atwar',
-                                                  'attack_secstatus_flag', 
-                                                  'attack_secstatus_value'),
-                                       'classes': 'collapse'}),
-                  )
-
-    def __str__(self):
-        return "%s (%s)" % (self.moon, self.corporation)
+    def __unicode__(self):
+        return u"%s (%s)" % (self.moon, self.corporation)
     
     @property
     def cpu_percent(self):
@@ -311,47 +282,33 @@ class PlayerStation(models.Model):
         return messages
     
 class PlayerStationModule(models.Model):
-    q = Q(group__category__name='Structure', published=True) 
-    q &= QNot( Q(group__name='Control Tower') )
+    q = Q(group__category__name='Structure', published=True) & ~Q(group__name='Control Tower')
     
-    item = models.ForeignKey(Item, limit_choices_to = q)
+    item = models.ForeignKey('ccp.Item', limit_choices_to = q)
     station = models.ForeignKey(PlayerStation)
     online = models.BooleanField(default=True)
     
-    def __str__(self):
-        return "%s" % (self.item)
+    def __unicode__(self):
+        return u"%s" % (self.item)
     
-    class Admin:
-        list_display = ('station', 'item')
-        list_display_links = ['item']
-        
 class PlayerStationDelegation(models.Model):
-    station = models.ForeignKey(PlayerStation, related_name='delegates',
-                                edit_inline=models.TABULAR, core=True)
-    character = models.ForeignKey(Character, related_name='pos_delegations',
-                                  edit_inline=models.TABULAR, core=True)
+    station = models.ForeignKey(PlayerStation, related_name='delegates')
+    character = models.ForeignKey('user.Character', related_name='pos_delegations')
         
 class PlayerStationFuelSupply(models.Model):
-    station = models.ForeignKey(PlayerStation, related_name='fuel', 
-                                edit_inline=models.TABULAR)
-    type = models.ForeignKey(Item, raw_id_admin=True, 
-                             related_name='active_stations_using', core=True)
-    solarsystem = models.ForeignKey(SolarSystem, raw_id_admin=True, )
-    constellation = models.ForeignKey(Constellation, raw_id_admin=True, )
-    region = models.ForeignKey(Region, raw_id_admin=True, )
-    corporation = models.ForeignKey(Corporation, related_name='pos_fuels', 
-                                    raw_id_admin=True, )
-
+    station = models.ForeignKey(PlayerStation, related_name='fuel')
+    type = models.ForeignKey('ccp.Item', related_name='active_stations_using')
+    solarsystem = models.ForeignKey('ccp.SolarSystem')
+    constellation = models.ForeignKey('ccp.Constellation')
+    region = models.ForeignKey('ccp.Region')
+    corporation = models.ForeignKey('ccp.Corporation', related_name='pos_fuels')
     quantity = models.IntegerField()
     
-    class Admin:
-        list_display = ('station', 'type', 'quantity')
-        
     class Meta:
         ordering = ['type']
     
-    def __str__(self):
-        return "%s: %s (%d)" % (self.station, self.type, self.quantity)
+    def __unicode__(self):
+        return u"%s: %s (%d)" % (self.station, self.type, self.quantity)
 
     @property
     def fuel_info(self):
@@ -442,19 +399,15 @@ class PlayerStationReaction(models.Model):
                            'Composite']) 
     q = q & Q(published=True)
     
-    station = models.ForeignKey(PlayerStation, related_name='reactions', 
-                                edit_inline=models.TABULAR, min_num_in_admin=6)
-    type = models.ForeignKey(Item, limit_choices_to = q,
-                             related_name='poses_reacting', core=True)
+    station = models.ForeignKey(PlayerStation, related_name='reactions')
+    type = models.ForeignKey('ccp.Item', limit_choices_to = q,
+                             related_name='poses_reacting')
     
-    class Admin:
-        list_display = ('station', 'type', )
-        
     class Meta:
         ordering = ['type']
 
-    def __str__(self):
-        return "%s: %s" % (self.station, self.type)
+    def __unicode__(self):
+        return u"%s: %s" % (self.station, self.type)
     
     @property
     def is_mining(self):

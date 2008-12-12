@@ -3,49 +3,38 @@
 {% load markup %}
 
 {% block content %}
-<p>Use this setting to designate someone within your corporation as a
-POS Helper, who will be able to view and update status on all POSes
-within their corporation.</p>
-
-<p>If you want to designate a single person as the owner of a
-personal POS, then do <strong>not</strong> use this page to do that. Go
-to the page for the specific POS, and you will find a delegation and
-ownership tool there.</p>
+<p>Use this setting to assign 'ownership' of this structure to someone within
+your corporation. They will be able to see the status of the POS via the Widget,
+but not within EVE itself.</p>
 
 <h3>{{ pos.corporation.name }}</h3>
+<ul class="links">
+<li class="pos-access">
+<img style="width: 32px; height: 32px">
+<a href="/pos/{{ pos.id }}/owner/0/">
+<span class="denied">Corprate</span><br>
+<span class="note">Click to set this POS to corprate use.</span>
+</a></li>
+</ul>
+
 <h4>Characters</h4>
 <p>Characters in green can view POS status. Those in red cannot.</p>
 
 <ul class="links">
-{% for c in characters%}
-{% if c.director %}
+{% for c in pos.corporation.characters.all %}
+{% ifequal c pos.owner %}
 <li class="pos-access no-link">
-<img src="{{ c.character.icon64 }}" style="width: 32px; height: 32px">
+<img src="{{ c.icon64 }}" style="width: 32px; height: 32px">
 <a>
-<span class="director">{{ c.character.name }}</span><br>
-<span class="note">This character is a director. They will always see POS status.</span>
-{% else %}
-{% if c.monkey %}
-<li class="pos-access no-link">
-<img src="{{ c.character.icon64 }}" style="width: 32px; height: 32px">
-<a>
-<span class="monkey">{{ c.character.name }}</span><br>
-<span class="note">This character is a designated POS Helper by the directors.
-They will always see POS status.</span>
-{% else %}
-{% if c.delegate %}
-<li class="pos-access">
-<img src="{{ c.character.icon64 }}" style="width: 32px; height: 32px">
-<a href="/pos/{{ pos.id }}/revoke/{{ c.character.name }}/">
-<span class="granted">{{ c.character.name }}</span><br>
-<span class="note">Click to revoke POS view access for this POS.</span>
+<span class="granted">{{ c.name }}</span><br>
+<span class="note">Owner! They will be able to see POS status.</span>
 {% else %}
 <li class="pos-access">
-<img src="{{ c.character.icon64 }}" style="width: 32px; height: 32px">
-<a href="/pos/{{ pos.id }}/grant/{{ c.character.name }}/">
-<span class="denied">{{ c.character.name }}</span><br>
-<span class="note">Click to grant POS view access for this POS.</span>
-{% endif %}{% endif %}{% endif %}
+<img src="{{ c.icon64 }}" style="width: 32px; height: 32px">
+<a href="/pos/{{ pos.id }}/owner/{{ c.id }}/">
+<span class="denied">{{ c.name }}</span><br>
+<span class="note">Click to make owner of this POS.</span>
+{% endifequal %}
 </a></li>
 {% endfor %}
 </ul>

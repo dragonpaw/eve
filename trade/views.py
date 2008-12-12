@@ -1,10 +1,10 @@
-from django import newforms as forms
+from django import forms
 from django.newforms import ModelForm
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
-from django.db.models.query import Q, QNot
+from django.db.models import Q
 
 import re
 

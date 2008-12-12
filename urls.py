@@ -1,9 +1,12 @@
 # $Id$
 from django.conf.urls.defaults import include, patterns, handler500, handler404 # need the handlers for django.
 from eve.settings import STATIC_DIR, DEBUG
+from django.contrib import admin
+
+admin.autodiscover()
 
 urlpatterns = patterns('',
-    (r'^admin/', include('django.contrib.admin.urls')),
+    (r'^admin/(.*)', admin.site.root),
     
     (r'^trade/', include('eve.trade.urls')),
     (r'^pos/', include('eve.pos.urls')),
