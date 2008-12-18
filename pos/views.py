@@ -12,11 +12,11 @@ from eve.pos.models import PlayerStation
 from eve.user.models import Character
 from eve.lib.formatting import make_nav
 
-pos_nav = make_nav("Player-Owned Structures", "/pos/", '40_14', 
+pos_nav = make_nav("Player-Owned Structures", "/pos/", '40_14',
                    note='Fuel status for all of your POSes.')
-pos_consumption_nav = make_nav('Consumption', '/pos/consumption/', '10_07', 
+pos_consumption_nav = make_nav('Consumption', '/pos/consumption/', '10_07',
                                'Consumption and shopping list for all of your POSes')
-pos_profit_nav = make_nav('Profits', '/pos/profit/', '06_03', 
+pos_profit_nav = make_nav('Profits', '/pos/profit/', '06_03',
                           'Profits and costs for all of your POSes')
 pos_monkey_nav = make_nav('POS Helpers', '/pos/helpers/','02_16',
                           'Check who is able to see POS status.')
@@ -43,7 +43,7 @@ def get_poses(request):
             c.corporation
         except Corporation.DoesNotExist:
             continue
-        
+
         poses = []
         for pos in c.corporation.pos.all():
             if not(c.is_director or c.is_pos_monkey
@@ -56,15 +56,15 @@ def get_poses(request):
                                         }
             # This works, because the object is already in the dict.
             poses.append(pos)
-            
+
         if len(poses) > 0:
             poses.sort(key=lambda x:"%s/%s/%03d/%03d" % (
                 x.owner,
-                x.solarsystem.name, 
-                x.moon.celestialindex, 
+                x.solarsystem.name,
+                x.moon.celestialindex,
                 x.moon.orbitindex)
             )
-    
+
     return corps.values()
 
 def check_rights(request, pos):
@@ -76,7 +76,7 @@ def check_rights(request, pos):
                 return True
         if pos.delegates.filter(character=c).count() > 0:
             return True
-        
+
     # Guess not.
     raise Http404
 
@@ -84,10 +84,10 @@ def check_rights(request, pos):
 def pos_list(request):
     d = {}
     d['nav'] = [pos_nav]
-    
-    d['poses'] = get_poses(request) 
+
+    d['poses'] = get_poses(request)
     d['inline_nav'] = [ pos_consumption_nav, pos_profit_nav, pos_monkey_nav ]
-    
+
     return render_to_response('pos_list.html', d, context_instance=RequestContext(request))
 
 
@@ -95,7 +95,7 @@ def pos_list(request):
 def fuel_detail(request, station_id, days=DEFAULT_DAYS):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
-    
+
     d = {}
     d['nav'] = [pos_nav, pos]
     d['pos'] = pos
@@ -107,24 +107,24 @@ def fuel_detail(request, station_id, days=DEFAULT_DAYS):
                       'run_time':f.time_remaining,
                       'type':f.type,
                       'fuel':f})
-        
+
     fuels.sort(key=lambda x:x['type'].name)
     d['fuels'] = fuels
-    
+
 
     nav = []
     # Build of the nav options for the POS.
     for x in (REFUEL_NAV, REACTION_NAV, PROFIT_NAV):
         x.id = pos.id
         nav.append(x)
-    
+
     if is_director_of(request.user, pos):
         x = DELEGATE_NAV
         x.id = pos.id
         nav.append(x)
 
     d['inline_nav'] = nav
-    
+
     return render_to_response('pos_fuel_detail.html', d,
                               context_instance=RequestContext(request))
 
@@ -133,7 +133,7 @@ def profit_detail(request, station_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
     profile = request.user.get_profile()
-    
+
     d = {}
     d['nav'] = [pos_nav, pos_profit_nav, pos]
     d['pos'] = pos
@@ -141,25 +141,25 @@ def profit_detail(request, station_id):
     fuels = []
     for f in pos.fuel.all():
         price = profile.get_buy_price(f.type)
-        
+
         weekly = 0
         if f.purpose != 'Reinforce':
             weekly = f.consumption * 24 * 7
             weekly_cost = price * weekly
             cost += weekly_cost
-                
+
         fuels.append({'price':price,
                       'weekly':weekly,
                       'weekly_cost':weekly_cost,
                       'type':f.type,
                       'fuel':f})
-        
+
     fuels.sort(key=lambda x:x['type'].name)
     d['weekly_cost'] = cost
     d['fuels'] = fuels
     d['reactions'] = list( pos.reactions.all() )
     d['reactions'].sort(key=lambda x:'%d-%s' % (x.is_reaction, x.type.name))
-    
+
     reaction_values = []
     weekly_value = 0
     for type, quantity in pos.reacted_quantities():
@@ -173,25 +173,25 @@ def profit_detail(request, station_id):
     reaction_values.sort(key=lambda x:x['type'].id)
     d['reaction_values'] = reaction_values
     d['weekly_value'] = weekly_value
-    d['weekly_total'] = weekly_value - cost
-    d['profitable'] = d['weekly_total'] > 0 
+    d['weekly_total'] = abs(weekly_value - cost)
+    d['profitable'] = d['weekly_total'] > 0
     nav = []
     # Build of the nav options for the POS.
     for x in (REACTION_NAV,):
         x.id = pos.id
         nav.append(x)
     d['inline_nav'] = nav
-    
+
     return render_to_response('pos_profit_detail.html', d,
                               context_instance=RequestContext(request))
-    
+
 @login_required
 def consumption(request, days=DEFAULT_DAYS):
     d = {}
     d['nav'] = [pos_nav, pos_consumption_nav]
-    
+
     profile = request.user.get_profile()
-    
+
     corps = []
     poses = get_poses(request)
     for pos_list in poses:
@@ -212,14 +212,14 @@ def consumption(request, days=DEFAULT_DAYS):
                                            'type':fuel.type,
                                            'buy_price':profile.get_buy_price(fuel.type)
                                           }
-                
+
                 f = needs[fuel.type.id]
                 f['quantity'] += fuel.quantity
                 f['needed'] += fuel.need(days=days)
                 if fuel.purpose != 'Reinforce':
                     f['consumption'] += fuel.consumption
                     f['weekly'] += fuel.consumption * 24 * 7
-          
+
         fuels = needs.values()
         for f in fuels:
             f['cost'] = f['needed'] * f['buy_price']
@@ -227,7 +227,7 @@ def consumption(request, days=DEFAULT_DAYS):
             f['cost_needed'] = f['needed'] * f['buy_price']
             cost_total += f['cost_needed']
             cost_weekly += f['cost_weekly']
-                        
+
         fuels.sort(key=lambda x:x['type'].name)
         corps.append({'name':corp_name,
                       'fuel':fuels,
@@ -235,7 +235,7 @@ def consumption(request, days=DEFAULT_DAYS):
                       'cost_weekly':cost_weekly,
                       'poses':pos_costs,
                       })
-        
+
     d['fuels'] = corps
     d['days'] = days
     return render_to_response('pos_consumption.html', d, context_instance=RequestContext(request))
@@ -244,9 +244,9 @@ def consumption(request, days=DEFAULT_DAYS):
 def profit_list(request):
     d = {}
     d['nav'] = [pos_nav, pos_profit_nav]
-    
+
     profile = request.user.get_profile()
-    
+
     corps = []
     poses = get_poses(request)
     for pos_list in poses:
@@ -266,15 +266,15 @@ def profit_list(request):
                 if not prices.has_key(fuel.type.id):
                     prices[fuel.type.id] = profile.get_buy_price(fuel.type)
                 pos_weekly_cost += fuel.consumption * 24 * 7 * prices[fuel.type.id]
-                
+
             for type, quantity in pos.reacted_quantities():
                 if not prices.has_key(type.id):
                     prices[type.id] = profile.get_sell_price(type)
                 pos_weekly_value += prices[type.id] * 24 * 7 * quantity
                 m3 += type.volume * 24 * 7 * quantity
             profit = pos_weekly_value - pos_weekly_cost
-            poses.append({'pos':pos, 
-                          'cost':pos_weekly_cost, 
+            poses.append({'pos':pos,
+                          'cost':pos_weekly_cost,
                           'value':pos_weekly_value,
                           'profit':profit,
                           'm3':m3,
@@ -286,21 +286,22 @@ def profit_list(request):
         corps.append({'name':corp_name,
                       'cost_weekly':cost_weekly,
                       'income_weekly':income_weekly,
-                      'profit_weekly': income_weekly - cost_weekly,
+                      'profit_weekly': abs(income_weekly - cost_weekly),
                       'm3_weekly':m3_weekly,
                       'poses':poses,
+                      'profitable': (income_weekly > cost_weekly),
                       })
-        
+
     d['fuels'] = corps
     return render_to_response('pos_profits.html', d, context_instance=RequestContext(request))
 
 class ReactionForm(forms.Form):
     q = Q(group__name__in=['Moon Materials', 'Intermediate Materials',
-                           'Composite']) 
+                           'Composite'])
     q = q & Q(published=True)
     reactions = [('', 'None')] + [(x.slug, x.name) for x in Item.objects.filter(q)]
     reactions.sort(key=lambda x:x[0])
-    
+
     r1 = forms.ChoiceField(label='1', choices=reactions, required=False)
     r2 = forms.ChoiceField(label='2', choices=reactions, required=False)
     r3 = forms.ChoiceField(label='3', choices=reactions, required=False)
@@ -311,17 +312,17 @@ class ReactionForm(forms.Form):
     r8 = forms.ChoiceField(label='8', choices=reactions, required=False)
     r9 = forms.ChoiceField(label='9', choices=reactions, required=False)
     r10 = forms.ChoiceField(label='10', choices=reactions, required=False)
-    
+
 @login_required
 def setup_reactions(request, station_id):
     template = 'pos_edit_reactions.html'
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
-    
+
     d = {}
     d['pos'] = pos
     d['nav'] = [pos_nav, pos_profit_nav, pos]
-    
+
     if request.method == 'POST':
         form = ReactionForm(request.POST)
         if not form.is_valid():
@@ -342,7 +343,7 @@ def setup_reactions(request, station_id):
             key = "r%d" % index
             reactions[key] = r.type.slug
             index += 1
-        
+
         d['form'] = ReactionForm(reactions)
         return render_to_response(template, d,
                                   context_instance=RequestContext(request))
@@ -371,23 +372,23 @@ def refuel(request, station_id, days=DEFAULT_DAYS):
         d['fuel'].sort(key=lambda x:x.type.name)
         d['days'] = days
         return render_to_response('pos_refuel.html', d,
-                                  context_instance=RequestContext(request))    
-    
+                                  context_instance=RequestContext(request))
+
 @login_required
 def monkey_list(request):
     d = {}
     d['nav'] = [pos_nav, pos_monkey_nav]
-    
+
     corporations = []
     d['corporations'] = corporations
-    
+
     profile = request.user.get_profile()
     for character in profile.characters.all():
         if not character.is_director:
             continue
         corporations.append(character.corporation)
-        
-    
+
+
     return render_to_response('pos_helpers.html', d,
                                   context_instance=RequestContext(request))
 
@@ -395,15 +396,15 @@ def is_director_of(me, you):
     '''Security check to make sure that profile 'me' has a director role that would allow
     them to alter user 'you'. The 'you' involved may be a character, or a pos. (Or anything
     with a corporation_id really.)'''
-    
+
     profile = me.get_profile()
-    
+
     for c in profile.characters.all():
         if c.is_director and you.corporation_id == c.corporation_id:
             return True
-        
+
     return False
-    
+
 def is_director_of_or_404(me, you):
     if is_director_of(me, you):
         return True
@@ -415,7 +416,7 @@ def owner_set(request, station_id, character_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
     if character_id == '0':
-        pos.owner = None    
+        pos.owner = None
     else:
         character = get_object_or_404(Character, id=character_id)
         is_director_of_or_404(request.user, character)
@@ -427,19 +428,19 @@ def owner_set(request, station_id, character_id):
 def owner(request, station_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
-    
+
     delegates = {}
     for d in pos.delegates.all():
         delegates[d.character.id] = 1
-    
+
     d = {}
     d['pos'] = pos
     d['characters'] = [{'character':c,
                          'director':c.is_director,
                          'monkey':c.is_pos_monkey,
                          'delegate':delegates.has_key(c.id)} for c in pos.corporation.characters.all() ]
-     
-     
-    d['nav'] = [pos_nav, pos, {'name':'Delegate'}]
-    return render_to_response('pos_delegate.html', d,
+
+
+    d['nav'] = [pos_nav, pos, {'name':'Owner'}]
+    return render_to_response('pos_owner.html', d,
                               context_instance=RequestContext(request))

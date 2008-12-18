@@ -3,18 +3,18 @@
 {% load markup %}
 
 {% block content %}
-<!-- pos: {{ pos|pprint }} --> 
-<h3>{{ pos.moon }}</h3>
+<!-- pos: {{ pos|pprint }} -->
+<h2>{{ pos.moon }}</h2>
 
-<h4>Fuel Status</h4>
+<h3>Fuel Status</h3>
   {% if pos.cache_remaining %}
-<p>Data here will be automatically refreshed in another 
+<p>Data here will be automatically refreshed in another
 {{ pos.cache_remaining|time }}. You may manually update it below if you
 have just changed the fuel supply in this tower.</p>
 {% else %}
   <p>Data here has expired from the cache and will be refreshed shortly.</p>
   {% endif %}
-  <table class="pos-fuel">
+  <table class="pos">
     <tr>
     	<th>Fuel</th>
     	<th class="number">Qty</th>
@@ -29,7 +29,7 @@ have just changed the fuel supply in this tower.</p>
 	  <td>{{ f.fuel.quantity|comma }}</td>
 	  <td>{{ f.fuel.consumption|comma }}</td>
 	  <td>{{ f.need|comma }}</td>
-	  <td class="remaining remaining-{{f.run_time.days}}">{{ f.run_time|time }}</td>
+	  <td class="runtime runtime-{{f.run_time.days}}">{{ f.run_time|time }}</td>
 	</tr>
 	{% endspaceless %}{% endfor %}
   <tr><th class="name" colspan=2>Remaining runtime</th>
@@ -48,39 +48,38 @@ consumption rates. As such, the numbers in-game will appear higher than
 what is listed here. However, these are the correct numbers.</p>
 {% endifequal %}
 
-<h4>Actions</h4>
+<h3>Actions</h3>
 {% include "include_inlinenav.html" %}
-		
-	<h4>Location</h4>
+
+	<h3>Location</h3>
 	<ul class="links">
-	
+
 	<li class="pos"><a href="{{ pos.solarsystem.get_absolute_url }}">
 	<img src="{{ pos.solarsystem.icon32 }}">
 	<span class="name">{{ pos.solarsystem }}</span><br>
 	<span class="note">Solar System</span></a></li>
-	
+
 	<li class="pos"><a href="{{ pos.constellation.get_absolute_url }}">
 	<img src="{{ pos.constellation.icon32 }}">
 	<span class="name">{{ pos.constellation }}</span><br>
 	<span class="note">Constellation</span></a></li>
-	
+
 	<li class="pos"><a href="{{ pos.region.get_absolute_url }}">
 	<img src="{{ pos.region.icon32 }}">
 	<span class="name">{{ pos.region }}</span><br>
 	<span class="note">Region</span></a></li>
-	
+
 	</ul>
-	
-	<h4>Type</h4>
+
+	<h3>Type</h3>
 	<ul class="links">
 	<li><a href="{{ pos.tower.get_absolute_url }}"><img src="{{ pos.tower.icon32 }}">
 	<span class="name">{{ pos.tower }}</span></a></li>
 	</ul>
-<h4>Facts</h4>
+<h3>Facts</h3>
 <p>{{ pos.note }}</p>
 <table class="pos">
 	<tr><th>Owning corporation</th><td>{{ pos.corporation }}</td></tr>
-	<tr><th>Depot</th><td>{{ pos.depot }}</td></tr>
 	<tr><th>Online time</th><td>{{ pos.online_time }}</td></tr>
 	<tr><th>Sov level</th><td>{{ pos.sov_level }}</td></tr>
 	<tr><th>State</th>
@@ -92,7 +91,7 @@ what is listed here. However, these are the correct numbers.</p>
 	<tr><th>Power utilization</th><td>{{ pos.power_percent }} % (Estimated)</td></tr>
 </table>
 
-<H4>Settings</H4>
+<h3>Settings</h3>
 <table class="pos">
 	<tr><th>Corporation use</th>
 		{% if pos.corporation_use %}<td class="enabled">Enabled{% else %}<td class="disabled">Disabled{% endif %}</td></tr>

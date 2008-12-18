@@ -409,7 +409,7 @@ class Character(models.Model):
     def get_absolute_url(self):
         return "/user/character/%d/" % self.id
     
-    def save( self ):
+    def save( self, *args, **kwargs ):
         messages = []
         try:
             old = Character.objects.get( pk = self._get_pk_val() )
@@ -418,7 +418,7 @@ class Character(models.Model):
                 self.pos_delegations.all().delete()
         except Character.DoesNotExist:
             pass
-        super( Character, self ).save()
+        super( Character, self ).save(*args, **kwargs)
         
         return messages
 

@@ -3,7 +3,7 @@
 
 from database_settings import *
 import sys
-import deseb 
+import deseb
 import os
 
 os.environ['TZ'] = 'UTC'
@@ -112,5 +112,5 @@ else:
     STATIC_DIR = ''
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
-LOGIN_REDIRECT_URL = '/' 
+LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/login/'
