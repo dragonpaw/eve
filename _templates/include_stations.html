@@ -1,22 +1,25 @@
 {% load trade %}
 
-{% expr item.stations.count() < 20 as shouldprint %} 
+{% expr item.stations.count() < 20 as shouldprint %}
 {% if shouldprint %}
     <h4>Stations</h4>
     {% if item.stations.count %}
     <ul class="links" >
-	{% for o in item.stations.all %}
+	{% for o in item.stations.all %}{% spaceless %}
     	<li class="stations">
         	<a href="{{ o.solarsystem.get_absolute_url }}">
-            {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
+            <img src="{{ o.icon32 }}">
             {% expr o.solarsystem.security < 0.5 as lowsec %}
             <span class="name">{{ o.name }}</span>
+	    <span class="solarsystem">{{ o.solarsystem }}</span>
             <br>
-            <span class="note">Solar system: {{ o.solarsystem }}</span>
+	    <span class="note corporation">{{ o.corporation }}</span>
+            {% if o.corporation.is_player_corp %}<span class="note alliance">{{ o.corporation.alliance }}</span>{% endif %}
             <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">
             ({{ o.solarsystem.security|floatformat:3 }})</span>
         	</a>
     	</li>
+    {% endspaceless %}
     {% endfor %}
     </ul>
     {% else %}

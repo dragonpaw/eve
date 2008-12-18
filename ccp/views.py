@@ -23,7 +23,7 @@ def generate_navigation(object):
         nav.append(current.parent)
         current = current.parent
     nav.append( item_nav )
-    nav.reverse()   
+    nav.reverse()
     return nav
 
 
@@ -31,7 +31,7 @@ def solarsystem(request, name):
     item = get_object_or_404(SolarSystem, name=name)
 
     d = {}
-    
+
     d['nav'] = [
                 {'name':"Regions",'get_absolute_url':"/regions/"},
                 item.region,
@@ -40,17 +40,17 @@ def solarsystem(request, name):
                ]
     d['title'] = "Solar System: %s" % item.name
     d['item'] = item
-    
+
     return render_to_response('ccp_solarsystem.html', d,
                               context_instance=RequestContext(request))
 
-    
+
 def constellation(request, name):
     item = get_object_or_404(Constellation, name=name)
     #item = Constellation.objects.get(name=name)
 
     d = {}
-    
+
     d['nav'] = [
                 {'name':"Regions",'get_absolute_url':"/regions/"},
                 item.region,
@@ -59,16 +59,16 @@ def constellation(request, name):
     d['title'] = "Constellation: %s" % item.name
     d['item'] = item
 
-    
+
     return render_to_response('ccp_constellation.html', d,
                               context_instance=RequestContext(request))
-    
+
 def region(request, slug):
     item = get_object_or_404(Region, slug=slug)
     #item = Constellation.objects.get(name=name)
 
     d = {}
-    
+
     d['nav'] = [
                 {'name':"Regions",'get_absolute_url':"/regions/"},
                 item
@@ -76,10 +76,10 @@ def region(request, slug):
     d['title'] = "Region: %s" % item.name
     d['item'] = item
 
-    
+
     return render_to_response('ccp_region.html', d,
                               context_instance=RequestContext(request))
-    
+
 def region_list(request):
     d = {}
     d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
@@ -89,22 +89,22 @@ def region_list(request):
 
     #regions = list(Region.objects.filter(q1)) + list(Region.objects.filter(q2))
     #regions.sort(key=lambda x:x.name)
-    
+
     q = Q(faction__isnull=True) | ~Q(faction__name='Jove Empire')
     regions = Region.objects.filter(q)
-    
+
     d['inline_nav'] = regions
-    
+
     return render_to_response('ccp_regions.html', d,
                               context_instance=RequestContext(request))
-    
+
 def group_index(request):
     root_objects = MarketGroup.objects.filter(parent__isnull=True)
     #output = ', '.join([m.name for m in root_objects])
     d = {}
     d['nav'] = [ item_nav ]
     d['objects'] = [{'item':x} for x in root_objects]
-    
+
     return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
@@ -113,14 +113,14 @@ def group(request, slug):
     profile = None
     if request.user.is_anonymous() == False:
         profile = request.user.get_profile()
-    
+
     d = {}
-    
+
     d['nav'] = generate_navigation(group)
     d['title'] = "Market Group: %s" % group.name
 
     objects = list(MarketGroup.objects.filter(parent=group)) + list(group.item_set.all())
-    d['objects'] = [{'item':x, 
+    d['objects'] = [{'item':x,
                      'buy':get_buy_price(profile, x),
                      'sell':get_sell_price(profile, x)} for x in objects]
 
@@ -128,12 +128,12 @@ def group(request, slug):
     return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
-    
+
 def get_index_price(profile, item, type=None):
     # I'm lazy in group above, and call this for market groups as well as items.
     if not isinstance(item, Item):
         return None
-     
+
     temp = list( item.index_values.all() )
     if len(temp) == 0:
         return None
@@ -143,19 +143,19 @@ def get_index_price(profile, item, type=None):
             return k.buy
         if type == 'sell' and k.sell:
             return k.sell
-        
+
     return None
 
 def get_sell_price(profile, item):
     if profile is not None:
         return profile.get_sell_price(item)
-    
+
     return get_index_price(profile, item, type='sell')
 
 def get_buy_price(profile, item):
     if profile is not None:
         return profile.get_buy_price(item)
-    
+
     return get_index_price(profile, item, type='buy')
 
 def item(request, slug, days=30):
@@ -163,39 +163,39 @@ def item(request, slug, days=30):
     d = {}
     d['time_span'] = '%d days' % days
     d['item'] = item
-    
+
     d['title']     = "Item: %s" % item.name
     d['nav']       = generate_navigation(item)
-    
+
     profile = None
     if request.user.is_authenticated():
         profile = request.user.get_profile()
         values, best_values = profile.trade_history(item=item, days=days)
-                
+
         d['values'] = values
         d['best_values'] = best_values
 
     max_pe = None
     if request.user.is_authenticated():
         max_pe = profile.max_skill_level('Production Efficiency')
-        
+
     my_blueprint = None
     if profile:
         try:
             my_blueprint = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=profile)[0]
         except IndexError:
             pass
-   
-   
+
+
     materials = {'titles':{},
                  'materials':{},
                  'isk': {} }
-        
+
     # Can it be manufactured?
     for mat in item.materials():
         if mat.quantity <= 0:
             continue
-        
+
         name = mat.activity.name
         materials['titles'][name] = name
         if not materials['materials'].has_key(mat.material.id):
@@ -203,12 +203,12 @@ def item(request, slug, days=30):
             materials['materials'][mat.material.id] = {'material': mat.material,
                                                        'buy_price': price}
         materials['materials'][mat.material.id][name] = mat.quantity
-        
+
         # Then, if we own the blueprint, the manufacture quantity.
         if my_blueprint and name == 'Manufacturing':
             perfect = materials['materials'][mat.material.id]['Manufacturing']
             materials['materials'][mat.material.id]['Personal'] = my_blueprint.mineral(perfect, max_pe)
-            
+
     # If we own this blueprint...
     if my_blueprint:
         # Add in the Blueprint itself.
@@ -232,14 +232,14 @@ def item(request, slug, days=30):
             portion = item.portionsize
         cost = cost / portion
         materials['isk'][key] = cost
-        
-    if (materials['isk'].has_key('Personal') and best_values.has_key('sell') 
+
+    if (materials['isk'].has_key('Personal') and best_values.has_key('sell')
         and best_values['sell'] and best_values['sell']['sell_price'] > 0
         and materials['isk']['Personal'] > 0):
-        best_values['manufacturing_profit_isk'] =  ( best_values['sell']['sell_price'] 
+        best_values['manufacturing_profit_isk'] =  ( best_values['sell']['sell_price']
                                                     - materials['isk']['Personal'])
-        best_values['manufacturing_profit_pct'] = (best_values['manufacturing_profit_isk'] 
-                                                    / materials['isk']['Personal']) * 100   
+        best_values['manufacturing_profit_pct'] = (best_values['manufacturing_profit_isk']
+                                                    / materials['isk']['Personal']) * 100
 
     # We don't want isk prices on where things refine -from-
     if item.group.name in ('Mineral','Ice Product'):
@@ -272,7 +272,7 @@ def item(request, slug, days=30):
                                                          'input':'Used',
                                                          'Reaction-out': r.quantity
                                                          }
-                    
+
     # This triggers on reaction blueprints
     if item.reactions.count():
         materials['titles']['Reaction'] = 'POS Reaction'
@@ -298,49 +298,59 @@ def item(request, slug, days=30):
     materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
 
     d['materials'] = materials
-    
+
     # Un-seeded items have no group.
     if item.marketgroup and item.marketgroup.name != 'Minerals':
-        #filter = QNot(Q(item__group__category__name='Blueprint')) & Q(item__published=True)
-        filter = Q(item__published=True) 
-        filter &= QNot(Q(activity__name__contains='Not in game'))
+        filter = ~Q(activity__name__contains='Not in game')
         filter &= Q(quantity__gt=0)
-        filter &= QNot(Q(activity__name='Refining'))
-        
+        filter &= ~Q(activity__name='Refining')
+
         d['makes'] = list(item.helps_make.filter(filter))
         d['makes'].sort(key=lambda x:x.item.name)
         # FIXME: Make this return an order_by instead.
-        
-    d['attributes'] = list(item.attributes())
+
+    attributes = list(item.attributes())
     if item.volume:
         volume = Attribute.objects.get(attributename='volume')
         volume.valuefloat = item.volume
-        d['attributes'].append(volume)
+        attributes.append(volume)
     if item.portionsize > 1:
         portion = Attribute.objects.get(attributename='portionsize')
         portion.valueint = item.portionsize
-        d['attributes'].append(portion)
+        attributes.append(portion)
         # FIXME: Make this return an order_by instead.
-    d['attributes'].sort(lambda a, b: cmp(a.attributecategory,
-                                          b.attributecategory)
-                         or cmp (a.id, b.id))
+
+    # Setup the attributes of an item.
+    d['attributes'] = []
+    temp = {}
+    attributes.sort(lambda a, b: cmp(a.id,  b.id))
+    for a in attributes:
+        if a.value == 0 or a.value == 0.0 or a.category is None:
+            continue
+        if not temp.has_key(a.category):
+            temp[a.category] = []
+        temp[a.category].append(a)
+    for c in temp.keys():
+        d['attributes'].append([c, temp[c]])
+    d['attributes'].sort(key=lambda x:x[0].id)
+
+    # Setup the price indexes of an item.
     q = Q(index__user__isnull=True) | Q(index__user=profile)
     d['indexes'] = list(item.index_values.filter(q))
     d['indexes'].sort(key=lambda x:x.index.priority, reverse=True)
-    
+
     d['blueprint'] = my_blueprint
-    
+
     return render_to_response('ccp_item.html', d,
                               context_instance=RequestContext(request))
-    
-               
+
+
 def sov_changes(request, days=14):
     """Show all of the changes in system sov since the last update."""
     old_date = datetime.utcnow() - timedelta(days)
     d = {}
     d['objects'] = SolarSystem.objects.filter(sov_time__gt=old_date).order_by('-sov_time')
     d['nav'] = [ sov_nav ]
-    
+
     return render_to_response('sov_changes.html', d,
                               context_instance=RequestContext(request))
-    

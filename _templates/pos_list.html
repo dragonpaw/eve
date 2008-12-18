@@ -3,16 +3,16 @@
 {% load markup %}
 
 {% block content %}
-<!-- poses: {{ poses|pprint }} --> 
+<!-- poses: {{ poses|pprint }} -->
 {% if poses %}
 {% include "include_inlinenav.html" %}
 
 {% for corp in poses %}
 <!-- corp: {{ corp|pprint }} -->
-<h4>{{ corp.name }}</h4>
+<h3>{{ corp.name }}</h3>
 {% regroup corp.pos by owner as owner_list %}
 {% for owner in owner_list %}
-<h5>{% ifequal owner.grouper None %}Corporate Use{% else %}{{ owner.grouper }}{% endifequal %}</h5>
+<h4>{% ifequal owner.grouper None %}Corporate Use{% else %}{{ owner.grouper }}{% endifequal %}</h4>
 	<ul class="links">
 	{% for pos in owner.list %}
 		<li class="pos">{% spaceless %}

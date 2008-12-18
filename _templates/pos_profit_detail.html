@@ -3,7 +3,7 @@
 {% load markup %}
 
 {% block content %}
-<!-- pos: {{ pos|pprint }} --> 
+<!-- pos: {{ pos|pprint }} -->
 <h3>{{ pos.moon }}</h3>
 
 {% if inline_nav %}
@@ -54,7 +54,7 @@
     {% if profitable %}
     <th class="number index-sell" colspan="3">+ {{ weekly_total|floatformat:2|comma }} ISK</th></tr>
     {% else %}
-    <th class="number index-buy" colspan="3">{{ weekly_total|floatformat:2|comma }} ISK</th></tr>
+    <th class="number index-buy" colspan="3">+ {{ weekly_total|floatformat:2|comma }} ISK</th></tr>
     {% endif %}
 </table>
 

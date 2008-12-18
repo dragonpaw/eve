@@ -5,7 +5,6 @@
 {% block title %} {{ item.name }}) {% endblock %}
 
 {% block content %}
-{% spaceless %}
 <div class="item">
     <div class="item-description">
         <h3>{{ item.name }}</h3>
@@ -26,32 +25,31 @@
         <tr><th>Moons:</th><td>{{ item.moons.count }}</td></tr>
         <tr><th>Security Class:</th><td>{{ item.securityclass }}</td></tr>
     </table>
-    
+
   	{% include "include_stations.html" %}
-        
+
     <div class="item-materials">
     <h4>Asteroid Belts</h4>
         <table>
-        {% for s in item.belts %}
+        {% spaceless %}{% for s in item.belts %}
             <tr>
             	<td class="left">{{ s.name }}</td>
             </tr>
         {% endfor %}
-        </tr>
+        </tr>{% endspaceless %}
         </table>
     </div>
 
     <div class="item-materials">
     <h4>Moons</h4>
         <table>
-        {% for i in item.moons %}
+        {% spaceless %}{% for i in item.moons %}
             <tr>
             	<td class="left">{{ i.name }}</td>
             </tr>
         {% endfor %}
-        </tr>
+        </tr>{% endspaceless %}
         </table>
-    </div>    
+    </div>
 </div>
-{% endspaceless %}
 {% endblock %}

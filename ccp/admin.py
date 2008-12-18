@@ -1,4 +1,4 @@
-from eve.ccp.models import Agent, AgentType, Alliance, CharacterAncestry, CharacterAttribute, CharacterBloodline, CharacterCareer, CharacterCareerSpeciality, Faction, Race, School, CorporationActivity, Corporation, CorporationDivision, Attribute, Effect, Graphic, Unit, Category, Group, BlueprintDetail, Material, Item, Name, MarketGroup, InventoryMetaGroup, InventoryMetaType, Reaction, Region, Constellation, SolarSystem, MapDenormalize, MapLandmarks, RamActivity, Station, StationResourcePurpose, StationResource
+from eve.ccp.models import Agent, AgentType, Alliance, CharacterAncestry, CharacterAttribute, CharacterBloodline, CharacterCareer, CharacterCareerSpeciality, Faction, Race, School, CorporationActivity, Corporation, CorporationDivision, Attribute, Effect, Graphic, Unit, Category, Group, BlueprintDetail, Material, Item, Name, MarketGroup, InventoryMetaGroup, InventoryMetaType, Reaction, Region, Constellation, SolarSystem, MapDenormalize, MapLandmarks, RamActivity, Station, StationResourcePurpose, StationResource, AttributeCategory
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
@@ -264,4 +264,4 @@ admin.site.register(MarketGroup, MarketGroupOptions)
 admin.site.register(Constellation, ConstellationOptions)
 admin.site.register(MapLandmarks, MapLandmarksOptions)
 admin.site.register(Unit, UnitOptions)
-
+admin.site.register(AttributeCategory)

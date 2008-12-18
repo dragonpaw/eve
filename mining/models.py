@@ -45,8 +45,8 @@ class MinerOnOp(models.Model):
     def __unicode__(self):
         return u"%s [%1.2f]" % (self.name, self.hours())
     
-    def save(self):
-        super(MinerOnOp, self).save() # Call the "real" save() method.
+    def save(self, *args, **kwargs):
+        super(MinerOnOp, self).save(*args, **kwargs) # Call the "real" save() method.
 
         # Update the current balance.
         # (We do it like this so edits don't make -very- odd things happen.
@@ -54,15 +54,12 @@ class MinerOnOp(models.Model):
         for row in self.op.miners.all():
             hours += row.hours() * row.multiplier
         self.op.hours = hours
-        self.op.save()
+        self.op.save(*args, **kwargs)
     
 class MiningOpMineral(models.Model):
     op = models.ForeignKey(MiningOp, related_name='minerals')
     type = models.ForeignKey(Item, limit_choices_to = {'group__name':'Mineral', 'published':True})
     quantity = models.IntegerField()
-    
-    class Admin:
-        list_display = ['id', 'op', 'type', 'quantity']
-        
+     
     def __unicode__(self):
         return u"%s: %s x%d" % (self.op, self.type, self.quantity)

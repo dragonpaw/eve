@@ -19,24 +19,23 @@ ownership tool there.</p>
 <p>Characters in green can view POS status. Those in red cannot.</p>
 
 <ul class="links">
-{% for char in c.characters.all %}
-<a>
+{% for char in c.characters.all %}{% spaceless %}
 <li class="pos-access no-link">
 <img src="{{ char.icon64 }}" style="width: 32px; height: 32px">
+<a>
 {% if char.is_director %}
 <span class="director">{{ char.name }}</span><br>
 <span class="note">This character is a director. They will always see POS status.</span>
 {% else %}
 {% if char.is_pos_monkey %}
 <span class="granted">{{ char.name }}</span><br>
-<span class="note">This character as the 'Starbase Caretaker' role granted within EVE.</span>
+<span class="note">This character has the 'Starbase Caretaker' role granted within EVE. They will see all POS status.</span>
 {% else %}
 <span class="denied">{{ char.name }}</span><br>
 <span class="note">This character has no roles.</span>
 {% endif %}{% endif %}
-</a></li>
-{% endfor %}
-</ul>
+</a></li>{% endspaceless %}
+{% endfor %}</ul>
 {% endfor %}
 {% else %}
 <P>This control is only avilable to the director of a corporation.</P>

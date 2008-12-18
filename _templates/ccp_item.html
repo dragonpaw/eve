@@ -7,18 +7,18 @@
 {% block content %}
 <div class="item">
     <div class="description">
-        <h3>{{ item.name }}</h3>
+        <h2>{{ item.name }}</h2>
         {{ item.description|default:"No Description"|markdown }}
         <img src="{{ item.icon64 }}" class="icon">
     </div>
-    
-    <h4>Details</h4>
+
+    <h3>Details</h3>
     {% if not item.published %}
     <p>This item is marked as an unpublished item and will not actually be available in-game.
      Have fun looking at it anyways.</p>
     {% endif %}
-    <table class="item-details">
     {% if item.is_blueprint %}
+    <table class="item-details">
         <tr><th>Batch Size:</th><td>{{ item.blueprint_makes.portionsize }}</td></tr>
         <tr><th>Tech Level:</th><td>{{ item.blueprint_details.techlevel }}</td></tr>
         <tr><th>Production Time:</th><td>{{ item.blueprint_details.productiontime|time }}</td></tr>
@@ -26,17 +26,22 @@
         <tr><th>Research, productivity:</th><td>{{ item.blueprint_details.researchproductivitytime|time }}</td></tr>
         <tr><th>Research, copy:</th><td>{{ item.blueprint_details.researchcopytime|time }}</td></tr>
         <tr><th>Base Waste Factor:</th><td>{{ item.blueprint_details.wastefactor }} %</td></tr>
-    {% else %}
-        {% for a in attributes %}{% if a.value and a.displayname %}
-            <tr><td class="icon"><img src="{{ a.icon16 }}"></td>
-            <th>{{ a.name }}</th>
-            <td>{{ a.display_value }}</td></tr>
-        {% endif %}{% endfor %}
-    {% endif %}
     </table>
-    
+    {% else %}
+        {% for c, v in attributes %}
+	<h4>{{ c.name }}<!-- {{ c.id }} --></h4>
+	<table class="item-details">
+	{% for a in v %}
+            <tr><td class="icon"><img src="{{ a.icon16 }}"></td>
+            <th>{{ a.name }}<!-- {{ a.id }} --></th>
+            <td>{{ a.display_value }}</td></tr>
+        {% endfor %}
+	</table>
+	{% endfor %}
+    {% endif %}
+
     {% if item.fuel.count %}
-    <h4>Fuel Consumption (Hourly)</h4>
+    <h3>Fuel Consumption (Hourly)</h3>
     <p>Charters only apply if in low-sec for that faction.</p>
     <table>
     {% for fuel in item.fuel.all %}
@@ -48,11 +53,11 @@
     {% endfor %}
     </table>
     {% endif %}
-    
-    
+
+
     {% if item.blueprint %}
     <div class="blueprint">
-    <h4>Blueprint</h4>
+    <h3>Blueprint</h3>
     <ul class="links">
     {% if not item.is_blueprint %}
     <li><a href="{{ item.blueprint.get_absolute_url }}">
@@ -71,15 +76,15 @@
     {% include "include_bpo.html" %}
     {% else %}
     <li><a href="/trade/blueprint/{{ item.blueprint.slug }}/">
-    <span class="name">You do not own this blueprint.</span><br> 
+    <span class="name">You do not own this blueprint.</span><br>
     <span class="link">Actually, I do. (Add to collection)</span></a></li>
     {% endif %}
     </ul>
     {% endif %}
-    
+
 {% if materials %}
 	{% for x in materials.order %}
-		<h4>{% expr materials['titles'][x] %}</h4>
+		<h3>{% expr materials['titles'][x] %}</h3>
 		<p>Red value is buy price, green value is sell price.</p>
 		<ul class="links materials">
 		{% for m in materials.materials %}
@@ -105,12 +110,12 @@
 		{% if cost %}
 		<p>Total cost (at buy prices): {{ cost|floatformat:2|comma }} ISK</p>
 		{% endif %}
-		
+
 	{% endfor %}
 {% endif %}
-    
+
     {% if makes %}
-	<h4>Used in</h4>
+	<h3>Used in</h3>
 		<ul class="links materials">
 		{% for m in makes %}{% spaceless %}
 			<li><a href="{{ m.item.get_absolute_url }}">
@@ -124,8 +129,8 @@
 		{% endspaceless %}{% endfor %}
 		</ul>
 	{% endif %}
-    
-    <h4>Market Indexes</h4>
+
+    <h3>Market Indexes</h3>
     {% if indexes %}
     <p>Red value is buy price, green value is sell price.</p>
     {% else %}
@@ -145,17 +150,17 @@
     <span class="note">Set a custom price for this item to be used in all calculations.</span>
     </a></li>
     </ul>
-    
+
     <!-- Trade values: {{ values|pprint }} Best: {{ best_values|pprint }}-->
     {% spaceless %}
     <div class="item-trade">
-    <h4>Trade values (for the last {{ time_span }})</h4>
+    <h3>Trade values (for the last {{ time_span }})</h3>
     {% if user.is_authenticated %}
     {% if not values.items %}
     <p>No recorded transactions for any of your characters.</p>
     {% else %}
     {% for key, value in values.items %}
-    <h5><a href="{{ value.region.get_absolute_url }}">{{ key }}</a></h5>            
+    <h5><a href="{{ value.region.get_absolute_url }}">{{ key }}</a></h5>
     <em>{{ value.gross|isk }}</em>
     {% if value.sell_volume %}
     <p>{{ value.sell_volume|comma }} units sold at average of
@@ -172,7 +177,7 @@
     {% if value.profit_isk %}
     <p>This works out to a per-unit resale profit of {{ value.profit_isk|isk }} ISK
     ({{ value.profit_pct|floatformat:2 }}%)</p>
-    {% endif %} <!-- if value.profit_isk -->                                                                                          
+    {% endif %} <!-- if value.profit_isk -->
     {% endfor %}<!-- for key, value in values.items -->
     {% endif %}<!-- if not values.items : else -->
     {% if best_values.sale or best_values.buy %}

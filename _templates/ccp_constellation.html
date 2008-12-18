@@ -3,7 +3,6 @@
 {% load markup %}
 
 {% block content %}
-{% spaceless %}
 <h3>{{ item.name }}</h3>
 {% if item.icon64 %}<img src="{{ item.icon64 }}" class="icon">{% endif %}
 
@@ -15,10 +14,10 @@
 	{% endif %}
     <tr><th>Systems:</th><td>{{ item.solarsystems.count }}</td></tr>
 </table>
-    
+
 <h4>Systems</h4>
 	<ul class="links" >
-	{% for o in item.solarsystems.all %}
+	{% spaceless %}{% for o in item.solarsystems.all %}
     	<li class="constellation">
         	<a href="{{ o.get_absolute_url }}">
             {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
@@ -36,11 +35,10 @@
             <span class="moons">M: {{ o.moons.count }}</span>
         	</a>
     	</li>
-	{% endfor %}
+	{% endfor %}{% endspaceless %}
 	</ul>
 
     {% include "include_stations.html" %}
-    
+
 </div>
-{% endspaceless %}
 {% endblock %}

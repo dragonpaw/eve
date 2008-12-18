@@ -29,7 +29,7 @@ parser.add_option('-a', '--alliances', action='store_true', default=False,
                    help='Load the list of alliances.')
 parser.add_option('-s', '--stations', action='store_true', default=False,
                   help='Load the list of conquerable stations/outposts.')
-parser.add_option('-u', '--user', 
+parser.add_option('-u', '--user',
                   help='Username to load accounts for.')
 parser.add_option('-f', '--force', action='store_true', default=False,
                   help='Force reload of cached data.')
@@ -51,46 +51,56 @@ api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=options.debug, t
 
 # After this long, we purge a character giving a security error. (So people don't change key
 # before leaving a corp to still see data.)
-character_security_timeout = timedelta(hours=12) 
+character_security_timeout = timedelta(hours=12)
 
 def output(msg):
     global message
     message += msg + '\n'
     if options.verbose:
         print msg
-    
+
 def exit():
     output("Runtime: %s" % (datetime.utcnow() - start_time))
     if exit_code != 0 and not options.verbose:
         print message
     sys.exit(exit_code)
-    
+
 def update_alliances():
     output ("Starting alliance list...")
-    
+
     alliance_ids = []
-    
+
     for a in api.eve.AllianceList().alliances:
         try:
             alliance = Alliance.objects.get(id=a.allianceID)
         except Alliance.DoesNotExist:
             alliance = Alliance(id=a.allianceID, name=a.name, ticker=a.shortName)
         alliance.member_count = a.memberCount
-        alliance.executor_id = a.executorCorpID
         alliance.save()
 
-        alliance_ids.append(alliance.id)
-            
-        # Cannot use get_or_create, as we cannot immediately save it.
-        try:
-            corp = Corporation.objects.get(id=a.executorCorpID)
-        except Corporation.DoesNotExist:
-            corp = Corporation(id=a.executorCorpID)
-        messages = corp.refresh(name=a.name)
-        
-        for m in messages:
+        # Create the executor corp.
+        corp = Corporation(id=a.executorCorpID)
+        for m in corp.refresh(name=a.name):
             output(m)
-        
+
+        # Refresh all the member corps too.
+        for c in a.memberCorporations:
+            id = c.corporationID
+            corp = Corporation(id=id)
+            for m in corp.refresh(name=a.name):
+                output(m)
+
+        # Have to set executor and re-save it here to work around constraints.
+        # Can't add an alliance unless the exec corp exists first. Can't add a
+        # Corp unless the alliance it belongs to exists.
+        # So dance is: Make alliance without exec, add corp, set exec.
+        if corp.failed is False:
+            alliance.executor = corp
+            alliance.save()
+            alliance_ids.append(alliance.id)
+        else:
+            output('Alliance refresh failed. Will be deleted.')
+
     # Force immediate evaluation to protect from odd interaction with the cursor
     # while deleting rows.
     delete_me = []
@@ -102,7 +112,7 @@ def update_alliances():
     for a in delete_me:
         output('Removing defunct alliance: %s' % a.name)
         a.delete()
-            
+
 def update_map():
     output ("Starting galaxy map...")
     for s in api.map.Sovereignty().solarSystems:
@@ -119,14 +129,14 @@ def update_map():
         # Data cleanup.
         if system.alliance_id == 0:
             system.alliance = None
-            
+
         constellation_sov = None
         if s.constellationSovereignty != 0:
             constellation_sov = s.constellationSovereignty
 
         old = datetime.utcnow() - timedelta(days=7)
         old = old.date()
-                
+
         if system.alliance_id != alliance:
             output ("Differing: %s Old: %s, current: %s, new: %s" % (system.name, system.alliance_old_id,
                                                                       system.alliance_id, alliance))
@@ -144,11 +154,11 @@ def update_map():
         elif system.sov_time < old and system.alliance_old != None:
             # You only get a certain time to reclaim it.
             system.alliance_old = None
-            
-            
+
+
         system.sov = s.sovereigntyLevel
         system.faction = faction
-        
+
         constellation = system.constellation
         if constellation.alliance_id != constellation_sov:
             if constellation.sov_time == None:
@@ -157,9 +167,9 @@ def update_map():
                 constellation.sov_time = datetime.utcnow()
             constellation.alliance_id = constellation_sov
             constellation.save()
-        
+
         system.save()
-    
+
 def update_stations():
     # http://api.eve-online.com//eve/ConquerableStationList.xml.aspx
     # <rowset name="outposts" key="stationID" columns="stationID,stationName,stationTypeID,solarSystemID,corporationID,corporationName">
@@ -167,7 +177,7 @@ def update_stations():
     output ('Starting outposts...')
     for s in api.eve.ConquerableStationList().outposts:
         #output ("%s: %s (%s)" % (s.solarSystemID, s.stationName, s.corporationID))
-        
+
         corp_id = s.corporationID
         corp_name = s.corporationName
         try:
@@ -182,7 +192,7 @@ def update_stations():
         except Station.DoesNotExist:
             print "system_id: %s" % s.solarSystemID
             solarsystem = SolarSystem.objects.get(id=s.solarSystemID)
-            station = Station(id=s.stationID, solarsystem=solarsystem, 
+            station = Station(id=s.stationID, solarsystem=solarsystem,
                               region=solarsystem.region, constellation=solarsystem.constellation)
         station.name = s.stationName
         station.corporation = corporation
@@ -196,7 +206,7 @@ if options.alliances:
         exit_code = 1
         if DEBUG:
             raise
-    
+
 if options.map:
     try:
         update_map()
@@ -225,7 +235,7 @@ if options.user:
     accounts = Account.objects.filter(user__user__username=options.user)
 else:
     accounts = Account.objects.all()
-    
+
 if options.force:
     print "Forcing reload, cache times will be ignored."
 
@@ -237,7 +247,7 @@ for account in accounts:
     except Exception, e:
         error = traceback.format_exc()
         exit_code = 1
-        
+
     if options.verbose or error:
         print  "-" * 78
         print "Account: %s(%s)" % (account.user, account.id)
@@ -247,5 +257,5 @@ for account in accounts:
     if error:
         print "Fatal error occured."
         print error
-   
+
 exit()

@@ -3,7 +3,7 @@
 {% load markup %}
 
 {% block content %}
-<!-- fuels: {{ fuels|pprint|safe }} --> 
+<!-- fuels: {{ fuels|pprint|safe }} -->
 {% for corp in fuels %}
 <h3>{{ corp.name }}</h3>
 
@@ -36,7 +36,8 @@
 <span class="pos-cost">
 	<p class="right cost total">Total cost: {{ corp.cost_weekly|floatformat:0|comma }}</p>
 	<p class="right profit total">Total income: {{ corp.income_weekly|floatformat:0|comma }}</p>
-	<p class="right profit total">Net profit: {{ corp.profit_weekly|floatformat:0|comma }}</p>
+	{% if corp.profitable %}<p class="right profit total">{% else %}<p class="right cost total">- {% endif %}
+	Net profit: {{ corp.profit_weekly|floatformat:0|comma }}</p>
 	<p class="right">Total m3 output per week: {{ corp.m3_weekly|floatformat:0|comma }} m3.</p>
 </span>
 </table>

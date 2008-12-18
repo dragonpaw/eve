@@ -10,7 +10,7 @@ but not within EVE itself.</p>
 <h3>{{ pos.corporation.name }}</h3>
 <ul class="links">
 <li class="pos-access">
-<img style="width: 32px; height: 32px">
+<img src="{{ pos.corporation.icon32 }}" style="width: 32px; height: 32px">
 <a href="/pos/{{ pos.id }}/owner/0/">
 <span class="denied">Corprate</span><br>
 <span class="note">Click to set this POS to corprate use.</span>
@@ -21,7 +21,7 @@ but not within EVE itself.</p>
 <p>Characters in green can view POS status. Those in red cannot.</p>
 
 <ul class="links">
-{% for c in pos.corporation.characters.all %}
+{% for c in pos.corporation.characters.all %}{% spaceless %}
 {% ifequal c pos.owner %}
 <li class="pos-access no-link">
 <img src="{{ c.icon64 }}" style="width: 32px; height: 32px">
@@ -36,6 +36,6 @@ but not within EVE itself.</p>
 <span class="note">Click to make owner of this POS.</span>
 {% endifequal %}
 </a></li>
-{% endfor %}
+{% endspaceless %}{% endfor %}
 </ul>
 {% endblock %}

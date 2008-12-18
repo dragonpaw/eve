@@ -30,7 +30,7 @@ class PlayerStationModuleOptions(admin.ModelAdmin):
 
 class PlayerStationOptions(admin.ModelAdmin):
     inlines = [PlayerStationDelegation_Inline, PlayerStationFuelSupply_Inline, PlayerStationReaction_Inline]
-    list_display = ('moon', 'corporation', 'state')
+    list_display = ('moon', 'corporation', 'state', 'fueled_until')
     fieldsets = (
         (None, {'fields': ('corporation','moon','tower', 'owner', 'state')}),
         ('Times', {'fields': ('state_time','online_time','cached_until','last_updated'),
@@ -44,9 +44,9 @@ class PlayerStationOptions(admin.ModelAdmin):
                                          'claim'),
                               'classes': ('collapse',)}),
         ('Combat Settings', {'fields': ('attack_standing_value',
-                                        'attack_aggression', 
+                                        'attack_aggression',
                                         'attack_atwar',
-                                        'attack_secstatus_flag', 
+                                        'attack_secstatus_flag',
                                         'attack_secstatus_value'),
                              'classes': ('collapse',)}),
     )
@@ -56,4 +56,3 @@ admin.site.register(PlayerStationFuelSupply, PlayerStationFuelSupplyOptions)
 admin.site.register(PlayerStationReaction, PlayerStationReactionOptions)
 admin.site.register(PlayerStationModule, PlayerStationModuleOptions)
 admin.site.register(PlayerStation, PlayerStationOptions)
-
