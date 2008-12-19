@@ -39,7 +39,6 @@ import os
 
 evelogo.resourcePath = os.path.join(settings.STATIC_DIR, 'ccp-icons', 'corplogos')
 
-
 TRUE_FALSE = (
     ('true', 'Yes'),
     ('false', 'No'),
@@ -1557,7 +1556,7 @@ class SolarSystem(models.Model):
     securityclass = models.CharField(blank=True, max_length=2, null=True)
     alliance = models.ForeignKey(Alliance, null=True, blank=True, related_name='solarsystems')
     sov = models.IntegerField(null=True, blank=True, db_column='sovereigntyLevel')
-    sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDateTime')
+    sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDate')
     alliance_old = models.ForeignKey(Alliance, null=True, blank=True, related_name='solarsystems_lost')
 
     class Meta:
@@ -1578,21 +1577,24 @@ class SolarSystem(models.Model):
     def get_absolute_url(self):
         return "/solarsystem/%s/" % self.name
 
+    def get_icon(self, size):
+        return self.alliance.get_icon(size)
+
     @property
     def icon16(self):
-        return self.alliance.icon16
+        return self.get_icon(16)
 
     @property
     def icon32(self):
-        return self.alliance.icon32
+        return self.get_icon(32)
 
     @property
     def icon64(self):
-        return self.alliance.icon64
+        return self.get_icon(64)
 
     @property
     def icon128(self):
-        return self.alliance.icon128
+        return self.get_icon(128)
 
 class MapDenormalize(models.Model):
     id = models.IntegerField(primary_key=True, db_column='itemid')
