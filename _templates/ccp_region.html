@@ -2,18 +2,16 @@
 {% load trade %}
 {% load markup %}
 
-{% block title %} {{ item.name }}) {% endblock %}
-
 {% block content %}
-<h3>{{ item.name }}</h3>
-<h4>Details</h4>
+<h2{{ item.name }}</h2>
+<h3>Details</h3>
 <table>
   <tr><th>Constellations:</th><td>{{ item.constellations.count }}</td></tr>
   <tr><th>Systems:</th><td>{{ item.solarsystems.count }}</td></tr>
   <tr><th>Stations:</th><td>{{ item.stations.count }}</td></tr>
   <tr><th>Faction:</th><td>{{ item.faction }}</td></tr>
-</table>    
-<h4>Constellations</h4>
+</table>
+<h3>Constellations</h3>
 <ul class="links">
     {% for c in item.constellations.all %}{% spaceless %}
 		<li class="region"><a href="{{ c.get_absolute_url }}">

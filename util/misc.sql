@@ -20,7 +20,7 @@ ALTER TABLE `eve`.`ccp_solarsystem`
     ADD COLUMN `alliance_id` INTEGER,
     ADD COLUMN `alliance_old_id` INTEGER,
     ADD COLUMN `sovereigntyLevel` INTEGER,
-    ADD COLUMN `sovereigntyDateTime` DATETIME;
+    ADD COLUMN `sovereigntyDate` DATE;
 
 ALTER TABLE `eve`.`ccp_constellation`
     ADD COLUMN `sovereigntyDateTime` DATETIME,
