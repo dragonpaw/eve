@@ -31,7 +31,7 @@ def derrived_value(item, index):
     refines_into = item.refines()
     if refines_into.count() == 0:
         return None, None
-    
+
     buy = 0
     sell = 0
     for r in refines_into:
@@ -44,71 +44,71 @@ def derrived_value(item, index):
                 if v.index.user is not None:
                     # Skip personal indexes.
                     continue
-                    
+
                 if buy_price is None:
                     buy_price = v.buy
                     #print "Buy: %s (%s)" % (buy_price, v.index.name)
                 if sell_price is None:
                     sell_price = v.sell
                     #print "Sell: %s (%s)" % (sell_price, v.index.name)
-                    
+
         except MarketIndexValue.DoesNotExist:
             print "No value for item '%s' in indexes." % r.material
             return None, None
-        
+
         # We set buy/sell to None when something wasn't available.
         if buy_price and buy is not None:
             buy += buy_price * r.quantity
         else:
             buy = None
-                
+
         if sell_price and sell is not None:
             sell += sell_price * r.quantity
         else:
             sell = None
-    
+
     if item.portionsize:
         if buy is not None:
             buy /= item.portionsize
         if sell is not None:
             sell /= item.portionsize
-            
+
     return buy, sell
 
 def fetch_url(url, id=None):
     if url.lower().startswith("http://"):
         url = url[7:]
-    
+
     if "/" in url:
         url, path = url.split("/", 1)
     else:
         path = ""
-        
-    name = QtcIndustries['name']     
+
+    name = QtcIndustries['name']
     qtc, created = MarketIndex.objects.get_or_create(name=name)
     qtc.url = QtcIndustries['url']
     qtc.note = QtcIndustries['description']
     qtc.priority = 200
     qtc.save()
-        
+
     http = httplib.HTTPConnection(url)
     if id:
         http.request("GET", "/"+path+str(id))
     else:
         http.request("GET", "/"+path)
-    
+
     response = http.getresponse()
     if response.status != 200:
         raise RuntimeError("'%s' request failed (%d %s)" % (path,
                                                             response.status,
                                                             response.reason))
-    
+
     return response
 
 def update_evecentral():
     indexes = {}
     group_filter = Q(published=True, marketgroup__isnull=False)
-    
+
     for x in EveCentral['systems']:
         system = SolarSystem.objects.get(name=x['name'])
         d = {'system':system.name, }
@@ -120,7 +120,7 @@ def update_evecentral():
         index.save()
         indexes[system.name] = index
         print "Updated index: %s" % index
-        
+
     # Build the list of items to query.
     items = {}
     for cat_name in EveCentral['categories']:
@@ -128,23 +128,23 @@ def update_evecentral():
         for group in cat.groups.all():
             for item in group.items.filter(group_filter):
                 items[item.id] = item
-    
+
     stations = {}
     for id in items.keys():
         item = items[id]
         print "Looking up: %s[%d]" % (item.name, item.id)
-        
+
         prices = {}
         for x in indexes.keys():
             prices[x] = { 'buy': Decimal(0), 'sell': Decimal(0) }
-            
+
         try:
             response = fetch_url(EveCentral['feed'] % {'item_id':item.id})
             doc = xml.dom.minidom.parse(response)
             for node in doc.getElementsByTagName('order'):
                 station = text(node.getElementsByTagName('station'))
                 #print "Station: %s" % station
-                
+
                 # Handle new stations.
                 if not stations.has_key(station):
                     system = Station.objects.get(id=station).solarsystem
@@ -157,14 +157,14 @@ def update_evecentral():
                 else:
                     system = stations[station]['system']
                 #print "Is located in: %s" % stations[station]['system']
-                
+
                 # Skip the useless.
                 #print "Is wanted? %s" % stations[station]['is_wanted']
                 if not stations[station]['is_wanted']:
                     continue
-                
+
                 local = prices[system.name]
-                
+
                 price = text(node.getElementsByTagName('price'))
                 price = price.replace(',','')
                 price = Decimal(price)
@@ -178,7 +178,7 @@ def update_evecentral():
                     #print "Is a buy order."
                     if price > local['buy']:
                         local['buy'] = price
-                    
+
             for x in indexes.keys():
                 buy = prices[x]['buy']
                 sell = prices[x]['sell']
@@ -188,15 +188,15 @@ def update_evecentral():
             print "Error loading EVE Central for item. [%s]" % e
 
 def update_qtc():
-    name = QtcIndustries['name']     
+    name = QtcIndustries['name']
     qtc, created = MarketIndex.objects.get_or_create(name=name)
     qtc.url = QtcIndustries['url']
     qtc.note = QtcIndustries['description']
     qtc.priority = 200
     qtc.save()
-           
+
     response = fetch_url(QtcIndustries['feed'])
-        
+
     doc = xml.dom.minidom.parse(response)
 
     minerals = {}
@@ -207,7 +207,7 @@ def update_qtc():
                 if m.localName:
                     mineral_name = m.localName
                     minerals[mineral_name] = find_price(m)
-                     
+
     # mapping now has the same value as in the SAX example:
     map = QtcIndustries['item_map']
     for m in minerals.items():
@@ -220,23 +220,22 @@ def update_qtc():
         print "Value: %s = %s/%s" % (v.item, v.buy, v.sell)
 
 def update_refinables():
-    name = 'Derived'     
+    name = 'Derived'
     index, created = MarketIndex.objects.get_or_create(name=name)
     index.note = 'Values calculated from the prevailing mineral prices.'
     index.priority = 250
     index.save()
-    
+
     filter = (Q(group__name='Refinables') | Q(group__category__name='Asteroid')) & Q(published=True)
     for m in Item.objects.filter(filter):
         buy, sell = derrived_value(m, index)
-        if buy or sell: 
+        if buy or sell:
             #print "Value: %s = %s/%s" % (m, buy, sell)
             v = index.set_value(m, buy=buy, sell=sell)
         else:
             print "Unable to calculate value of: %s" % m
 
-
-update_evecentral()
-update_qtc()
-update_refinables()
-
+if __name__ == '__main__':
+    update_evecentral()
+    update_qtc()
+    update_refinables()
