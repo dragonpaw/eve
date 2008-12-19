@@ -6,7 +6,8 @@ class MarketIndexValue_Inline(admin.TabularInline):
     model = MarketIndexValue
 
 class JournalEntryTypeOptions(admin.ModelAdmin):
-    list_display = ('name', 'is_boring',)
+    list_display = ('id', 'name', 'is_boring',)
+    list_display_links = ('name',)
 
 class MarketIndexOptions(admin.ModelAdmin):
     inlines = [MarketIndexValue_Inline]
@@ -39,4 +40,3 @@ admin.site.register(MarketIndexValue, MarketIndexValueOptions)
 admin.site.register(BlueprintOwned, BlueprintOwnedOptions)
 admin.site.register(Transaction, TransactionOptions)
 admin.site.register(JournalEntry, JournalEntryOptions)
-
