@@ -58,13 +58,6 @@ class StationOptions(admin.ModelAdmin):
 
 class GroupOptions(admin.ModelAdmin):
     search_fields = ('name',)
-    radio_fields = {'usebaseprice': admin.HORIZONTAL,
-                    'allowmanufacture': admin.HORIZONTAL,
-                    'allowrecycler': admin.HORIZONTAL,
-                    'anchored': admin.HORIZONTAL,
-                    'anchorable': admin.HORIZONTAL,
-                    'fittablenonsingleton': admin.HORIZONTAL
-                    }
     list_display = ('name', 'category', 'graphic', 'description',) 
     fieldsets = (
         (None, {

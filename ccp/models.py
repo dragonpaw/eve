@@ -567,7 +567,7 @@ class CorporationDivision(models.Model):
     id = models.IntegerField(primary_key=True, db_column='divisionid')
     name = models.CharField(max_length=100, db_column='divisionname')
     description = models.TextField()
-    leadertype = models.CharField(max_length=300)
+    leadertype = models.CharField(max_length=100)
 
     class Meta:
         ordering = ('name',)
@@ -617,7 +617,7 @@ class Attribute(models.Model):
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     defaultvalue = models.FloatField()
     published = models.BooleanField()
-    displayname = models.CharField(max_length=300, blank=True)
+    displayname = models.CharField(max_length=100, blank=True)
     unit = models.ForeignKey('Unit', null=True, blank=True, db_column='unitid')
     stackable = models.BooleanField()
     highisgood = models.BooleanField()
