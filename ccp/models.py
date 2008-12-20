@@ -153,7 +153,7 @@ class Alliance(models.Model):
 
 class CharacterAncestry(models.Model):
     id = models.IntegerField(primary_key=True, db_column='ancestryid')
-    name = models.CharField(max_length=300, db_column='ancestryname')
+    name = models.CharField(max_length=100, db_column='ancestryname')
     bloodline = models.ForeignKey('CharacterBloodline', db_column='bloodlineid')
     description = models.TextField()
     perception = models.IntegerField()
@@ -186,7 +186,7 @@ class CharacterAncestry(models.Model):
 
 class CharacterAttribute(models.Model):
     id = models.IntegerField(primary_key=True, db_column='attributeid')
-    name = models.CharField(max_length=300, db_column='attributename')
+    name = models.CharField(max_length=100, db_column='attributename')
     description = models.TextField()
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     shortdescription = models.TextField()
@@ -200,7 +200,7 @@ class CharacterAttribute(models.Model):
 
 class CharacterBloodline(models.Model):
     id = models.IntegerField(primary_key=True, db_column='bloodlineid')
-    name = models.CharField(max_length=300, db_column='bloodlinename')
+    name = models.CharField(max_length=100, db_column='bloodlinename')
     race = models.ForeignKey('Race', db_column='raceid')
     description = models.TextField()
     maledescription = models.TextField()
@@ -238,7 +238,7 @@ class CharacterBloodline(models.Model):
 class CharacterCareer(models.Model):
     id = models.IntegerField(primary_key=True, db_column='careerid')
     race = models.ForeignKey('Race', db_column='raceid')
-    name = models.CharField(max_length=300, db_column='careername')
+    name = models.CharField(max_length=100, db_column='careername')
     description = models.TextField()
     shortdescription = models.TextField()
     graphic = models.ForeignKey('Graphic', null=True, blank=True,
@@ -259,7 +259,7 @@ class CharacterCareer(models.Model):
 class CharacterCareerSpeciality(models.Model):
     id = models.IntegerField(primary_key=True, db_column='specialityid')
     career = models.ForeignKey('CharacterCareer', db_column='careerid')
-    name = models.CharField(max_length=300, db_column='specialityname')
+    name = models.CharField(max_length=100, db_column='specialityname')
     description = models.TextField()
     shortdescription = models.TextField()
     graphic = models.ForeignKey('Graphic', null=True, blank=True,
@@ -287,7 +287,7 @@ class Faction(models.Model):
     Thukker Tribe"""
     id = models.IntegerField(primary_key=True, db_column='factionid')
     name = models.CharField(max_length=100, db_column='factionname')
-    description = models.CharField(max_length=1000, null=True)
+    description = models.TextField(null=True)
     raceids = models.IntegerField(null=True, blank=True)
     solarsystem = models.ForeignKey('SolarSystem', null=True, blank=True,
                                     db_column='solarsystemid', related_name='home_system')
@@ -350,7 +350,7 @@ class Race(models.Model):
     Gallente
     Jove"""
     id = models.IntegerField(primary_key=True, db_column='raceid')
-    name = models.CharField(max_length=300, db_column='racename')
+    name = models.CharField(max_length=100, db_column='racename')
     description = models.TextField()
     skilltypeid1 = models.IntegerField(null=True, blank=True)
     typeid = models.IntegerField(null=True, blank=True)
@@ -383,7 +383,7 @@ class Race(models.Model):
 class School(models.Model):
     id = models.IntegerField(primary_key=True, db_column='schoolid')
     race = models.ForeignKey(Race, null=True, blank=True, db_column='raceid')
-    name = models.CharField(max_length=300, db_column='schoolname')
+    name = models.CharField(max_length=100, db_column='schoolname')
     description = models.TextField()
     graphic = models.ForeignKey('Graphic', null=True, blank=True,
                                 db_column='graphicid',)
@@ -404,7 +404,7 @@ class School(models.Model):
 
 class CorporationActivity(models.Model):
     id = models.IntegerField(primary_key=True, db_column='activityid')
-    name = models.CharField(max_length=300, db_column='activityname')
+    name = models.CharField(max_length=100, db_column='activityname')
     description = models.TextField()
 
     class Meta:
@@ -565,7 +565,7 @@ class Corporation(models.Model):
 
 class CorporationDivision(models.Model):
     id = models.IntegerField(primary_key=True, db_column='divisionid')
-    name = models.CharField(max_length=300, db_column='divisionname')
+    name = models.CharField(max_length=100, db_column='divisionname')
     description = models.TextField()
     leadertype = models.CharField(max_length=300)
 
@@ -612,7 +612,7 @@ class Attribute(models.Model):
     Attribute: 120: weaponRangeMultiplier
     """
     id = models.IntegerField(primary_key=True, db_column='attributeid')
-    description = models.CharField(max_length=1000)
+    description = models.TextField()
     attributename = models.CharField(max_length=100)
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     defaultvalue = models.FloatField()
@@ -723,27 +723,27 @@ class Effect(models.Model):
     id = models.IntegerField(primary_key=True, db_column='effectid')
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     name = models.TextField(db_column='effectname')
-    displayname = models.CharField(max_length=300)
-    effectcategory = models.IntegerField()
+    displayname = models.CharField(max_length=100)
+    effectcategory = models.IntegerField(null=True, blank=True)
     preexpression = models.IntegerField(null=True, blank=True)
     postexpression = models.IntegerField(null=True, blank=True)
-    description = models.TextField(blank=True)
-    guid = models.CharField(blank=True, max_length=180)
-    isoffensive = models.CharField(max_length=15)
-    isassistance = models.CharField(max_length=15)
+    description = models.TextField(null=True, blank=True)
+    guid = models.CharField(null=True, blank=True, max_length=60)
+    isoffensive = models.IntegerField(null=True, blank=True)
+    isassistance = models.IntegerField(null=True, blank=True)
     durationattributeid = models.IntegerField(null=True, blank=True)
     trackingspeedattributeid = models.IntegerField(null=True, blank=True)
     dischargeattributeid = models.IntegerField(null=True, blank=True)
     rangeattributeid = models.IntegerField(null=True, blank=True)
     falloffattributeid = models.IntegerField(null=True, blank=True)
-    disallowautorepeat = models.CharField(max_length=15)
-    published = models.CharField(max_length=15)
-    iswarpsafe = models.CharField(max_length=15)
-    rangechance = models.CharField(max_length=15)
-    electronicchance = models.CharField(max_length=15)
-    propulsionchance = models.CharField(max_length=15)
+    disallowautorepeat = models.IntegerField(null=True, blank=True)
+    published = models.BooleanField(null=True, blank=True)
+    iswarpsafe = models.IntegerField(null=True, blank=True)
+    rangechance = models.IntegerField(null=True, blank=True)
+    electronicchance = models.IntegerField(null=True, blank=True)
+    propulsionchance = models.IntegerField(null=True, blank=True)
     distribution = models.IntegerField(null=True, blank=True)
-    sfxname = models.CharField(blank=True, max_length=60)
+    sfxname = models.CharField(blank=True, max_length=20)
     npcusagechanceattributeid = models.IntegerField(null=True, blank=True)
     npcactivationchanceattributeid = models.IntegerField(null=True, blank=True)
     fittingusagechanceattributeid = models.IntegerField(null=True, blank=True)
@@ -778,13 +778,13 @@ class Effect(models.Model):
 
 class Graphic(models.Model):
     id = models.IntegerField(primary_key=True, db_column='graphicid')
-    url3d = models.CharField(max_length=300, null=True, blank=True)
-    urlweb = models.CharField(max_length=300, null=True, blank=True)
+    url3d = models.CharField(max_length=100, null=True, blank=True)
+    urlweb = models.CharField(max_length=100, null=True, blank=True)
     description = models.TextField(null=True, blank=True, default='Automatically added by Django')
     published = models.BooleanField(default=False, null=True)
     obsolete = models.BooleanField(default=False, null=True)
-    icon = models.CharField(max_length=300)
-    urlsound = models.CharField(max_length=300, null=True, blank=True)
+    icon = models.CharField(max_length=100)
+    urlsound = models.CharField(max_length=100, null=True, blank=True)
     explosionid = models.IntegerField(null=True, blank=True)
 
     class Meta:
@@ -852,12 +852,9 @@ def get_graphic(icon):
 
 class Unit(models.Model):
     id = models.IntegerField(primary_key=True, db_column='unitid')
-    name = models.CharField(blank=True, max_length=60, db_column='unitname')
-    displayname = models.CharField(blank=True, max_length=60)
-    description = models.CharField(blank=True, max_length=300)
-
-    class Meta:
-        ordering = ('id',)
+    name = models.CharField(null=True, blank=True, max_length=100, db_column='unitname')
+    displayname = models.CharField(null=True, blank=True, max_length=20)
+    description = models.TextField(null=True, blank=True)
 
     def __unicode__(self):
         return self.displayname
@@ -887,10 +884,10 @@ class Category(models.Model):
         Charge
         Ship"""
     id = models.IntegerField(primary_key=True, db_column='categoryid')
-    name = models.CharField(max_length=300, db_column='categoryName')
-    description = models.TextField()
+    name = models.CharField(max_length=100, db_column='categoryName')
+    description = models.TextField(null=True, blank=True)
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    published = models.BooleanField()
+    published = models.BooleanField(null=True, blank=True, default=False)
 
     class Meta:
         ordering = ('name',)
@@ -906,14 +903,14 @@ class Group(models.Model):
     id = models.IntegerField(primary_key=True, db_column='groupid')
     category = models.ForeignKey(Category, db_column='categoryid', related_name='groups')
     name = models.CharField(max_length=100, db_column='groupname')
-    description = models.CharField(max_length=3000, null=True)
+    description = models.TextField(null=True, blank=True)
     graphic = models.ForeignKey(Graphic, null=True, blank=True, db_column='graphicid')
-    usebaseprice = models.CharField(max_length=15, choices=TRUE_FALSE)
-    allowmanufacture = models.CharField("Manafacturable?", max_length=15, choices=TRUE_FALSE)
-    allowrecycler = models.CharField(max_length=15, choices=TRUE_FALSE)
-    anchored = models.CharField(max_length=15, choices=TRUE_FALSE)
-    anchorable = models.CharField(max_length=15, choices=TRUE_FALSE)
-    fittablenonsingleton = models.CharField(max_length=15, choices=TRUE_FALSE)
+    usebaseprice = models.IntegerField(max_length=15, choices=TRUE_FALSE)
+    allowmanufacture = models.BooleanField("Manafacturable?", choices=TRUE_FALSE)
+    allowrecycler = models.BooleanField(null=True, blank=True)
+    anchored = models.BooleanField(null=True, blank=True)
+    anchorable = models.BooleanField(null=True, blank=True)
+    fittablenonsingleton = models.BooleanField(null=True, blank=True)
     published = models.BooleanField(default=True, null=True)
 
     class Meta:
@@ -1025,7 +1022,7 @@ class Item(models.Model):
     # DON'T REORDER!!! (Breaks the test copy above.)
     id = models.IntegerField(primary_key=True, db_column='typeid')
     group = models.ForeignKey('Group', db_column='groupid', related_name='items')
-    name = models.CharField(max_length=300)
+    name = models.CharField(max_length=100)
     real_description = models.TextField(db_column='description')
     graphic = models.ForeignKey('Graphic', null=True, blank=True,
                                 db_column='graphicid')
@@ -1288,7 +1285,7 @@ class Item(models.Model):
 class Name(models.Model):
     """This table contains the names of planets, stars, systems and corporations."""
     id = models.IntegerField(primary_key=True, db_column='itemid')
-    name = models.CharField(max_length=300, db_column='itemname')
+    name = models.CharField(max_length=100, db_column='itemname')
     category = models.ForeignKey(Category, db_column='categoryid', related_name='names')
     group = models.ForeignKey(Group, db_column='groupid', related_name='names')
     type = models.ForeignKey(Item, db_column='typeid', related_name='names',)
@@ -1310,11 +1307,11 @@ class MarketGroup(models.Model):
     id = models.IntegerField(primary_key=True, db_column='marketgroupid')
     parent = models.ForeignKey('MarketGroup', null=True, blank=True, db_column='parentgroupid')
     name = models.CharField(max_length=100, db_column='marketgroupname')
-    description = models.CharField(max_length=3000, null=True)
+    description = models.TextField(null=True, blank=True)
     graphic = models.ForeignKey(Graphic, null=True, blank=True, db_column='graphicid')
-    hastypes = models.CharField(max_length=15, choices=TRUE_FALSE)
-    slug = models.SlugField(max_length=50)
-    objects = models.Manager()
+    hastypes = models.BooleanField(null=True, blank=True)
+    slug = models.SlugField(max_length=100)
+    #objects = models.Manager()
 
     class Meta:
         ordering = ('name',)
@@ -1345,8 +1342,8 @@ class MarketGroup(models.Model):
 
 class InventoryMetaGroup(models.Model):
     id = models.IntegerField(primary_key=True, db_column='metagroupid')
-    name = models.CharField(blank=True, max_length=300, db_column='metagroupname')
-    description = models.CharField(blank=True, max_length=300)
+    name = models.CharField(blank=True, max_length=100, db_column='metagroupname')
+    description = models.TextField(blank=True, null=True)
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
 
     def __unicode__(self):
@@ -1472,7 +1469,7 @@ class Constellation(models.Model):
     region = models.ForeignKey(Region, db_column='regionid',
                                related_name='constellations')
     id = models.IntegerField(primary_key=True, db_column='constellationid')
-    name = models.CharField(max_length=300, db_column='constellationname')
+    name = models.CharField(max_length=100, db_column='constellationname')
     x = models.FloatField(null=True)
     y = models.FloatField(null=True)
     z = models.FloatField(null=True)
@@ -1616,7 +1613,7 @@ class MapDenormalize(models.Model):
     y = models.FloatField(null=True, blank=True)
     z = models.FloatField(null=True, blank=True)
     radius = models.FloatField(null=True, blank=True)
-    name = models.CharField(blank=True, max_length=300, db_column='itemname')
+    name = models.CharField(blank=True, max_length=100, db_column='itemname')
     security = models.FloatField(null=True, blank=True)
     celestialindex = models.IntegerField(null=True, blank=True)
     orbitindex = models.IntegerField(null=True, blank=True)
@@ -1632,7 +1629,7 @@ class MapDenormalize(models.Model):
 
 class MapLandmarks(models.Model):
     id = models.IntegerField(primary_key=True, db_column='landmarkid')
-    landmarkname = models.CharField(max_length=300)
+    landmarkname = models.TextField(null=True, blank=True)
     description = models.TextField()
     locationid = models.IntegerField(null=True, blank=True)
     x = models.FloatField()
@@ -1641,7 +1638,7 @@ class MapLandmarks(models.Model):
     radius = models.FloatField()
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     importance = models.IntegerField()
-    url2d = models.CharField(blank=True, max_length=765)
+    url2d = models.TextField()
 
 # class Mapregionjumps(models.Model):
 #     fromregionid = models.IntegerField()
@@ -1670,7 +1667,7 @@ class MapLandmarks(models.Model):
 
 class MapUniverse(models.Model):
     id = models.IntegerField(primary_key=True, db_column='universeid')
-    universename = models.CharField(max_length=300)
+    universename = models.CharField(max_length=100)
     x = models.FloatField()
     y = models.FloatField()
     z = models.FloatField()
@@ -1698,15 +1695,14 @@ class RamActivity(models.Model):
     5 rows in set (0.00 sec)
     """
     id = models.IntegerField(primary_key=True, db_column='activityid')
-    name = models.CharField(max_length=300, db_column='activityname')
+    name = models.CharField(max_length=100, db_column='activityname')
     description = models.TextField(default="")
-    iconNo = models.CharField(max_length=300, blank=True, null=True, default="")
-    published = models.IntegerField(default=0)
+    iconNo = models.CharField(max_length=5, blank=True, null=True, default="")
+    published = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.name
-#
-#
+
 #class RamAssemblyLines(models.Model):
 #    id = models.IntegerField(primary_key=True, db_column='assemblylineid')
 #    assemblylinetypeid = models.IntegerField()
@@ -1870,7 +1866,7 @@ class Station(models.Model):
 
 class StationResourcePurpose(models.Model):
     id = models.IntegerField(primary_key=True, db_column='purpose')
-    text = models.CharField(max_length=300, db_column='purposetext')
+    text = models.CharField(max_length=100, db_column='purposetext')
 
     def __unicode__(self):
         return self.text
