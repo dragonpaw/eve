@@ -77,7 +77,7 @@ class PlayerStation(models.Model):
     cpu_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
     power_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
 
-    note = models.CharField(max_length=500, blank=True)
+    note = models.CharField(max_length=200, blank=True)
     owner = models.ForeignKey('user.Character', blank=True, null=True)
 
     fueled_until = models.DateTimeField(blank=True, null=True)
