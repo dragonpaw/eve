@@ -362,6 +362,7 @@ def refuel(request, station_id, days=DEFAULT_DAYS):
                 print "new qty: %d" % fuel.quantity
                 fuel.save()
         pos.state_time = datetime.utcnow()
+        pos.update_fueled_until()
         pos.save()
         return HttpResponseRedirect( pos.get_absolute_url() )
     else:

@@ -1,25 +1,41 @@
 #!/usr/bin/env python
 # $Id$
-import os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'eve.settings'
+from django_extensions.management.jobs import DailyJob
 
 import httplib
-from eve.trade.models import *
-from eve.ccp.models import *
 import xml.dom.minidom
-from xml.dom.minidom import Node
+#import socket
+import traceback
+import workerpool
+
+from datetime import datetime
+from decimal import Decimal
+
+from django.db.models import Q
+
+from eve.trade.models import MarketIndex, MarketIndexValue
+from eve.ccp.models import Item, SolarSystem
 from eve.trade.sources import QtcIndustries, EveCentral
-from datetime import date
-from sys import exit
-import socket
-socket.setdefaulttimeout(10)
+
+#socket.setdefaulttimeout(10)
+
+
+class Job(DailyJob):
+    help = "Load prices from external sources."
+
+    def execute(self):
+        print("Starting EVE Central index...")
+        start_time = datetime.utcnow()
+        update_evecentral()
+        print "Elapsed: %s" % (datetime.utcnow() - start_time)
+
+        #update_qtc()  # Gives really wonky prices.
+        update_refinables()
+
 
 def text(node):
     '''XML is so annoying to deal with.'''
     return node[0].firstChild.data
-
-def find_mineral(node):
-    pass
 
 def find_price(node):
     for x in node.childNodes:
@@ -84,13 +100,6 @@ def fetch_url(url, id=None):
     else:
         path = ""
 
-    name = QtcIndustries['name']
-    qtc, created = MarketIndex.objects.get_or_create(name=name)
-    qtc.url = QtcIndustries['url']
-    qtc.note = QtcIndustries['description']
-    qtc.priority = 200
-    qtc.save()
-
     http = httplib.HTTPConnection(url)
     if id:
         http.request("GET", "/"+path+str(id))
@@ -106,90 +115,91 @@ def fetch_url(url, id=None):
     return response
 
 def update_evecentral():
-    indexes = {}
-    group_filter = Q(published=True, marketgroup__isnull=False)
+    indexes = []
 
-    for x in EveCentral['systems']:
-        system = SolarSystem.objects.get(name=x['name'])
+    # Setup the job queue and workers.
+    def toolbox_factory():
+        return EveCentralToolbox(EveCentral['host'])
+    def worker_factory(queue):
+        return workerpool.EquippedWorker(queue, toolbox_factory)
+    pool = workerpool.WorkerPool(size=5, worker_factory=worker_factory)
+
+    for s in EveCentral['systems']:
+        system = SolarSystem.objects.get(name=s['name'])
         d = {'system':system.name, }
         name = EveCentral['name'] % d
-        index, created = MarketIndex.objects.get_or_create(name=name)
+        index = MarketIndex(name=name)
         index.url = EveCentral['url']
         index.note = EveCentral['description'] % d
-        index.priority = x['priority']
+        index.priority = s['priority']
         index.save()
-        indexes[system.name] = index
+        indexes.append((index, system))
         print "Updated index: %s" % index
 
-    # Build the list of items to query.
-    items = {}
-    for cat_name in EveCentral['categories']:
-        cat = Category.objects.get(name=cat_name)
-        for group in cat.groups.all():
-            for item in group.items.filter(group_filter):
-                items[item.id] = item
+    for item in Item.objects.filter(marketgroup__isnull=False, published=True):
+        for index, system in indexes:
+            job = EveCentralJob(item, system, index)
+            pool.put(job)
+    pool.shutdown()
+    pool.wait()
 
-    stations = {}
-    for id in items.keys():
-        item = items[id]
-        print "Looking up: %s[%d]" % (item.name, item.id)
+class EveCentralToolbox(object):
+    "Create a http connection to the server."
+    def __init__(self, host):
+        #print "Host: %s" % host
+        self.http = httplib.HTTPConnection(host)
+        #self.http.connect()
 
-        prices = {}
-        for x in indexes.keys():
-            prices[x] = { 'buy': Decimal(0), 'sell': Decimal(0) }
+    def fetch(self, url, id=None):
+        #print "GET %s" % url
+        self.http.request("GET", url)
+
+        response = self.http.getresponse()
+        #print "%s: %s %s" % (url, response.status, response.reason)
+        if response.status != 200:
+            raise RuntimeError("'%s' request failed (%d %s)" % (url,
+                                                                response.status,
+                                                                response.reason))
+        return response.read()
+
+class EveCentralJob(workerpool.Job):
+    "Job for grabbing a single item in a single system, and saving it to an index."
+
+    def __init__(self, item, system, index):
+        self.item = item
+        self.system = system
+        self.index = index
+
+    def run(self, toolbox):
+        buy = Decimal(0)
+        sell = Decimal(0)
 
         try:
-            response = fetch_url(EveCentral['feed'] % {'item_id':item.id})
-            doc = xml.dom.minidom.parse(response)
+            d = {'item_id':self.item.id, 'system_id':self.system.id}
+            data = toolbox.fetch(EveCentral['path'] % d)
+            doc = xml.dom.minidom.parseString(data)
             for node in doc.getElementsByTagName('order'):
-                station = text(node.getElementsByTagName('station'))
-                #print "Station: %s" % station
-
-                # Handle new stations.
-                if not stations.has_key(station):
-                    system = Station.objects.get(id=station).solarsystem
-                    if system.name in indexes.keys():
-                        is_wanted = True
-                    else:
-                        is_wanted = False
-                    stations[station] = {'system': system,
-                                         'is_wanted': is_wanted }
-                else:
-                    system = stations[station]['system']
-                #print "Is located in: %s" % stations[station]['system']
-
-                # Skip the useless.
-                #print "Is wanted? %s" % stations[station]['is_wanted']
-                if not stations[station]['is_wanted']:
-                    continue
-
-                local = prices[system.name]
 
                 price = text(node.getElementsByTagName('price'))
-                price = price.replace(',','')
                 price = Decimal(price)
-                #print "Price: %s" % price
 
                 if node.parentNode.nodeName == 'sell_orders':
-                    #print "Is a sell order."
-                    if local['sell'] == 0 or price < local['sell']:
-                        local['sell'] = price
+                    if sell == 0 or price < sell:
+                        sell = price
                 else:
-                    #print "Is a buy order."
-                    if price > local['buy']:
-                        local['buy'] = price
+                    if price > buy:
+                        buy = price
 
-            for x in indexes.keys():
-                buy = prices[x]['buy']
-                sell = prices[x]['sell']
-                print "Best %s prices: %s/%s" % (x, buy, sell)
-                indexes[x].set_value(item, buy=buy, sell=sell)
+            print "Best %s prices in %s: %s/%s" % (self.item.name, self.system.name, buy, sell)
+            self.index.set_value(self.item, buy=buy, sell=sell)
+
         except Exception, e:
-            print "Error loading EVE Central for item. [%s]" % e
+            print "Error loading EVE Central for item: %s." % self.item
+            print traceback.print_exc()
 
 def update_qtc():
     name = QtcIndustries['name']
-    qtc, created = MarketIndex.objects.get_or_create(name=name)
+    qtc = MarketIndex(name=name)
     qtc.url = QtcIndustries['url']
     qtc.note = QtcIndustries['description']
     qtc.priority = 200
@@ -214,14 +224,13 @@ def update_qtc():
         try:
             item = Item.objects.get(pk=map[m[0]])
         except KeyError:
-            print "No such key in item mapping: '%s'" % (m[0])
-            exit(1)
+            raise RuntimeError("No such key in item mapping: '%s'" % (m[0]))
         v = qtc.set_value(item, buy=m[1], sell=m[1])
         print "Value: %s = %s/%s" % (v.item, v.buy, v.sell)
 
 def update_refinables():
     name = 'Derived'
-    index, created = MarketIndex.objects.get_or_create(name=name)
+    index = MarketIndex(name=name)
     index.note = 'Values calculated from the prevailing mineral prices.'
     index.priority = 250
     index.save()
@@ -234,8 +243,3 @@ def update_refinables():
             v = index.set_value(m, buy=buy, sell=sell)
         else:
             print "Unable to calculate value of: %s" % m
-
-if __name__ == '__main__':
-    update_evecentral()
-    update_qtc()
-    update_refinables()

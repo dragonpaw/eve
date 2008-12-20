@@ -17,13 +17,13 @@ QtcIndustries = {
         'Datacore-CaldariStarshipEngineering': 25887,
         'Datacore-ElectromagneticPhysics': 20417,
         'Datacore-ElectronicEngineering': 20418,
-        'Datacore-GallenteanStarshipEngineering': 20410, 
+        'Datacore-GallenteanStarshipEngineering': 20410,
         'Datacore-GravitonPhysics': 20419,
         'Datacore-HighEnergyPhysics': 20411,
         'Datacore-HydromagneticPhysics': 20171,
         'Datacore-LaserPhysics': 20413,
-        'Datacore-MechanicalEngineering': 20424, 
-        'Datacore-MinmatarStarshipEngineering': 20172, 
+        'Datacore-MechanicalEngineering': 20424,
+        'Datacore-MinmatarStarshipEngineering': 20172,
         'Datacore-MolecularEngineering': 20415,
         'Datacore-NaniteEngineering': 20416,
         'Datacore-NuclearPhysics': 20423,
@@ -36,7 +36,7 @@ QtcIndustries = {
         'HeliumIsotopes': 16274,
         'HydrogenIsotopes': 17889,
         'HypersynapticFibers': 16682,
-        'ImpetusConsole': 25621, 
+        'ImpetusConsole': 25621,
         'Isogen': 37,
         'LiquidOzone': 16273,
         'MalfunctioningShieldEmitter': 25589,
@@ -64,7 +64,8 @@ QtcIndustries = {
 }
 
 EveCentral = {
-    'feed': "http://eve-central.com/home/quicklook.html?typeid=%(item_id)s&outtype=xml",
+    'host': "eve-central.com",
+    'path': '/home/quicklook.html?typeid=%(item_id)s&usesystem=%(system_id)s&outtype=xml',
     'url': "http://www.eve-central.com/",
     'description': "Min/max sell/buy prices from %(system)s.",
     'name': "EVE Central: %(system)s",
@@ -74,6 +75,4 @@ EveCentral = {
                  {'name':'Oursulaert', 'priority':153}, # Gallente
                  {'name':'Jita',       'priority':154}, # Caldari
                 ),
-    'categories': ('Charge','Drone','Commodity','Material','Implant','Ship',
-                   'Module'),
 }
