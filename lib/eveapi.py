@@ -2,7 +2,7 @@
 # eveapi - EVE Online API access
 #
 # Copyright (c)2007 Jamie "Entity" van den Berge <entity@vapor.com>
-# 
+#
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without
@@ -11,7 +11,7 @@
 # copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following
 # conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 #
@@ -68,6 +68,17 @@ import copy
 from xml.parsers import expat
 from time import strptime
 from calendar import timegm
+
+#-----------------------------------------------------------------------------
+# Added by Ash for ease of use.
+from eve.lib.cachehandler import MyCacheHandler
+from eve.settings import DEBUG
+
+def get_api(debug=False, throw=False):
+        # Debug disabled for now.
+        cache = MyCacheHandler(debug=debug, throw=throw)
+        api = EVEAPIConnection(cacheHandler=cache).context(version=2)
+        return api
 
 #-----------------------------------------------------------------------------
 
@@ -310,7 +321,7 @@ class _Parser(object):
 		else:
 			p.Parse(data, True)
 		return self.root
-		
+
 
 	def tag_start(self, name, attributes):
 		# <hack>
@@ -476,7 +487,7 @@ class Row(object):
 	#
 	# To conserve resources, Row objects are only created on-demand. This is
 	# typically done by Rowsets (e.g. when iterating over the rowset).
-	
+
 	def __init__(self, cols=None, row=None):
 		self._cols = cols or []
 		self._row = row or []
@@ -514,7 +525,7 @@ class Rowset(object):
 	# Rowsets support most of the list interface:
 	#   iteration, indexing and slicing
 	#
-	# As well as the following methods: 
+	# As well as the following methods:
 	#
 	#   IndexedBy(column)
 	#     Returns an IndexRowset keyed on given column. Requires the column to
@@ -710,4 +721,3 @@ class FilterRowset(object):
 	def __setstate__(self, state):
 		self._cols, self._rows, self._items, self.key, self.key2 = state
 		self._bind()
-

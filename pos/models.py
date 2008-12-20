@@ -124,8 +124,12 @@ class PlayerStation(models.Model):
 
     @property
     def hours_of_fuel(self):
-        return min([f.hours_of_fuel for f in self.fuel.exclude(type__name='Strontium Clathrates')
-                    if f.consumption > 0])
+        x = [f.hours_of_fuel for f in self.fuel.exclude(type__name='Strontium Clathrates')
+                    if f.consumption > 0]
+        if len(x) == 0:
+            return 0
+        else:
+            return min(x)
 
     @property
     def fuel_needed(self):

@@ -43,7 +43,7 @@ TRUE_FALSE = (
     ('true', 'Yes'),
     ('false', 'No'),
 )
-API = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=DEBUG, throw=False)).context(version=2)
+API = eveapi.get_api()
 
 class PublishedManager(models.Manager):
     def get_query_set(self):
@@ -497,12 +497,23 @@ class Corporation(models.Model):
         return self.characters.filter(is_director=True)
 
     def logofile(self):
-        path = os.path.join(settings.STATIC_DIR, 'corplogos', '32_32')
-        if not os.path.exists(path):
-            os.makedirs(path)
-        path = os.path.join(path, (str(self.id) + '.png'))
-        print "Path: %s" % path
-        return path
+        return os.path.join(settings.STATIC_DIR, 'corplogos', '32_32', (str(self.id) + '.png'))
+
+    def updatelogo(self, record=None):
+        path = self.logofile()
+        if os.path.exists(path):
+            return('No logo generation required.')
+        try:
+            dir, file = os.path.split(path)
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            if record is None:
+                record = API.corp.CorporationSheet(corporationID=self.id)
+            logo = evelogo.CorporationLogo(record.logo, size=32)
+            logo.save(path, 'png')
+            return('Logo created.')
+        except Exception, e:
+            return('Failed to make corp icon for: %s. [%s]' % (self.id, str(e)))
 
     def refresh(self, character=None, name=None):
         messages = []
@@ -548,13 +559,7 @@ class Corporation(models.Model):
         messages.append('Corp refreshed: %s(%s)' % (name.name, self.id))
         self.save()
 
-        try:
-            path = self.logofile()
-            if not os.path.exists(path) and record:
-                logo = evelogo.CorporationLogo(record.logo, size=32)
-                logo.save(path, 'png')
-        except Exception, e:
-            messages.append('Failed to make corp icon for: %s. [%s]' % (self.id, str(e)))
+        self.updatelogo()
 
         return messages
 
