@@ -19,6 +19,9 @@ TEMPLATE_DEBUG = DEBUG
 
 DEFAULT_FROM_EMAIL='ash@dragonpaw.org'
 
+# Necessary for (mt) Django GridContainer
+FORCE_SCRIPT_NAME = ""
+
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/8.1/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
 # If running in a Windows environment this must be set to the same as your
@@ -71,8 +74,8 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    "/var/www/vhosts/magicwidget.net/django-sites/eve/_templates",
-    "/home/ash/django-sites/eve/_templates",
+    "/home/56240/users/.home/container/eve/_templates",
+    #"/home/ash/django-sites/eve/_templates",
     "C:/django-sites/eve/_templates",
 )
 
@@ -110,7 +113,7 @@ INSTALLED_APPS = (
 if sys.platform == 'win32':
     STATIC_DIR = 'C:/django-sites/eve/_static/'
 else:
-    STATIC_DIR = ''
+    STATIC_DIR = '/home/56240/users/.home/domains/eve.magicwidget.net/html/static'
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/'
