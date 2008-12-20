@@ -1,6 +1,4 @@
 from django import forms
-from django.newforms import ModelForm
-from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
@@ -80,7 +78,7 @@ def blueprint_list(request):
     
     return render_to_response('trade_blueprint_list.html', d)
 
-class BlueprintOwnedForm(ModelForm):
+class BlueprintOwnedForm(forms.ModelForm):
     class Meta:
         model = BlueprintOwned
         exclude = ('user','blueprint',)
