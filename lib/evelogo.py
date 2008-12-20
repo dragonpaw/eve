@@ -90,9 +90,18 @@ a background with the color of your choice if specified, otherwise black."""
 		for x in xrange(64):
 			for y in xrange(64):
 				r,g,b,a = pix[x,y]
-				a1 = ((255 - p1[x,y][3]) / 255.0) if shape1 else 1.0
-				a2 = ((255 - p2[x,y][3]) / 255.0) if shape2 else 1.0
-				a3 = ((255 - p3[x,y][3]) / 255.0) if shape3 else 1.0
+				if shape1:
+				    a1 = ((255 - p1[x,y][3]) / 255.0)
+				else:
+				    a1 = 1.0
+				if shape2:
+				    a2 = ((255 - p2[x,y][3]) / 255.0)
+				else:
+				    a2 = 1.0
+				if shape3:
+				    a3 = ((255 - p3[x,y][3]) / 255.0)
+				else:
+				    a3 = 1.0
 				a = (1.0-(a1*a2*a3))
 				if a:
 					pix[x,y] = (int(r/a),int(g/a),int(b/a),int(255*a))
