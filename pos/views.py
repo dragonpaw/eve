@@ -47,7 +47,7 @@ def get_poses(request):
         poses = []
         for pos in c.corporation.pos.all():
             if not(c.is_director or c.is_pos_monkey
-                   or pos.delegates.filter(character=c).count() ):
+                   or pos.owner == c ):
                 continue
             if not corps.has_key(c.corporation.name):
                 corps[c.corporation.name] = {
@@ -74,8 +74,8 @@ def check_rights(request, pos):
                 return True
             elif c.is_pos_monkey:
                 return True
-        if pos.delegates.filter(character=c).count() > 0:
-            return True
+            elif pos.owner == c:
+                return True
 
     # Guess not.
     raise Http404
@@ -430,16 +430,13 @@ def owner(request, station_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     check_rights(request, pos)
 
-    delegates = {}
-    for d in pos.delegates.all():
-        delegates[d.character.id] = 1
-
     d = {}
     d['pos'] = pos
-    d['characters'] = [{'character':c,
-                         'director':c.is_director,
-                         'monkey':c.is_pos_monkey,
-                         'delegate':delegates.has_key(c.id)} for c in pos.corporation.characters.all() ]
+    d['characters'] = [{
+        'character':c,
+        'director':c.is_director,
+        'monkey':c.is_pos_monkey
+    }]
 
 
     d['nav'] = [pos_nav, pos, {'name':'Owner'}]
