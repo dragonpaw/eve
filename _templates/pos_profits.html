@@ -36,8 +36,9 @@
 <span class="pos-cost">
 	<p class="right cost total">Total cost: {{ corp.cost_weekly|floatformat:0|comma }}</p>
 	<p class="right profit total">Total income: {{ corp.income_weekly|floatformat:0|comma }}</p>
-	{% if corp.profitable %}<p class="right profit total">{% else %}<p class="right cost total">- {% endif %}
-	Net profit: {{ corp.profit_weekly|floatformat:0|comma }}</p>
+	{% if corp.profitable %}<p class="right profit total">Net profit:
+        {% else %}<p class="right cost total">Net Loss: - {% endif %}
+	{{ corp.profit_weekly|floatformat:0|comma }}</p>
 	<p class="right">Total m3 output per week: {{ corp.m3_weekly|floatformat:0|comma }} m3.</p>
 </span>
 </table>
