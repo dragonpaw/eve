@@ -6,7 +6,7 @@ import socket
 
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
-from django.db.models.query import Q
+from django.db.models import Q
 from django.db import models
 from django.db.models.signals import post_save
 
