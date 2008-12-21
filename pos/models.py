@@ -272,8 +272,6 @@ class PlayerStation(models.Model):
         self.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)
         self.last_updated = datetime.utcnow()
 
-        self.update_fueled_until()
-
         self.save()
         self.setup_fuel_supply()
 
@@ -301,21 +299,26 @@ class PlayerStation(models.Model):
 
             fuel.quantity=fuel_type.quantity
             fuel.save()
+
+        # Once all fuel is loaded, calculate how much runtime that gives us.
+        self.update_fueled_until()
+        self.save()
+
         return messages
 
-class PlayerStationModule(models.Model):
-    q = Q(group__category__name='Structure', published=True) & ~Q(group__name='Control Tower')
-
-    item = models.ForeignKey('ccp.Item', limit_choices_to = q)
-    station = models.ForeignKey(PlayerStation)
-    online = models.BooleanField(default=True)
-
-    def __unicode__(self):
-        return u"%s" % (self.item)
-
-class PlayerStationDelegation(models.Model):
-    station = models.ForeignKey(PlayerStation, related_name='delegates')
-    character = models.ForeignKey('user.Character', related_name='pos_delegations')
+#class PlayerStationModule(models.Model):
+#    q = Q(group__category__name='Structure', published=True) & ~Q(group__name='Control Tower')
+#
+#    item = models.ForeignKey('ccp.Item', limit_choices_to = q)
+#    station = models.ForeignKey(PlayerStation)
+#    online = models.BooleanField(default=True)
+#
+#    def __unicode__(self):
+#        return u"%s" % (self.item)
+#
+#class PlayerStationDelegation(models.Model):
+#    station = models.ForeignKey(PlayerStation, related_name='delegates')
+#    character = models.ForeignKey('user.Character', related_name='pos_delegations')
 
 class PlayerStationFuelSupply(models.Model):
     station = models.ForeignKey(PlayerStation, related_name='fuel')
