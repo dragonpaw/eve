@@ -128,7 +128,10 @@ def update_evecentral():
         system = SolarSystem.objects.get(name=s['name'])
         d = {'system':system.name, }
         name = EveCentral['name'] % d
-        index = MarketIndex(name=name)
+        try:
+            index = MarketIndex.objects.get(name=name)
+        except MarketIndex.DoesNotExist:
+            index = MarketIndex(name=name)
         index.url = EveCentral['url']
         index.note = EveCentral['description'] % d
         index.priority = s['priority']

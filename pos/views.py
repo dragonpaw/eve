@@ -35,9 +35,12 @@ PROFIT_NAV = make_nav('View Profit & Loss', '/pos/%d/profit/', '06_03',
 
 DEFAULT_DAYS = 30
 
-def get_poses(request):
+def get_poses(request, profile=None):
+    if profile is None:
+        profile = request.user.get_profile()
+
     corps = {}
-    for c in request.user.get_profile().characters.all():
+    for c in profile.characters.all():
         # Workaround CCP bug as of 2008-09-23. Some corps not queryable by members.
         try:
             c.corporation
@@ -46,16 +49,8 @@ def get_poses(request):
 
         poses = []
         for pos in c.corporation.pos.all():
-            if not(c.is_director or c.is_pos_monkey
-                   or pos.owner == c ):
-                continue
-            if not corps.has_key(c.corporation.name):
-                corps[c.corporation.name] = {
-                                          'name':c.corporation.name,
-                                          'pos':poses,
-                                        }
-            # This works, because the object is already in the dict.
-            poses.append(pos)
+            if pos_allowed(pos, c):
+                poses.append(pos)
 
         if len(poses) > 0:
             poses.sort(key=lambda x:"%s/%s/%03d/%03d" % (
@@ -64,18 +59,31 @@ def get_poses(request):
                 x.moon.celestialindex,
                 x.moon.orbitindex)
             )
+            corps[c.corporation.name] = {
+                'name':c.corporation.name,
+                'pos':poses,
+            }
+
 
     return corps.values()
 
-def check_rights(request, pos):
-    for c in request.user.get_profile().characters.all():
-        if pos.corporation_id == c.corporation_id:
-            if c.is_director:
-                return True
-            elif c.is_pos_monkey:
-                return True
-            elif pos.owner == c:
-                return True
+def pos_allowed(pos, character):
+    if pos.corporation_id == character.corporation_id:
+        if character.is_director:
+            return True
+        elif character.is_pos_monkey:
+            return True
+        elif pos.owner == character:
+            return True
+    return False
+
+def check_rights(request, pos, profile=None):
+    if profile is None:
+        profile = request.user.get_profile()
+
+    for c in profile.characters.all():
+        if pos_allowed(pos, c):
+            return True
 
     # Guess not.
     raise Http404
@@ -114,12 +122,7 @@ def fuel_detail(request, station_id, days=DEFAULT_DAYS):
 
     nav = []
     # Build of the nav options for the POS.
-    for x in (REFUEL_NAV, REACTION_NAV, PROFIT_NAV):
-        x.id = pos.id
-        nav.append(x)
-
-    if is_director_of(request.user, pos):
-        x = DELEGATE_NAV
+    for x in (REFUEL_NAV, REACTION_NAV, PROFIT_NAV, DELEGATE_NAV):
         x.id = pos.id
         nav.append(x)
 
@@ -130,9 +133,9 @@ def fuel_detail(request, station_id, days=DEFAULT_DAYS):
 
 @login_required
 def profit_detail(request, station_id):
-    pos = get_object_or_404(PlayerStation, id=station_id)
-    check_rights(request, pos)
     profile = request.user.get_profile()
+    pos = get_object_or_404(PlayerStation, id=station_id)
+    check_rights(request, pos, profile=profile)
 
     d = {}
     d['nav'] = [pos_nav, pos_profit_nav, pos]
@@ -191,9 +194,9 @@ def consumption(request, days=DEFAULT_DAYS):
     d['nav'] = [pos_nav, pos_consumption_nav]
 
     profile = request.user.get_profile()
-
+    poses = get_poses(request, profile=profile)
     corps = []
-    poses = get_poses(request)
+
     for pos_list in poses:
         corp_name = pos_list['name']
         needs = {}
