@@ -13,4 +13,4 @@ class Job(BaseJob):
             
             message = c.updatelogo()
             if message != 'No logo generation required.':
-                print message
+                print "%s: %s" % (c.name, message)

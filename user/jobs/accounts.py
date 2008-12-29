@@ -10,6 +10,7 @@ from eve.user.models import Account
 
 class Job(BaseJob):
     help = "Reload all of the alliances and member corporations."
+    when = '5min'
 
     def execute(self):
         update_users()

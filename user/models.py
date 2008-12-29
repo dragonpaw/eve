@@ -309,7 +309,7 @@ class Account(models.Model):
 
     def refresh_messages_list(self):
         if self.refresh_messages:
-            return pickle.loads(self.refresh_messages)
+            return pickle.loads(str(self.refresh_messages))
         else:
             return []
 
@@ -422,7 +422,7 @@ class Character(models.Model):
 
     def refresh_messages_list(self):
         if self.refresh_messages:
-            return pickle.loads(self.refresh_messages)
+            return pickle.loads(str(self.refresh_messages))
         else:
             return []
 
