@@ -171,28 +171,31 @@ class PlayerStation(models.Model):
 
     @property
     def sov_fuel_rate(self):
-        if self.corporation.alliance_id == self.constellation.alliance_id:
+        if self.sov_level == 'Constellation':
             return Decimal('0.70')
-        elif self.corporation.alliance_id == self.solarsystem.alliance_id:
+        elif self.sov_level == 'System':
             return Decimal('0.75')
         else:
             return Decimal(1)
 
     def setup_fuel_supply(self):
-        for fuel in self.tower.fuel.all():
-            if fuel.faction:
-                if fuel.faction != self.solarsystem.faction:
+        for f in self.tower.fuel.all():
+            if f.faction:
+                if f.faction != self.solarsystem.faction:
                     continue
-                elif self.solarsystem.security < fuel.minsecuritylevel:
+                elif self.solarsystem.security < f.minsecuritylevel:
                     continue
-            #print "My corp is:", self.corporation, "ID:", self.corporation.id
-            PlayerStationFuelSupply.objects.get_or_create(station=self,
-                                                          type=fuel.type,
-                                                          defaults={'quantity':0,
-                                                                    'solarsystem':self.solarsystem,
-                                                                    'constellation':self.moon.constellation,
-                                                                    'region':self.moon.region,
-                                                                    'corporation':self.corporation,})
+            try:
+                self.fuel.get(station=self, type=f.type)
+            except FuelSupply.DoesNotExist:
+                self.fuel.create(
+                    type     = f.type,
+                    quantity = 0,
+                )
+                #fuel.solarsystem = self.solarsystem,
+                #fuel.constellation = self.moon.constellation
+                #fuel.region = self.moon.region
+                #fuel.corporation = self.corporation
 
 
     @property
@@ -320,13 +323,13 @@ class PlayerStation(models.Model):
 #    station = models.ForeignKey(PlayerStation, related_name='delegates')
 #    character = models.ForeignKey('user.Character', related_name='pos_delegations')
 
-class PlayerStationFuelSupply(models.Model):
+class FuelSupply(models.Model):
     station = models.ForeignKey(PlayerStation, related_name='fuel')
     type = models.ForeignKey('ccp.Item', related_name='active_stations_using')
-    solarsystem = models.ForeignKey('ccp.SolarSystem')
-    constellation = models.ForeignKey('ccp.Constellation')
-    region = models.ForeignKey('ccp.Region')
-    corporation = models.ForeignKey('ccp.Corporation', related_name='pos_fuels')
+    #solarsystem = models.ForeignKey('ccp.SolarSystem')
+    #constellation = models.ForeignKey('ccp.Constellation')
+    #region = models.ForeignKey('ccp.Region')
+    #corporation = models.ForeignKey('ccp.Corporation', related_name='pos_fuels')
     quantity = models.IntegerField()
 
     class Meta:
@@ -413,7 +416,7 @@ class PlayerStationFuelSupply(models.Model):
     def runs_until(self):
         return datetime.utcnow() + self.time_remaining
 
-class PlayerStationReaction(models.Model):
+class Reaction(models.Model):
     '''
     All of the items that can be mined and/or reacted at a POS.
 
@@ -424,7 +427,7 @@ class PlayerStationReaction(models.Model):
                            'Composite'])
     q = q & Q(published=True)
 
-    station = models.ForeignKey(PlayerStation, related_name='reactions')
+    station = models.ForeignKey(PlayerStation)
     type = models.ForeignKey('ccp.Item', limit_choices_to = q,
                              related_name='poses_reacting')
 

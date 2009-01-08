@@ -140,7 +140,7 @@ class UserProfile(models.Model):
 
     def get_indexes(self, type):
         q = (Q(index__user__isnull=True) | Q(index__user=self)) & Q(item=type)
-        indexes = MarketIndexValue.objects.filter(q).select_related()
+        indexes = MarketIndexValue.objects.filter(q)
         indexes = indexes.order_by('-trade_marketindex.priority')
         return indexes
 
@@ -266,7 +266,7 @@ def create_profile_for_user(sender, instance, created, **kwargs):
 post_save.connect(create_profile_for_user, sender=User)
 
 class Account(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField('ID', primary_key=True)
     user = models.ForeignKey(UserProfile, related_name='accounts')
     api_key = models.CharField(max_length=200)
     last_refreshed = models.DateTimeField(null=True, blank=True)
@@ -382,16 +382,16 @@ class Account(models.Model):
         return self.user.email(template, subject=subject, account=self)
 
 class Character(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField('ID', primary_key=True)
     account = models.ForeignKey(Account, related_name='characters')
     name = models.CharField(max_length=100)
     isk = models.FloatField(null=True, blank=True)
     training_completion = models.DateTimeField(null=True, blank=True)
     training_level = models.IntegerField(null=True, blank=True)
     training_skill = models.ForeignKey('ccp.Item', null=True, blank=True,
-                     limit_choices_to = {'group__category__name': 'Skill'})
-    is_director = models.BooleanField(default=False)
-    is_pos_monkey = models.BooleanField(default=False)
+                     limit_choices_to = {'group__category__name': 'Skill', 'published': True})
+    is_director = models.BooleanField('Has Director role', default=False)
+    is_pos_monkey = models.BooleanField('Has POS Caretaker role', default=False)
     corporation = models.ForeignKey('ccp.Corporation', related_name='characters')
     user = models.ForeignKey(UserProfile, related_name='characters')
     last_refreshed = models.DateTimeField(blank=True)

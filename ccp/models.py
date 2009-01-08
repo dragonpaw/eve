@@ -49,49 +49,10 @@ class PublishedManager(models.Manager):
     def get_query_set(self):
         return super(PublishedManager, self).get_query_set().filter(published=True)
 
-class Agent(models.Model):
-    id = models.IntegerField(primary_key=True, db_column='agentid')
-    division = models.ForeignKey('CorporationDivision', null=True, blank=True, db_column='divisionid')
-    corporation = models.ForeignKey('Corporation', null=True, blank=True, db_column='corporationid')
-    station = models.ForeignKey('Station', null=True, blank=True, db_column='stationid')
-    level = models.IntegerField(null=True, blank=True)
-    quality = models.IntegerField(null=True, blank=True)
-    agenttype = models.ForeignKey('AgentType', db_column='agenttypeid')
 
-    class Meta:
-        ordering = ('id',)
-
-    @property
-    def name(self):
-        obj = Name.objects.get(pk=self.id)
-        return obj.name
-
-    def __unicode__(self):
-        return self.name
-
-class AgentType(models.Model):
-    id = models.IntegerField(primary_key=True, db_column='agenttypeid')
-    agenttype = models.CharField(max_length=150)
-
-    class Meta:
-        ordering = ('id',)
-
-    def __unicode__(self):
-        return self.agenttype
-
-class Alliance(models.Model):
-    name = models.CharField(max_length=100)
-    executor = models.ForeignKey('Corporation', blank=True, null=True, related_name='executors')
-    ticker = models.CharField(max_length=10)
-    member_count = models.IntegerField()
-    slug = models.SlugField(max_length=100)
-    objects = models.Manager()
-
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
+class Base(models.Model):
+    def get_icon(self, size):
+        return None
 
     @property
     def icon16(self):
@@ -108,6 +69,56 @@ class Alliance(models.Model):
     @property
     def icon128(self):
         return self.get_icon(128)
+
+    def __unicode__(self):
+        if hasattr(self, 'displayname') and self.displayname is not None:
+            return self.displayname
+        elif hasattr(self, 'name'):
+            return self.name
+        else:
+            return u'Undefined __unicode__'
+
+    class Meta:
+        abstract = True
+        ordering = ('name',)
+
+
+class Agent(Base):
+    id = models.IntegerField(primary_key=True, db_column='agentid')
+    division = models.ForeignKey('CorporationDivision', null=True, blank=True, db_column='divisionid')
+    corporation = models.ForeignKey('Corporation', null=True, blank=True, db_column='corporationid')
+    station = models.ForeignKey('Station', null=True, blank=True, db_column='stationid')
+    level = models.IntegerField(null=True, blank=True)
+    quality = models.IntegerField(null=True, blank=True)
+    agenttype = models.ForeignKey('AgentType', db_column='agenttypeid')
+
+    class Meta:
+        ordering = ('id',)
+
+    @property
+    def name(self):
+        obj = Name.objects.get(pk=self.id)
+        return obj.name
+
+
+class AgentType(Base):
+    id = models.IntegerField(primary_key=True, db_column='agenttypeid')
+    agenttype = models.CharField(max_length=150)
+
+    class Meta:
+        ordering = ('id',)
+
+    def __unicode__(self):
+        return self.agenttype
+
+
+class Alliance(Base):
+    name = models.CharField(max_length=100)
+    executor = models.ForeignKey('Corporation', blank=True, null=True, related_name='executors')
+    ticker = models.CharField(max_length=10)
+    member_count = models.IntegerField()
+    slug = models.SlugField(max_length=100)
+    objects = models.Manager()
 
     def get_icon(self, size):
         if alliance_graphics.has_key(self.id):
@@ -144,14 +155,16 @@ class Alliance(models.Model):
             c.save()
         super(Alliance, self).delete()
 
-# class Agent_config(models.Model):
+
+# class Agent_config(Base):
 #     id = models.IntegerField(primary_key=True, db_column='agentid')
 #     k = models.CharField(max_length=150)
 #     v = models.TextField()
 #     class Meta:
 #         db_table = u'agtconfig'
 
-class CharacterAncestry(models.Model):
+
+class CharacterAncestry(Base):
     id = models.IntegerField(primary_key=True, db_column='ancestryid')
     name = models.CharField(max_length=100, db_column='ancestryname')
     bloodline = models.ForeignKey('CharacterBloodline', db_column='bloodlineid')
@@ -178,13 +191,10 @@ class CharacterAncestry(models.Model):
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid',)
     shortdescription = models.TextField()
 
-    class Meta:
-        ordering = ('name',)
+    class Meta(Base.Meta):
+        verbose_name_plural = "Character ancestries"
 
-    def __unicode__(self):
-        return self.name
-
-class CharacterAttribute(models.Model):
+class CharacterAttribute(Base):
     id = models.IntegerField(primary_key=True, db_column='attributeid')
     name = models.CharField(max_length=100, db_column='attributename')
     description = models.TextField()
@@ -192,13 +202,8 @@ class CharacterAttribute(models.Model):
     shortdescription = models.TextField()
     notes = models.TextField()
 
-    class Meta:
-        ordering = ('name',)
 
-    def __unicode__(self):
-        return self.name
-
-class CharacterBloodline(models.Model):
+class CharacterBloodline(Base):
     id = models.IntegerField(primary_key=True, db_column='bloodlineid')
     name = models.CharField(max_length=100, db_column='bloodlinename')
     race = models.ForeignKey('Race', db_column='raceid')
@@ -229,13 +234,8 @@ class CharacterBloodline(models.Model):
     shortmaledescription = models.TextField()
     shortfemaledescription = models.TextField()
 
-    class Meta:
-        ordering = ('name',)
 
-    def __unicode__(self):
-        return self.name
-
-class CharacterCareer(models.Model):
+class CharacterCareer(Base):
     id = models.IntegerField(primary_key=True, db_column='careerid')
     race = models.ForeignKey('Race', db_column='raceid')
     name = models.CharField(max_length=100, db_column='careername')
@@ -246,17 +246,15 @@ class CharacterCareer(models.Model):
     school = models.ForeignKey('School', null=True, blank=True, related_name='careers',
                                db_column='schoolid')
 
-    def __unicode__(self):
-        return self.name
 
-# class Character_careerskills(models.Model):
+# class Character_careerskills(Base):
 #     careerid = models.IntegerField()
 #     skilltypeid = models.IntegerField()
 #     levels = models.IntegerField()
 #     class Meta:
 #         db_table = u'chrcareerskills'
 
-class CharacterCareerSpeciality(models.Model):
+class CharacterCareerSpeciality(Base):
     id = models.IntegerField(primary_key=True, db_column='specialityid')
     career = models.ForeignKey('CharacterCareer', db_column='careerid')
     name = models.CharField(max_length=100, db_column='specialityname')
@@ -265,20 +263,18 @@ class CharacterCareerSpeciality(models.Model):
     graphic = models.ForeignKey('Graphic', null=True, blank=True,
                                   db_column='graphicid' )
     departmentid = models.IntegerField(null=True, blank=True)
-    class Meta:
-        ordering = ('name',)
 
-    def __unicode__(self):
-        return self.name
+    class Meta(Base.Meta):
+        verbose_name_plural = "Character career specialities"
 
-# class Character_careerspecialityskills(models.Model):
+# class Character_careerspecialityskills(Base):
 #     specialityid = models.IntegerField()
 #     skilltypeid = models.IntegerField()
 #     levels = models.IntegerField()
 #     class Meta:
 #         db_table = u'chrcareerspecialityskills'
 
-class Faction(models.Model):
+class Faction(Base):
     """Table describes the major factions in game:
 
     Amaar Empire
@@ -296,12 +292,6 @@ class Faction(models.Model):
     sizefactor = models.FloatField(null=True, blank=True)
     stationcount = models.IntegerField(null=True, blank=True)
     stationsystemcount = models.IntegerField(null=True, blank=True)
-
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
 
     def iconid(self):
         ids = {
@@ -339,11 +329,8 @@ class Faction(models.Model):
         else:
             return "/static/ccp-icons/corporation/%s-%s.jpg" % (id, size)
 
-    @property
-    def icon32(self):
-        return self.get_icon(32)
 
-class Race(models.Model):
+class Race(Base):
     """Table contains the basic races in the game:
 
     Amaar
@@ -357,30 +344,26 @@ class Race(models.Model):
     typequantity = models.IntegerField(null=True, blank=True)
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     shortdescription = models.TextField()
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
 
     def delete(self):
         raise 'ERROR: Tried to remove an immutable.'
 
-# class Character_raceskills(models.Model):
+
+# class Character_raceskills(Base):
 #     race = models.ForeignKey(Race, null=True, blank=True, db_column='raceid')
 #     skilltypeid = models.IntegerField()
 #     levels = models.IntegerField()
 #     class Meta:
 #         db_table = u'chrraceskills'
 #
-# class Character_schoolagents(models.Model):
+# class Character_schoolagents(Base):
 #     schoolid = models.IntegerField(null=True, blank=True)
 #     agentindex = models.IntegerField(null=True, blank=True)
 #     agentid = models.IntegerField(null=True, blank=True)
 #     class Meta:
 #         db_table = u'chrschoolagents'
 
-class School(models.Model):
+class School(Base):
     id = models.IntegerField(primary_key=True, db_column='schoolid')
     race = models.ForeignKey(Race, null=True, blank=True, db_column='raceid')
     name = models.CharField(max_length=100, db_column='schoolname')
@@ -396,24 +379,17 @@ class School(models.Model):
                                  related_name='charactershool_new_set', )
     career = models.ForeignKey('CharacterCareer', null=True, blank=True, related_name='schools',
                                 db_column='careerid')
-    class Meta:
-        ordering = ('name',)
 
-    def __unicode__(self):
-        return self.name
 
-class CorporationActivity(models.Model):
+class CorporationActivity(Base):
     id = models.IntegerField(primary_key=True, db_column='activityid')
     name = models.CharField(max_length=100, db_column='activityname')
     description = models.TextField()
 
-    class Meta:
-        ordering = ('name',)
+    class Meta(Base.Meta):
+        verbose_name_plural = "Corporation activities"
 
-    def __unicode__(self):
-        return self.name
-
-# class Crpnpccorporationdivisions(models.Model):
+# class Crpnpccorporationdivisions(Base):
 #     corporationid = models.IntegerField()
 #     divisionid = models.IntegerField()
 #     divisionnumber = models.IntegerField()
@@ -422,14 +398,14 @@ class CorporationActivity(models.Model):
 #     class Meta:
 #         db_table = u'crpnpccorporationdivisions'
 
-# class Crpnpccorporationresearchfields(models.Model):
+# class Crpnpccorporationresearchfields(Base):
 #     skillid = models.IntegerField()
 #     corporationid = models.IntegerField()
 #     suppliertype = models.IntegerField()
 #     class Meta:
 #         db_table = u'crpnpccorporationresearchfields'
 
-class Corporation(models.Model):
+class Corporation(Base):
     id = models.IntegerField(primary_key=True, db_column='corporationid')
     #mainactivity = models.ForeignKey('CorporationActivity',
     #                                 db_column='mainactivityid',
@@ -474,20 +450,16 @@ class Corporation(models.Model):
     class Meta:
         ordering = ('id',)
 
-    def __unicode__(self):
-        return self.name
-
     @property
     def name(self):
         obj = Name.objects.get(pk=self.id)
         return obj.name
 
-    @property
-    def icon32(self):
+    def get_icon(self, size):
         if self.is_player_corp:
-            return '/static/corplogos/32_32/%s.png' % self.id
+            return '/static/corplogos/%d_%d/%s.png' % (size, size, self.id)
         else:
-            return '/static/ccp-icons/corporation/32/c_%s.jpg' % self.id
+            return '/static/ccp-icons/corporation/%d/c_%s.jpg' % (size, self.id)
 
     @property
     def is_player_corp(self):
@@ -563,28 +535,23 @@ class Corporation(models.Model):
 
         return messages
 
-class CorporationDivision(models.Model):
+
+class CorporationDivision(Base):
     id = models.IntegerField(primary_key=True, db_column='divisionid')
     name = models.CharField(max_length=100, db_column='divisionname')
     description = models.TextField()
     leadertype = models.CharField(max_length=100)
 
-    class Meta:
-        ordering = ('name',)
 
-    def __unicode__(self):
-        return self.name
-
-
-class AttributeCategory(models.Model):
+class AttributeCategory(Base):
     id = models.IntegerField(primary_key=True, db_column='categoryID')
     name = models.CharField(max_length=50, db_column='categoryName')
     description = models.CharField(max_length=200, db_column='categoryDescription')
 
-    def __unicode__(self):
-        return self.name
+    class Meta(Base.Meta):
+        verbose_name_plural = "Attribute catagories"
 
-class Attribute(models.Model):
+class Attribute(Base):
     """This table seems to contain the various attributes of an Item that can
     have numeric values associated with them.
 
@@ -622,8 +589,6 @@ class Attribute(models.Model):
     stackable = models.BooleanField()
     highisgood = models.BooleanField()
     category = models.ForeignKey('AttributeCategory', db_column='categoryID')
-
-    objects = PublishedManager()
 
     class Meta:
         ordering = ['category', 'displayname' ]
@@ -666,11 +631,7 @@ class Attribute(models.Model):
                 value = 'Large'
             elif value == 4:
                 value = 'X-Large'
-        elif self.attributename == 'requiredSkill1':
-            value = "%s %s" % (Item.objects.get(pk=self.valueint).name, self.valuefloat)
-        elif self.attributename == 'requiredSkill2':
-            value = "%s %s" % (Item.objects.get(pk=self.valueint).name, self.valuefloat)
-        elif self.attributename == 'requiredSkill3':
+        elif self.attributename.startswith('requiredSkill'):
             value = "%s %s" % (Item.objects.get(pk=self.valueint).name, self.valuefloat)
         elif name == 'groupID':
             value = Group.objects.get(pk=value)
@@ -703,23 +664,8 @@ class Attribute(models.Model):
         else:
             return Graphic.objects.get(icon='07_15').get_icon(size)
 
-    @property
-    def icon16(self):
-        return self.get_icon(16)
 
-    @property
-    def icon32(self):
-        return self.get_icon(32)
-
-    @property
-    def icon64(self):
-        return self.get_icon(64)
-
-    @property
-    def icon128(self):
-        return self.get_icon(128)
-
-class Effect(models.Model):
+class Effect(Base):
     id = models.IntegerField(primary_key=True, db_column='effectid')
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     name = models.TextField(db_column='effectname')
@@ -748,18 +694,10 @@ class Effect(models.Model):
     npcactivationchanceattributeid = models.IntegerField(null=True, blank=True)
     fittingusagechanceattributeid = models.IntegerField(null=True, blank=True)
 
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        if self.displayname is not None:
-            return self.displayname
-        else:
-            return self.name
 
 # This table cannot be used within Django, as it's a multi-multi table with id's
 # That Django doesn't like. I've emulated it in class Item below.
-# class Dgmtypeattributes(models.Model):
+# class Dgmtypeattributes(Base):
 #     typeid = models.IntegerField()
 #     attributeid = models.IntegerField()
 #     valueint = models.IntegerField(null=True, blank=True)
@@ -769,14 +707,15 @@ class Effect(models.Model):
 #
 # This table cannot be used within Django, as it's a multi-multi table with id's
 # That Django doesn't like. I've emulated it in class Item below.
-# class Dgmtypeeffects(models.Model):
+# class Dgmtypeeffects(Base):
 #     typeid = models.IntegerField()
 #     effectid = models.IntegerField()
 #     isdefault = models.CharField(max_length=15)
 #     class Meta:
 #         db_table = u'dgmtypeeffects'
 
-class Graphic(models.Model):
+
+class Graphic(Base):
     id = models.IntegerField(primary_key=True, db_column='graphicid')
     url3d = models.CharField(max_length=100, null=True, blank=True)
     urlweb = models.CharField(max_length=100, null=True, blank=True)
@@ -850,16 +789,15 @@ def get_graphic(icon):
         graphic = g[0]
     return graphic
 
-class Unit(models.Model):
+
+class Unit(Base):
     id = models.IntegerField(primary_key=True, db_column='unitid')
     name = models.CharField(null=True, blank=True, max_length=100, db_column='unitname')
     displayname = models.CharField(null=True, blank=True, max_length=20)
     description = models.TextField(null=True, blank=True)
 
-    def __unicode__(self):
-        return self.displayname
 
-class ContrabandType(models.Model):
+class ContrabandType(Base):
     factionid = models.IntegerField()
     id = models.IntegerField(primary_key=True, db_column='typeid')
     standingloss = models.FloatField()
@@ -867,7 +805,11 @@ class ContrabandType(models.Model):
     finebyvalue = models.FloatField()
     attackminsec = models.FloatField()
 
-# class InventoryFlags(models.Model):
+    class Meta:
+        ordering = ('id',)
+
+
+# class InventoryFlags(Base):
 #     id = models.IntegerField(primary_key=True, db_column='flagid')
 #     flagname = models.CharField(blank=True, max_length=300)
 #     flagtext = models.TextField(blank=True)
@@ -876,7 +818,8 @@ class ContrabandType(models.Model):
 #     class Meta:
 #         db_table = u'invflags'
 
-class Category(models.Model):
+
+class Category(Base):
     """This table contains the most basic groupings in game:
 
     Sample:
@@ -889,14 +832,11 @@ class Category(models.Model):
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     published = models.BooleanField(null=True, blank=True, default=False)
 
-    class Meta:
-        ordering = ('name',)
+    class Meta(Base.Meta):
         verbose_name_plural = "Categories"
 
-    def __unicode__(self):
-        return self.name
 
-class Group(models.Model):
+class Group(Base):
     """This table describes goups like: Ammo and Advanced Torpedo.
 
     It also contains non-item groups like 'Alliance'."""
@@ -913,16 +853,11 @@ class Group(models.Model):
     fittablenonsingleton = models.BooleanField(null=True, blank=True)
     published = models.BooleanField(default=True, null=True)
 
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
-
     def get_icon(self, size):
         return self.graphic.get_icon(size)
 
-class BlueprintDetail(models.Model):
+
+class BlueprintDetail(Base):
     # Using the proper foreign key relationship here causes a fatal django error.
     # (Only using the admin interface.)
     id = models.ForeignKey('Item', primary_key=True,
@@ -961,10 +896,7 @@ class BlueprintDetail(models.Model):
     class Meta:
         ordering = ('id',)
 
-    #def __unicode__(self):
-    #    return self.id.name
-
-class Material(models.Model):
+class Material(Base):
     """
     All the 'stuff' to make other 'stuff'.
     """
@@ -976,6 +908,9 @@ class Material(models.Model):
     quantity = models.IntegerField()
     damageperjob = models.FloatField(default=1)
     id = models.IntegerField(primary_key=True)
+
+    class Meta:
+        ordering = ('id',)
 
     def __unicode__(self):
         return "%s: %d" % (self.name, self.quantity)
@@ -998,11 +933,16 @@ class Material(models.Model):
         else:
             return None
 
+
 class ItemSkillManager(models.Manager):
     def get_query_set(self):
-        return super(ItemSkillManager, self).get_query_set().filter(group__category__name__exact='Skill')
+        return super(ItemSkillManager, self).get_query_set().filter(
+            group__category__name__exact = 'Skill',
+            published = True,
+        )
 
-class Item(models.Model):
+
+class Item(Base):
     """This table contains information about each item that you can aquire in
     EVE. Weapons, Ammo, etc...
 
@@ -1040,14 +980,11 @@ class Item(models.Model):
     slug = models.SlugField(max_length=100)
     objects = models.Manager()
 
-    class Meta:
-        pass
+    #class Meta:
+        #pass
         # If I use 'name' instead of 'typename', then the BlueprintDetails model dies
         # in the admin list view. Like this, the list works, but not the detail.
-        ordering = ['name', ]
-
-    def __unicode__(self):
-        return self.name
+        #ordering = ['name', ]
 
     @property
     def category(self):
@@ -1083,21 +1020,6 @@ class Item(models.Model):
         '''
         return self.graphic.get_icon(size, item=self)
 
-    @property
-    def icon16(self):
-        return self.get_icon(16)
-
-    @property
-    def icon32(self):
-        return self.get_icon(32)
-
-    @property
-    def icon64(self):
-        return self.get_icon(64)
-
-    @property
-    def icon128(self):
-        return self.get_icon(128)
 
     # Fancy way to get the attributes and their values.
     def attributes(self):
@@ -1126,6 +1048,10 @@ class Item(models.Model):
                     s.valuefloat = set.filter(attributename='requiredSkill3Level')[0].valueint
             except IndexError:
                 s.valuefloat = 1
+
+        # Limit to the published attributes.
+        # (If done in Attribute, then we don't get the skill levels above.)
+        set = [x for x in set if x.published]
         return set
 
     def attribute_by_name(self, name):
@@ -1282,7 +1208,7 @@ class Item(models.Model):
     def refines(self):
         return self.materials(activity='Refining')
 
-class Name(models.Model):
+class Name(Base):
     """This table contains the names of planets, stars, systems and corporations."""
     id = models.IntegerField(primary_key=True, db_column='itemid')
     name = models.CharField(max_length=100, db_column='itemname')
@@ -1290,14 +1216,8 @@ class Name(models.Model):
     group = models.ForeignKey(Group, db_column='groupid', related_name='names')
     type = models.ForeignKey(Item, db_column='typeid', related_name='names',)
 
-    class Meta:
-        ordering = ('name',)
 
-    def __unicode__(self):
-        return self.name
-
-
-class MarketGroup(models.Model):
+class MarketGroup(Base):
     '''This is the list of the groups as seen in the market type browser.
     (Which is more detailed than the normal group table.)
 
@@ -1311,45 +1231,22 @@ class MarketGroup(models.Model):
     graphic = models.ForeignKey(Graphic, null=True, blank=True, db_column='graphicid')
     hastypes = models.BooleanField(null=True, blank=True)
     slug = models.SlugField(max_length=100)
-    #objects = models.Manager()
-
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
 
     def get_absolute_url(self):
         return "/items/%s/" % self.slug
 
-    #-------------------------------------------------------------------------
-    # All things iconic.
-    @property
-    def icon16(self):
-        return self.graphic.get_icon(16)
+    def get_icon(self, size):
+        return self.graphic.get_icon(size)
 
-    @property
-    def icon32(self):
-        return self.graphic.get_icon(32)
 
-    @property
-    def icon64(self):
-        return self.graphic.get_icon(64)
-
-    @property
-    def icon128(self):
-        return self.graphic.get_icon(128)
-
-class InventoryMetaGroup(models.Model):
+class InventoryMetaGroup(Base):
     id = models.IntegerField(primary_key=True, db_column='metagroupid')
     name = models.CharField(blank=True, max_length=100, db_column='metagroupname')
     description = models.TextField(blank=True, null=True)
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
 
-    def __unicode__(self):
-        return self.name
 
-class InventoryMetaType(models.Model):
+class InventoryMetaType(Base):
     item = models.ForeignKey('Item', null=True, blank=True,
                            db_column='typeid',
                            related_name='metatype')
@@ -1359,7 +1256,11 @@ class InventoryMetaType(models.Model):
     metagroup = models.ForeignKey('InventoryMetaGroup', null=True, blank=True,
                                     db_column='metagroupid')
 
-class Reaction(models.Model):
+    class Meta:
+        ordering = ('item',)
+
+
+class Reaction(Base):
     reaction = models.ForeignKey(Item, db_column='reactiontypeid', related_name='reactions')
     input = models.BooleanField()
     item = models.ForeignKey(Item, db_column='typeid', related_name='reacts')
@@ -1371,7 +1272,11 @@ class Reaction(models.Model):
             arrow = '<-'
         return "%s %s %s[%d]" % (self.reaction, arrow, self.item, self.quantity)
 
-#class MapcClestialStatistics(models.Model):
+    class Meta:
+        ordering = ('reaction',)
+
+
+#class MapcClestialStatistics(Base):
 #    id = models.IntegerField(primary_key=True, db_column='celestialid')
 #    temperature = models.FloatField()
 #    spectralclass = models.CharField(max_length=30)
@@ -1394,7 +1299,7 @@ class Reaction(models.Model):
 #    mass = models.FloatField()
 
 #
-# class Mapconstellationjumps(models.Model):
+# class Mapconstellationjumps(Base):
 #     fromregionid = models.IntegerField()
 #     fromconstellationid = models.IntegerField()
 #     toconstellationid = models.IntegerField()
@@ -1402,7 +1307,7 @@ class Reaction(models.Model):
 #     class Meta:
 #         db_table = u'mapconstellationjumps'
 
-class Region(models.Model):
+class Region(Base):
     id = models.IntegerField(primary_key=True, db_column='regionid')
     name = models.CharField(max_length=100, db_column='regionname')
     x = models.FloatField(null=True)
@@ -1417,12 +1322,6 @@ class Region(models.Model):
     faction = models.ForeignKey(Faction, null=True, blank=True, db_column='factionid')
     radius = models.FloatField(null=True)
     slug = models.SlugField(max_length=50)
-
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
 
     def get_absolute_url(self):
         return "/region/%s/" % self.slug
@@ -1456,16 +1355,13 @@ class Region(models.Model):
         if owner is None:
             return None
         else:
-            return owner.get_icon(32)
-
-    @property
-    def icon32(self):
-        return self.get_icon(32)
+            return owner.get_icon(size)
 
     def delete(self):
         raise 'ERROR: Tried to remove an immutable.'
 
-class Constellation(models.Model):
+
+class Constellation(Base):
     region = models.ForeignKey(Region, db_column='regionid',
                                related_name='constellations')
     id = models.IntegerField(primary_key=True, db_column='constellationid')
@@ -1488,9 +1384,6 @@ class Constellation(models.Model):
                                  related_name='constellations')
     grace_date_time = models.DateTimeField(null=True, db_column='graceDateTime')
 
-    def __unicode__(self):
-        return self.name
-
     def get_absolute_url(self):
         return "/constellation/%s/" % self.name
 
@@ -1507,26 +1400,11 @@ class Constellation(models.Model):
         else:
             return None
 
-    @property
-    def icon16(self):
-        return self.get_icon(16)
-
-    @property
-    def icon32(self):
-        return self.get_icon(32)
-
-    @property
-    def icon64(self):
-        return self.get_icon(64)
-
-    @property
-    def icon128(self):
-        return self.get_icon(128)
-
     def delete(self):
         raise 'ERROR: Tried to remove an immutable.'
 
-class SolarSystem(models.Model):
+
+class SolarSystem(Base):
     region = models.ForeignKey(Region, db_column='regionid', related_name='solarsystems')
     constellation = models.ForeignKey(Constellation, db_column='constellationid',
                                       related_name='solarsystems')
@@ -1561,12 +1439,6 @@ class SolarSystem(models.Model):
     sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDate')
     alliance_old = models.ForeignKey(Alliance, null=True, blank=True, related_name='solarsystems_lost')
 
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
-
     def delete(self):
         raise 'ERROR: Tried to remove an immutable.'
 
@@ -1582,23 +1454,8 @@ class SolarSystem(models.Model):
     def get_icon(self, size):
         return self.alliance.get_icon(size)
 
-    @property
-    def icon16(self):
-        return self.get_icon(16)
 
-    @property
-    def icon32(self):
-        return self.get_icon(32)
-
-    @property
-    def icon64(self):
-        return self.get_icon(64)
-
-    @property
-    def icon128(self):
-        return self.get_icon(128)
-
-class MapDenormalize(models.Model):
+class MapDenormalize(Base):
     id = models.IntegerField(primary_key=True, db_column='itemid')
     type = models.ForeignKey(Item, db_column='typeid')
     group = models.ForeignKey(Group, db_column='groupid')
@@ -1618,18 +1475,17 @@ class MapDenormalize(models.Model):
     celestialindex = models.IntegerField(null=True, blank=True)
     orbitindex = models.IntegerField(null=True, blank=True)
 
-    def __unicode__(self):
-        return self.name
 
-# class Mapjumps(models.Model):
+# class Mapjumps(Base):
 #     stargateid = models.IntegerField()
 #     celestialid = models.IntegerField()
 #     class Meta:
 #         db_table = u'mapjumps'
 
-class MapLandmarks(models.Model):
+
+class MapLandmark(Base):
     id = models.IntegerField(primary_key=True, db_column='landmarkid')
-    landmarkname = models.TextField(null=True, blank=True)
+    name = models.TextField(null=True, blank=True, db_column='landmarkname')
     description = models.TextField()
     locationid = models.IntegerField(null=True, blank=True)
     x = models.FloatField()
@@ -1640,22 +1496,27 @@ class MapLandmarks(models.Model):
     importance = models.IntegerField()
     url2d = models.TextField()
 
-# class Mapregionjumps(models.Model):
+    class Meta(Base.Meta):
+        db_table = u'ccp_maplandmarks'
+
+# class Mapregionjumps(Base):
 #     fromregionid = models.IntegerField()
 #     toregionid = models.IntegerField()
 #     class Meta:
 #         db_table = u'mapregionjumps'
 
+
 # Empty table in dump
-# class Mapsecurityratings(models.Model):
+# class Mapsecurityratings(Base):
 #     fromsolarsystemid = models.IntegerField()
 #     fromvalue = models.FloatField()
 #     tosolarsystemid = models.IntegerField()
 #     tovalue = models.FloatField()
 #     class Meta:
 #         db_table = u'mapsecurityratings'
-#
-# class Mapsolarsystemjumps(models.Model):
+
+
+# class Mapsolarsystemjumps(Base):
 #     fromregionid = models.IntegerField()
 #     fromconstellationid = models.IntegerField()
 #     fromsolarsystemid = models.IntegerField()
@@ -1665,9 +1526,10 @@ class MapLandmarks(models.Model):
 #     class Meta:
 #         db_table = u'mapsolarsystemjumps'
 
-class MapUniverse(models.Model):
+
+class MapUniverse(Base):
     id = models.IntegerField(primary_key=True, db_column='universeid')
-    universename = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, db_column='universename')
     x = models.FloatField()
     y = models.FloatField()
     z = models.FloatField()
@@ -1680,7 +1542,7 @@ class MapUniverse(models.Model):
     radius = models.FloatField()
 
 
-class RamActivity(models.Model):
+class RamActivity(Base):
     """
     mysql> desc ccp_ramactivity;
     +--------------+----------+------+-----+---------+-------+
@@ -1700,10 +1562,8 @@ class RamActivity(models.Model):
     iconNo = models.CharField(max_length=5, blank=True, null=True, default="")
     published = models.BooleanField(default=False)
 
-    def __unicode__(self):
-        return self.name
 
-#class RamAssemblyLines(models.Model):
+#class RamAssemblyLines(Base):
 #    id = models.IntegerField(primary_key=True, db_column='assemblylineid')
 #    assemblylinetypeid = models.IntegerField()
 #    containerid = models.IntegerField(null=True, blank=True)
@@ -1723,17 +1583,17 @@ class RamActivity(models.Model):
 #    oldcontainerid = models.IntegerField(null=True, blank=True)
 #    oldownerid = models.IntegerField(null=True, blank=True)
 #    activityid = models.IntegerField(null=True, blank=True)
-#
-#
-#class RamAssemblyLineStationCostLogs(models.Model):
+
+
+#class RamAssemblyLineStationCostLogs(Base):
 #    stationid = models.IntegerField()
 #    id = models.IntegerField(primary_key=True, db_column='assemblylinetypeid')
 #    logdatetime = models.CharField(max_length=60)
 #    _usage = models.FloatField()
 #    costperhour = models.FloatField()
 
-#
-# class Ramassemblylinestations(models.Model):
+
+# class Ramassemblylinestations(Base):
 #     stationid = models.IntegerField()
 #     assemblylinetypeid = models.IntegerField()
 #     quantity = models.IntegerField()
@@ -1743,16 +1603,18 @@ class RamActivity(models.Model):
 #     regionid = models.IntegerField()
 #     class Meta:
 #         db_table = u'ramassemblylinestations'
-#
-# class Ramassemblylinetypedetailpercategory(models.Model):
+
+
+# class Ramassemblylinetypedetailpercategory(Base):
 #     assemblylinetypeid = models.IntegerField()
 #     categoryid = models.IntegerField()
 #     timemultiplier = models.FloatField()
 #     materialmultiplier = models.FloatField()
 #     class Meta:
 #         db_table = u'ramassemblylinetypedetailpercategory'
-#
-# class Ramassemblylinetypedetailpergroup(models.Model):
+
+
+# class Ramassemblylinetypedetailpergroup(Base):
 #     assemblylinetypeid = models.IntegerField()
 #     groupid = models.IntegerField()
 #     timemultiplier = models.FloatField()
@@ -1760,7 +1622,8 @@ class RamActivity(models.Model):
 #     class Meta:
 #         db_table = u'ramassemblylinetypedetailpergroup'
 
-#class RamAssemblylineTypes(models.Model):
+
+#class RamAssemblylineTypes(Base):
 #    id = models.IntegerField(primary_key=True, db_column='assemblylinetypeid')
 #    assemblylinetypename = models.CharField(max_length=300)
 #    description = models.TextField()
@@ -1769,13 +1632,15 @@ class RamActivity(models.Model):
 #    volume = models.FloatField()
 #    activityid = models.IntegerField()
 #    mincostperhour = models.FloatField(null=True, blank=True)
-#
-#class RamCompletedStatuses(models.Model):
+
+
+#class RamCompletedStatuses(Base):
 #    completedstatus = models.IntegerField(primary_key=True)
 #    completedstatustext = models.CharField(max_length=300)
 #    description = models.TextField()
-#
-#class RamInstallationTypeDefaultContents(models.Model):
+
+
+#class RamInstallationTypeDefaultContents(Base):
 #    id = models.IntegerField(primary_key=True, db_column='installationtypeid')
 #    assemblylinetypeid = models.IntegerField()
 #    uigroupingid = models.IntegerField()
@@ -1790,8 +1655,9 @@ class RamActivity(models.Model):
 #    minimumcorpsecurity = models.FloatField()
 #    maximumcharsecurity = models.FloatField()
 #    maximumcorpsecurity = models.FloatField()
-#
-#class StationOperation(models.Model):
+
+
+#class StationOperation(Base):
 #    activityid = models.IntegerField()
 #    id = models.IntegerField(primary_key=True, db_column='operationid')
 #    operationname = models.CharField(max_length=300)
@@ -1807,18 +1673,21 @@ class RamActivity(models.Model):
 #    gallentestationtypeid = models.IntegerField(null=True, blank=True)
 #    jovestationtypeid = models.IntegerField(null=True, blank=True)
 
-# class Staoperationservices(models.Model):
+
+# class Staoperationservices(Base):
 #     operationid = models.IntegerField()
 #     serviceid = models.IntegerField()
 #     class Meta:
 #         db_table = u'staoperationservices'
 
-#class StationService(models.Model):
+
+#class StationService(Base):
 #    id = models.IntegerField(primary_key=True, db_column='serviceid')
 #    servicename = models.CharField(max_length=300)
 #    description = models.TextField()
 
-class Station(models.Model):
+
+class Station(Base):
     id = models.IntegerField(primary_key=True, db_column='stationid')
     security = models.IntegerField(null=True)
     dockingcostpervolume = models.FloatField('Docking', default=0)
@@ -1848,35 +1717,29 @@ class Station(models.Model):
     custom_service_mask = models.IntegerField('Service Mask', null=True,
                                                db_column='customServiceMask')
 
-    class Meta:
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
-
-    @property
-    def icon32(self):
-        if self.corporation.icon32:
-            return self.corporation.icon32
-        else:
-            return self.type.icon32
+    def get_icon(self, size):
+        return self.corporation.get_icon(size)
+        #icon = self.corporation.get_icon(size)
+        #if icon:
+        #    return icon
+        #else:
+        #    return self.type.get_icon(size)
 
     def delete(self):
         raise 'ERROR: Tried to remove an immutable.'
 
-class StationResourcePurpose(models.Model):
+
+class StationResourcePurpose(Base):
     id = models.IntegerField(primary_key=True, db_column='purpose')
-    text = models.CharField(max_length=100, db_column='purposetext')
+    name = models.CharField(max_length=100, db_column='purposetext')
 
-    def __unicode__(self):
-        return self.text
 
-class StationResource(models.Model):
+class StationResource(Base):
     q = Q(group__name='Control Tower') & Q(published=True)
 
     tower = models.ForeignKey(Item, limit_choices_to = q, db_column = 'controlTowerTypeID', related_name='fuel')
     type = models.ForeignKey(Item, db_column='resourcetypeid', related_name='fuel_for')
-    purpose_id = models.ForeignKey(StationResourcePurpose, db_column='purpose')
+    purpose = models.ForeignKey(StationResourcePurpose, db_column='purpose')
     quantity = models.IntegerField()
     minsecuritylevel = models.FloatField(null=True, blank=True)
     faction = models.ForeignKey(Faction, null=True, blank=True, db_column='factionID')
@@ -1884,11 +1747,11 @@ class StationResource(models.Model):
     def __unicode__(self):
         return "%s (%d)" % (self.type, self.quantity)
 
-    @property
-    def purpose(self):
-        return self.purpose_id.text
+    class Meta:
+        ordering = ('tower', 'purpose', 'type')
 
-#class StationType(models.Model):
+
+#class StationType(Base):
 #    id = models.IntegerField(primary_key=True, db_column='stationtypeid')
 #    dockingbaygraphicid = models.IntegerField(null=True, blank=True)
 #    hangargraphicid = models.IntegerField(null=True, blank=True)

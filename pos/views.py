@@ -42,10 +42,10 @@ def get_poses(request, profile=None):
     corps = {}
     for c in profile.characters.all():
         # Workaround CCP bug as of 2008-09-23. Some corps not queryable by members.
-        try:
-            c.corporation
-        except Corporation.DoesNotExist:
-            continue
+        #try:
+        #    c.corporation
+        #except Corporation.DoesNotExist:
+        #    continue
 
         poses = []
         for pos in c.corporation.pos.all():
