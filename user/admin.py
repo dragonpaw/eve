@@ -4,9 +4,12 @@ from django.utils.translation import ugettext_lazy as _
 
 class Account_Inline(admin.TabularInline):
     model = Account
+    extra = 0
 
-class Character_Inline(admin.TabularInline):
+class Character_Inline(admin.StackedInline):
     model = Character
+    raw_id_fields = ('corporation',)
+    extra = 0
 
 class AccountOptions(admin.ModelAdmin):
     inlines = [Character_Inline]
@@ -14,8 +17,9 @@ class AccountOptions(admin.ModelAdmin):
     list_display_links = ('id', )
 
 class CharacterOptions(admin.ModelAdmin):
-    list_display = ('name', 'user', 'corporation', 'get_isk_formatted', 
+    list_display = ('name', 'user', 'corporation', 'get_isk_formatted',
                     'get_sp_formatted', 'training_skill', 'training_level')
+    raw_id_fields = ('corporation',)
 
 class SkillLevelOptions(admin.ModelAdmin):
     search_fields = ('character__name',)
@@ -30,4 +34,3 @@ admin.site.register(Account, AccountOptions)
 admin.site.register(Character, CharacterOptions)
 admin.site.register(SkillLevel, SkillLevelOptions)
 admin.site.register(UserProfile, UserProfileOptions)
-

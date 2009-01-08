@@ -1,4 +1,4 @@
-from eve.ccp.models import Agent, AgentType, Alliance, CharacterAncestry, CharacterAttribute, CharacterBloodline, CharacterCareer, CharacterCareerSpeciality, Faction, Race, School, CorporationActivity, Corporation, CorporationDivision, Attribute, Effect, Graphic, Unit, Category, Group, BlueprintDetail, Material, Item, Name, MarketGroup, InventoryMetaGroup, InventoryMetaType, Reaction, Region, Constellation, SolarSystem, MapDenormalize, MapLandmarks, RamActivity, Station, StationResourcePurpose, StationResource, AttributeCategory
+from eve.ccp.models import Agent, AgentType, Alliance, CharacterAncestry, CharacterAttribute, CharacterBloodline, CharacterCareer, CharacterCareerSpeciality, Faction, Race, School, CorporationActivity, Corporation, CorporationDivision, Attribute, Effect, Graphic, Unit, Category, Group, BlueprintDetail, Material, Item, Name, MarketGroup, InventoryMetaGroup, InventoryMetaType, Reaction, Region, Constellation, SolarSystem, MapDenormalize, MapLandmark, RamActivity, Station, StationResourcePurpose, StationResource, AttributeCategory
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
@@ -7,7 +7,7 @@ class Constellation_Inline(admin.TabularInline):
 
 class CategoryOptions(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'description',) 
+    list_display = ('name', 'description',)
     raw_id_fields = ('graphic',)
 
 class InventoryMetaTypeOptions(admin.ModelAdmin):
@@ -36,36 +36,36 @@ class CharacterAncestryOptions(admin.ModelAdmin):
 
 class StationOptions(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'region', 'constellation', 'corporation') 
+    list_display = ('name', 'region', 'constellation', 'corporation')
     fieldsets = (
         (None, {
             'fields': ('id', 'name', 'corporation', 'security')
-        }), 
+        }),
         ('Corp', {
-         'fields': ('dockingcostpervolume', 'maxshipvolumedockable', 
-                    'officerentalcost'), 
-         }), 
+         'fields': ('dockingcostpervolume', 'maxshipvolumedockable',
+                    'officerentalcost'),
+         }),
         ('Reprocessing', {
-         'fields': ('reprocessingefficiency', 'reprocessingstationstake', 
-                    'reprocessinghangarflag'), 
-         }), 
+         'fields': ('reprocessingefficiency', 'reprocessingstationstake',
+                    'reprocessinghangarflag'),
+         }),
         ('Location', {
-            'fields': ('region', 'constellation', 'solarsystem', 'x', 'y', 'z',), 
-        }), 
+            'fields': ('region', 'constellation', 'solarsystem', 'x', 'y', 'z',),
+        }),
     )
     list_filter = ('region',)
     raw_id_fields = ('solarsystem', 'constellation')
 
 class GroupOptions(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'category', 'graphic', 'description',) 
+    list_display = ('name', 'category', 'graphic', 'description',)
     fieldsets = (
         (None, {
-            'fields': ('id', 'name', 'category', 'description', 'graphic'), 
-        }), 
+            'fields': ('id', 'name', 'category', 'description', 'graphic'),
+        }),
         ('Flags', {
-            'fields': ('usebaseprice', 'allowmanufacture', 'allowrecycler', 
-                       'anchored', 'anchorable'), 
+            'fields': ('usebaseprice', 'allowmanufacture', 'allowrecycler',
+                       'anchored', 'anchorable'),
         })
     )
 
@@ -86,26 +86,26 @@ class StationResourceOptions(admin.ModelAdmin):
 
 class BlueprintDetailOptions(admin.ModelAdmin):
     search_fields = ('makes__name',)
-    list_display = ('id', 'makes',) 
+    list_display = ('id', 'makes',)
     raw_id_fields = ('id', 'makes')
 
 class SolarSystemOptions(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'region', 'constellation', 'security',) 
+    list_display = ('name', 'region', 'constellation', 'security',)
     raw_id_fields = ('constellation',)
 
 class FactionOptions(admin.ModelAdmin):
     search_fields = ('name', 'id')
-    list_display = ('name', 'description') 
+    list_display = ('name', 'description')
 
 class MaterialOptions(admin.ModelAdmin):
     search_fields = ('item',)
-    list_display = ('item', 'activity', 'material', 'quantity',) 
+    list_display = ('item', 'activity', 'material', 'quantity',)
     raw_id_fields = ('item', 'material')
 
 class EffectOptions(admin.ModelAdmin):
     search_fields = ('name', 'displayname', 'id')
-    list_display = ('id', 'name', 'displayname', 'description',) 
+    list_display = ('id', 'name', 'displayname', 'description',)
 
 class InventoryMetaGroupOptions(admin.ModelAdmin):
     search_fields = ('name', 'id')
@@ -115,24 +115,24 @@ class InventoryMetaGroupOptions(admin.ModelAdmin):
 
 class SchoolOptions(admin.ModelAdmin):
     search_fields = ('id', 'name')
-    list_display = ('id', 'name') 
+    list_display = ('id', 'name')
     raw_id_fields = ('graphic', 'corporation', 'agent', 'newagent')
 
 class GraphicOptions(admin.ModelAdmin):
     search_fields = ('id', 'icon', 'description')
-    list_display = ('id', 'icon', 'url3d', 'urlweb', 'description') 
+    list_display = ('id', 'icon', 'url3d', 'urlweb', 'description')
 
 class NameOptions(admin.ModelAdmin):
     search_fields = ('name', 'id')
     # Don't ask why, but adding type or group makes the admin list show
     # no rows at all.
-    list_display = ('name', 'category', 'group') 
+    list_display = ('name', 'category', 'group')
     list_filter = ('group',)
     raw_id_fields = ('type',)
 
 class CorporationDivisionOptions(admin.ModelAdmin):
     search_fields = ('id', 'name')
-    list_display = ('id', 'name', 'description',) 
+    list_display = ('id', 'name', 'description',)
 
 class CharacterCareerSpecialityOptions(admin.ModelAdmin):
     search_fields = ('id', 'name')
@@ -142,30 +142,30 @@ class CharacterCareerSpecialityOptions(admin.ModelAdmin):
 class RegionOptions(admin.ModelAdmin):
     inlines = [Constellation_Inline]
     search_fields = ('name',)
-    list_display = ('name', 'faction') 
+    list_display = ('name', 'faction')
     fieldsets = (
         (None, {
             'fields': ('id', 'name', 'faction')
-        }), 
+        }),
         ('Location', {
-            'fields': ('radius', 'x', 'y', 'z', 'xmin', 'ymin', 'zmin', 
-                       'xmax', 'ymax', 'zmax'), 
-        }), 
+            'fields': ('radius', 'x', 'y', 'z', 'xmin', 'ymin', 'zmin',
+                       'xmax', 'ymax', 'zmax'),
+        }),
     )
 
 class ItemOptions(admin.ModelAdmin):
     search_fields = ('name', 'id')
-    list_display = ('name', 'id', 'group', 'category', 'graphic') 
+    list_display = ('name', 'id', 'group', 'category', 'graphic')
     fieldsets = (
         (None, {
-            'fields': ('id', 'name', 'group', 'marketgroup', 'real_description', 
-                       'graphic', 'race'), 
-        }), 
+            'fields': ('id', 'name', 'group', 'marketgroup', 'real_description',
+                       'graphic', 'race'),
+        }),
         ('Physics', {
             'fields': ('mass', 'volume', 'radius', 'portionsize')
-        }), 
+        }),
         ('Misc', {
-            'fields': ('published', 'baseprice', 'chanceofduplicating'), 
+            'fields': ('published', 'baseprice', 'chanceofduplicating'),
         })
     )
     list_filter = ('group',)
@@ -173,7 +173,7 @@ class ItemOptions(admin.ModelAdmin):
 
 class RaceOptions(admin.ModelAdmin):
     search_fields = ('name', 'id')
-    list_display = ('name', 'description') 
+    list_display = ('name', 'description')
     raw_id_fields = ('graphic',)
 
 class CharacterAttributeOptions(admin.ModelAdmin):
@@ -187,7 +187,7 @@ class AllianceOptions(admin.ModelAdmin):
 
 class AttributeOptions(admin.ModelAdmin):
     search_fields = ('attributename', 'displayname', 'id')
-    list_display = ('id', 'attributename', 'displayname', 'description',) 
+    list_display = ('id', 'attributename', 'displayname', 'description',)
 
 class AgentOptions(admin.ModelAdmin):
     search_fields = ('id',)
@@ -197,28 +197,28 @@ class AgentOptions(admin.ModelAdmin):
 class MarketGroupOptions(admin.ModelAdmin):
     search_fields = ('name',)
     #radio_fields = ('hastypes',)
-    list_display = ('name', 'slug', 'description', 'graphic') 
+    list_display = ('name', 'slug', 'description', 'graphic')
 
 class ConstellationOptions(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'faction') 
+    list_display = ('name', 'faction')
     fieldsets = (
         (None, {
             'fields': ('id', 'name', 'region', 'faction')
-        }), 
+        }),
         ('Location', {
-            'classes': ('collapse',), 
-            'fields': ('radius', 'x', 'y', 'z', 'xmin', 'ymin', 'zmin', 
-                       'xmax', 'ymax', 'zmax'), 
-        }), 
+            'classes': ('collapse',),
+            'fields': ('radius', 'x', 'y', 'z', 'xmin', 'ymin', 'zmin',
+                       'xmax', 'ymax', 'zmax'),
+        }),
     )
 
-class MapLandmarksOptions(admin.ModelAdmin):
+class MapLandmarkOptions(admin.ModelAdmin):
     raw_id_fields = ('graphic',)
 
 class UnitOptions(admin.ModelAdmin):
     search_fields = ('id',)
-    list_display = ('id', 'name', 'description') 
+    list_display = ('id', 'name', 'description')
 
 admin.site.register(Category, CategoryOptions)
 admin.site.register(InventoryMetaType, InventoryMetaTypeOptions)
@@ -255,6 +255,6 @@ admin.site.register(Attribute, AttributeOptions)
 admin.site.register(Agent, AgentOptions)
 admin.site.register(MarketGroup, MarketGroupOptions)
 admin.site.register(Constellation, ConstellationOptions)
-admin.site.register(MapLandmarks, MapLandmarksOptions)
+admin.site.register(MapLandmark, MapLandmarkOptions)
 admin.site.register(Unit, UnitOptions)
 admin.site.register(AttributeCategory)

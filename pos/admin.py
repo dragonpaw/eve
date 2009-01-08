@@ -1,23 +1,23 @@
-from eve.pos.models import PlayerStation, PlayerStationFuelSupply, PlayerStationReaction
+from eve.pos.models import PlayerStation, FuelSupply, Reaction
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
 
-class PlayerStationFuelSupply_Inline(admin.TabularInline):
-    model = PlayerStationFuelSupply
+class FuelSupply_Inline(admin.TabularInline):
+    model = FuelSupply
 
-class PlayerStationReaction_Inline(admin.TabularInline):
-    model = PlayerStationReaction
+class Reaction_Inline(admin.TabularInline):
+    model = Reaction
 
-class PlayerStationFuelSupplyOptions(admin.ModelAdmin):
+class FuelSupplyOptions(admin.ModelAdmin):
     list_display = ('station', 'type', 'quantity')
-    raw_id_fields = ('type', 'solarsystem', 'constellation', 'region', 'corporation')
+    raw_id_fields = ('station', 'type',)
 
-class PlayerStationReactionOptions(admin.ModelAdmin):
+class ReactionOptions(admin.ModelAdmin):
     list_display = ('station', 'type', )
 
 class PlayerStationOptions(admin.ModelAdmin):
-    inlines = [PlayerStationFuelSupply_Inline, PlayerStationReaction_Inline]
+    inlines = [FuelSupply_Inline, Reaction_Inline]
     list_display = ('moon', 'corporation', 'state', 'fueled_until')
     fieldsets = (
         (None, {'fields': ('corporation','moon','tower', 'owner', 'state')}),
@@ -40,6 +40,6 @@ class PlayerStationOptions(admin.ModelAdmin):
     )
     raw_id_fields = ('moon', 'solarsystem', 'constellation', 'region', 'corporation')
 
-admin.site.register(PlayerStationFuelSupply, PlayerStationFuelSupplyOptions)
-admin.site.register(PlayerStationReaction, PlayerStationReactionOptions)
+admin.site.register(FuelSupply, FuelSupplyOptions)
+admin.site.register(Reaction, ReactionOptions)
 admin.site.register(PlayerStation, PlayerStationOptions)
