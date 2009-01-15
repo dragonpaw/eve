@@ -3,7 +3,7 @@ import traceback
 
 from eve.lib import eveapi
 from eve.settings import DEBUG
-from eve.user.models import Account
+from eve.user.models import UserProfile
 
 #from Queue import Queue
 #import workerpool
@@ -21,27 +21,32 @@ def update_users(user=None, force=False):
 
     if user:
         print("Only loading characters for: %s" % user)
-        accounts = Account.objects.filter(user__user__username=user)
+        users = UserProfile.objects.filter(user__username=user)
     else:
-        accounts = Account.objects.all()
+        # All the non-stale users.
+        users = [u for u in UserProfile.objects.all() if not u.is_stale]
 
     if force:
         print("Forcing reload, cache times will be ignored.")
 
-    for account in accounts:
+    for u in users:
+        print  "-" * 77
+        print "User: %s" % u
         error = False
         m = []
-        try:
-            messages = account.refresh(force=force)
-        except Exception, e:
-            m.append(traceback.format_exc())
-            if DEBUG:
-                raise
-        print  "-" * 78
-        print "Account: %s(%s)" % (account.user, account.id)
-        for x in messages:
-            print "-- %s" % x['name']
-            print "  " +("\n  ".join(x['messages']))
-        if error:
-            print "Fatal error occured."
-            print error
+        for a in u.accounts.all():
+            print "  " + ('- ' * 38)
+            print "  Account: %s" % a.id
+            try:
+                messages = a.refresh(force=force)
+            except Exception, e:
+                m.append(traceback.format_exc())
+                if DEBUG:
+                    raise
+            for x in messages:
+                print "  -- %s" % x['name']
+                for m in x['messages']:
+                    print "    " + m
+            if error:
+                print "    Fatal error occured."
+                print "    " + error
