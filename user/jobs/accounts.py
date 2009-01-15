@@ -46,8 +46,8 @@ def update_users(user=None, force=False):
                     raise
             for x in messages:
                 print "  -- %s" % x['name']
-                for m in x['messages']:
-                    print "    " + m
+                for msg in x['messages']:
+                    print "    " + msg
             if error:
                 print "    Fatal error occured."
                 print "    " + error
