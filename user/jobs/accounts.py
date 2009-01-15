@@ -24,7 +24,8 @@ def update_users(user=None, force=False):
         users = UserProfile.objects.filter(user__username=user)
     else:
         # All the non-stale users.
-        users = [u for u in UserProfile.objects.all() if not u.is_stale]
+        q = UserProfile.objects.order_by('user__username')
+        users = [u for u in q if not u.is_stale]
 
     if force:
         print("Forcing reload, cache times will be ignored.")
