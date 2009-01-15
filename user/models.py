@@ -413,7 +413,7 @@ class Character(models.Model):
             old = Character.objects.get( pk = self._get_pk_val() )
             if self.corporation_id != old.corporation_id:
                 messages.append("Corporation changed. Purging delegations and rights.")
-                self.pos_delegations.all().delete()
+                #self.pos_delegations.all().delete()
         except Character.DoesNotExist:
             pass
         super( Character, self ).save(*args, **kwargs)
@@ -587,6 +587,7 @@ class Character(models.Model):
         me = self.api_character()
         skills = 0
         points = 0
+        messages = []
 
         training = me.SkillInTraining()
         if training.skillInTraining:
@@ -600,6 +601,7 @@ class Character(models.Model):
             self.training_skill = None
             self.training_level = None
             self.training_completion = None
+        messages.append('Training: %s %s' % (self.training_skill, self.training_level))
         self.save()
 
         sheet = me.CharacterSheet()
@@ -619,7 +621,8 @@ class Character(models.Model):
                 points += obj.points
                 obj.save()
 
-        return ['Skills: %d, Total SP: %0.2fm' % (skills, points/1000000.0)]
+        messages.append('Skills: %d, Total SP: %0.2fm' % (skills, points/1000000.0))
+        return messages
 
     def refresh_transactions(self):
         me = self.api_character()
@@ -692,7 +695,7 @@ class Character(models.Model):
                           client = t.clientName,
                           )
         obj.save()
-        return []
+        return ['Transaction: %s x %s: %s ISK' % (obj.quantity, obj.item, obj.price*obj.quantity) ]
 
     def refresh_journal(self):
         me = self.api_character()
