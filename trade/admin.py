@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 
 class MarketIndexValue_Inline(admin.TabularInline):
     model = MarketIndexValue
+    raw_id_fields = ('item',)
 
 class JournalEntryTypeOptions(admin.ModelAdmin):
     list_display = ('id', 'name', 'is_boring',)
