@@ -433,7 +433,7 @@ class Reaction(models.Model):
                            'Composite'])
     q = q & Q(published=True)
 
-    station = models.ForeignKey(PlayerStation)
+    station = models.ForeignKey(PlayerStation, related_name='reactions')
     type = models.ForeignKey('ccp.Item', limit_choices_to = q,
                              related_name='poses_reacting')
 
