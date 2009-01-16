@@ -21,15 +21,15 @@ isk_map = (" kmbt") # kilo, million, billion, trillion...
 def isk(isk):
     """Take a integer value and return it in human representation with a suffix
     such as 'b' for billion.
-    
+
     There will always be 3 significant digits in the results.
-    
+
     Examples:
     '2.33k ISK' = isk(2330)
     '100k ISK'  = isk(100000)
     '12.2m ISK' = isk(12000000)
     """
-    try:    
+    try:
         isk = Decimal(str(isk))
     except InvalidOperation:
         return isk
@@ -58,7 +58,7 @@ def time(sec):
         sec = Decimal(str(sec))
     except InvalidOperation:
         return sec
-        
+
     if sec < 60:
         return "%0.2f s" % sec
     elif sec < (60**2):
@@ -73,7 +73,7 @@ def time(sec):
             return "%dh %dm" % (sec / 60**2, sec % 60**2 / 60)
     else:
         return "%dd %dh" % (sec / (60**2*24), sec % (60**2*24) / 60**2)
-   
+
 def title(nav):
     temp = []
     for x in reversed(nav):
@@ -82,7 +82,7 @@ def title(nav):
         else:
             temp.append(x.name)
     return " &laquo; ".join(temp)
-        
+
 class NavigationElement:
     def __init__(self, name, url, icon, note=None, id=None):
         from eve.ccp.models import get_graphic
@@ -90,25 +90,33 @@ class NavigationElement:
             graphic = get_graphic('09_14')
         else:
             graphic = get_graphic(icon)
-            
+
         self.url = url
         self.name = name
         self.graphic = graphic
         self.note = note
         self.id = id
-    
+
     def get_absolute_url(self):
         if self.id:
             return self.url % self.id
         else:
             return self.url
-        
-    def icon32(self):
+
+    def get_icon(self, size):
         if self.graphic is None:
             return None
         else:
-            return self.graphic.icon32
-        
+            return self.graphic.get_icon(size)
+
+    @property
+    def icon32(self):
+        return self.get_icon(32)
+
+    @property
+    def icon64(self):
+        return self.get_icon(64)
+
     def __getitem__(self, key):
         value = getattr(self, key)()
         return value
@@ -130,22 +138,22 @@ def javascript_points(list):
 
 def unique_slug(item,slug_source='name',slug_field='slug'):
     """unique_slug(item,slug_source='name',slug_field='slug')
-    
-    Ensures a unique slug field by appending an integer counter to duplicate 
+
+    Ensures a unique slug field by appending an integer counter to duplicate
     slugs.
-  
+
     If the item already has a slug, then it is returned without modification
     or checking. If it does not have a slug, then one will be determined and
     returned.
-    
+
     The item's slug field is first populated by slugify-ing the source field.
-    If that value already exists, a counter is appended to the slug, and the 
+    If that value already exists, a counter is appended to the slug, and the
     counter incremented upward until the value is unique.
-  
-    For instance, if you save an object titled Daily Roundup, and the slug 
-    daily-roundup is already taken, this function will try daily-roundup-2, 
+
+    For instance, if you save an object titled Daily Roundup, and the slug
+    daily-roundup is already taken, this function will try daily-roundup-2,
     daily-roundup-3, daily-roundup-4, etc, until a unique value is found.
-  
+
     Call from within a model's custom save() method like so:
     item.slug = unique_slug(item)
 
@@ -155,14 +163,14 @@ def unique_slug(item,slug_source='name',slug_field='slug'):
     # if it's already got a slug, do nothing.
     slug = getattr(item, slug_field)
     if slug:
-        return slug 
-    
+        return slug
+
     slug = slugify(getattr(item,slug_source))
-    
+
     slug_search = slug_field + '__istartswith'
     itemModel = item.__class__
     query = itemModel.objects.filter(**{slug_search:slug})
-    
+
     # the following gets all existing slug values
     slugs = [x[slug_field] for x in query.values(slug_field)]
     test = slug

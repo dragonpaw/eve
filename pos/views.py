@@ -10,7 +10,7 @@ from datetime import datetime
 from eve.ccp.models import Item, Corporation
 from eve.pos.models import PlayerStation
 from eve.user.models import Character
-from eve.lib.formatting import make_nav
+from eve.lib.formatting import make_nav, NavigationElement
 
 pos_nav = make_nav("Player-Owned Structures", "/pos/", '40_14',
                    note='Fuel status for all of your POSes.')
@@ -21,9 +21,6 @@ pos_profit_nav = make_nav('Profits', '/pos/profit/', '06_03',
 pos_monkey_nav = make_nav('POS Helpers', '/pos/helpers/','02_16',
                           'Check who is able to see POS status.')
 
-DELEGATE_NAV = make_nav('Configure Ownership', '/pos/%d/owner/', '02_16',
-                        'Setup a player in the corporation as owner of this POS.'
-                        )
 REFUEL_NAV = make_nav('Update Fuel Quantities', '/pos/%d/refuel/', '10_07',
                       'The EVE Widget automatically refreshes all POS data every 6 hours. '
                       + 'Click here to update quantities if you have just refueled the tower and do not wish '
@@ -122,9 +119,25 @@ def fuel_detail(request, station_id, days=DEFAULT_DAYS):
 
     nav = []
     # Build of the nav options for the POS.
-    for x in (REFUEL_NAV, REACTION_NAV, PROFIT_NAV, DELEGATE_NAV):
+    for x in (REFUEL_NAV, REACTION_NAV, PROFIT_NAV):
         x.id = pos.id
         nav.append(x)
+
+    if pos.owner:
+        owner = NavigationElement (
+            'Owner: %s' % pos.owner.name,
+            '/pos/%d/owner' % pos.id,
+            pos.owner,
+            "Set the 'owner' of this POS."
+        )
+    else:
+        owner = NavigationElement (
+            'Corporation Use',
+            '/pos/%d/owner' % pos.id,
+            pos.corporation,
+            "Set the 'owner' of this POS."
+        )
+    nav.append(owner)
 
     d['inline_nav'] = nav
 
@@ -388,7 +401,7 @@ def monkey_list(request):
 
     profile = request.user.get_profile()
     for character in profile.characters.all():
-        if not character.is_director:
+        if not character.is_director or character.is_pos_monkey:
             continue
         corporations.append(character.corporation)
 

@@ -16,7 +16,15 @@
 {% for nav in inline_nav %}
     {% spaceless %}<li>
         <a href="{{ nav.get_absolute_url }}">
-	    {% if nav.icon32 %}<img src="{{ nav.icon32 }}">{% else %}<img>{% endif %}
+	    {% if nav.icon32 %}
+            <img src="{{ nav.icon32 }}">
+            {% else %}
+            <!-- Characters have an icon64 but no icon32 -->
+            {% if nav.icon64 %}
+            <img src="{{ nav.icon64 }}">
+            {% else %}
+            <img>
+            {% endif %}{% endif %}
             <span class="name">{{ nav.name }}</span>
             {% if nav.note %}<br><span class="note">{{ nav.note }}</span>{% endif %}
         </a>

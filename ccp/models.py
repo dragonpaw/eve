@@ -782,13 +782,15 @@ class Graphic(Base):
 def get_graphic(icon):
     """Helper utility that will find one icon or make it for you. Used in make_nav and elsewhere.
     Useful because icons are often non-unique, but I don't care in my app."""
-    g = Graphic.objects.filter(icon=icon)
-    if g.count() == 0:
-        graphic = Graphic.objects.create(icon=icon)
+    if isinstance(icon, type('')):
+        g = Graphic.objects.filter(icon=icon)
+        if g.count() == 0:
+            graphic = Graphic.objects.create(icon=icon)
+        else:
+            graphic = g[0]
+        return graphic
     else:
-        graphic = g[0]
-    return graphic
-
+        return icon
 
 class Unit(Base):
     id = models.IntegerField(primary_key=True, db_column='unitid')
