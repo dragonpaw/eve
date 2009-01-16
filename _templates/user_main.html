@@ -16,13 +16,13 @@
 <ul class="links">
   {% for c in characters %}
     <li class="character"><a href="{{ c.get_absolute_url }}">
-    <img src="{{ c.icon64 }}">
+    <img class="icon64" src="{{ c.icon64 }}">
     <span class="name">{{ c.name }}</span>
     <span class="corporation"><br>{{ c.corporation }}<br></span>
     <span class="isk">{{ c.isk|floatformat:0|comma }} ISK</span>
     <span class="right skill-points">{{ c.skill_points|isk }} SP</span>
     <br>
-    {% if c.training_skill %} 
+    {% if c.training_skill %}
     <span class="skill">{{ c.training_skill }} {{ c.training_level }}</span>
     <span class="right skill-completion">{{ c.training_remaining|default:"Done"|time }}</span>
     {% else  %}
@@ -30,11 +30,11 @@
     {% endif %}
     </a>
     </li>
-  {% endfor %}  
+  {% endfor %}
 </ul>
 {% else %}
 <p>There are no characters on file for your accounts.</p>
-{% endif %} 
+{% endif %}
 <h4>Accounts</h4>
 <ul class="links">
   {% for a in accounts %}
