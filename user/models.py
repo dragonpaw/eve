@@ -492,8 +492,8 @@ class Character(models.Model):
 
         messages.extend( self.refresh_character(force=force) )
 
-        if self.is_director:
-            messages.extend( self.refresh_poses(force=force) )
+        #if self.is_director:
+        #    messages.extend( self.refresh_poses(force=force) )
 
         return messages
 
@@ -742,42 +742,6 @@ class Character(models.Model):
                 return messages
             else:
                 raise
-
-    def refresh_poses(self, force=False):
-        messages = []
-
-        api = self.api_corporation()
-        try:
-            corp = self.corporation
-        except Corporation.DoesNotExist:
-            # This is a workaround for a CCP bug where corporations give 'not
-            # in alliance error' and prevent themselves from being visable even
-            # when they should be.
-            messages.append('Corporation not available. Unable to check for POSes.')
-            return messages
-
-        try:
-            ids = []
-            for record in api.StarbaseList().starbases:
-                ids.append(record.itemID)
-                try:
-                    station = PlayerStation.objects.get(pk=record.itemID)
-                except PlayerStation.DoesNotExist:
-                    station = PlayerStation(id=record.itemID)
-
-                messages.extend( station.refresh(record, api, corp=corp, force=force) )
-
-            # Look for POSes that got taken down.
-            for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
-                messages.append("Removed POS: %s will be purged." % pos.moon)
-                pos.delete()
-        except RuntimeError, e:
-            if str(e) == "Invalid API response: expected 'eveapi', got html":
-                messages.append('EVE POS API still broken. complain to CCP, not me.')
-            else:
-                raise
-
-        return messages
 
     def purge_old_data(self):
         messages = []

@@ -217,6 +217,12 @@ class PlayerStation(models.Model):
                     d[item.id] = { 'quantity': quantity, 'item': item }
         return [(x['item'], x['quantity']) for x in d.values()]
 
+    def refresh_needed(self):
+        if self.cached_until and self.cached_until > datetime.utcnow():
+            return False
+        else:
+            return True
+
     def refresh(self, record, api, corp=None, force=False):
         messages = []
 
@@ -224,7 +230,7 @@ class PlayerStation(models.Model):
         solarsystem = SolarSystem.objects.get(id=record.locationID)
         tower = Item.objects.get(pk=record.typeID)
 
-        if not force and self.cached_until and self.cached_until > datetime.utcnow():
+        if not force and not self.refresh_needed():
             messages.append("Cached: POS: %s at %s." % (tower, moon))
             return messages
 
