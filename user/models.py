@@ -426,16 +426,20 @@ class Character(models.Model):
         else:
             return []
 
-    def icon(self, size):
-        return "http://img.eve.is/serv.asp?s=%d&c=%s" % (size, self.id)
+    def get_icon(self, size):
+        # CCP gives us only two sizes.
+        if size in (64, 256):
+            return "http://img.eve.is/serv.asp?s=%d&c=%s" % (size, self.id)
+        else:
+            return None
 
     @property
     def icon64(self):
-        return self.icon(64)
+        return self.get_icon(64)
 
     @property
     def icon256(self):
-        return self.icon(256)
+        return self.get_icon(256)
 
     def last_refreshed_delta(self):
         return datetime.utcnow() - self.last_refreshed
