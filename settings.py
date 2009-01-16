@@ -74,8 +74,7 @@ TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    "/home/56240/users/.home/container/eve/_templates",
-    #"/home/ash/django-sites/eve/_templates",
+    "/home/ash/django-sites/eve/_templates",
     "C:/django-sites/eve/_templates",
 )
 
@@ -113,7 +112,7 @@ INSTALLED_APPS = (
 if sys.platform == 'win32':
     STATIC_DIR = 'C:/django-sites/eve/_static/'
 else:
-    STATIC_DIR = '/home/56240/users/.home/domains/eve.magicwidget.net/html/static'
+    STATIC_DIR = '/home/ash/django-sites/eve/_static'
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/'

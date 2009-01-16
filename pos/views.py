@@ -423,7 +423,9 @@ def owner_set(request, station_id, character_id):
         pos.owner = None
     else:
         character = get_object_or_404(Character, id=character_id)
-        is_director_of_or_404(request.user, character)
+        #is_director_of_or_404(request.user, character)
+        if character.corporation != pos.corporation:
+            raise Http404
         pos.owner = character
     pos.save()
     return HttpResponseRedirect( '/pos/%s/fuel/' % pos.id )
@@ -435,11 +437,11 @@ def owner(request, station_id):
 
     d = {}
     d['pos'] = pos
-    d['characters'] = [{
-        'character':c,
-        'director':c.is_director,
-        'monkey':c.is_pos_monkey
-    }]
+    #d['characters'] = [{
+    #    'character':c,
+    #    'director':c.is_director,
+    #    'monkey':c.is_pos_monkey
+    #}]
 
 
     d['nav'] = [pos_nav, pos, {'name':'Owner'}]
