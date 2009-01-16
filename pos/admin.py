@@ -5,6 +5,8 @@ from django.utils.translation import ugettext_lazy as _
 
 class FuelSupply_Inline(admin.TabularInline):
     model = FuelSupply
+    raw_id_fields = ['type']
+    extra = 0
 
 class Reaction_Inline(admin.TabularInline):
     model = Reaction
@@ -14,7 +16,7 @@ class FuelSupplyOptions(admin.ModelAdmin):
     raw_id_fields = ('station', 'type',)
 
 class ReactionOptions(admin.ModelAdmin):
-    list_display = ('station', 'type', )
+    list_display = ['station', 'type' ]
 
 class PlayerStationOptions(admin.ModelAdmin):
     inlines = [FuelSupply_Inline, Reaction_Inline]

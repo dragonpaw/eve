@@ -18,19 +18,22 @@ class Skill_Inline(admin.TabularInline):
 
 class AccountOptions(admin.ModelAdmin):
     inlines = [Character_Inline]
-    list_display = ('user', 'id')
-    list_display_links = ('id', )
+    list_display       = ['id', 'user']
+    list_display_links = ['id']
+    search_fields      = ['user__user__username']
+    ordering           = ['user__user__username']
 
 class CharacterOptions(admin.ModelAdmin):
-    list_display = ('name', 'user', 'corporation', 'get_isk_formatted',
-                    'get_sp_formatted', 'training_skill', 'training_level')
-    inlines = [Skill_Inline]
-    raw_id_fields = ('corporation',)
+    list_display       = ['name', 'user', 'corporation', 'get_isk_formatted',
+                    'get_sp_formatted', 'training_skill', 'training_level']
+    inlines            = [Skill_Inline]
+    raw_id_fields      = ['corporation']
+    search_fields      = ['name', 'user__user__username']
 
 class SkillLevelOptions(admin.ModelAdmin):
-    search_fields = ('character__name',)
-    list_display = ('character', 'skill', 'level')
-    list_display_links = ('skill',)
+    list_display       = ['character', 'skill', 'level']
+    list_display_links = ['skill']
+    search_fields      = ['character__name']
 
 class UserProfileOptions(admin.ModelAdmin):
     inlines = [Account_Inline]
