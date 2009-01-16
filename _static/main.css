@@ -656,6 +656,11 @@ li.character a {
         height: 32px;
 }
 
+.links img.icon64 {
+        width: 64px;
+        height: 64px;
+}
+
 /************************************************************************************************/
 .panel {
 	box-sizing: border-box;

@@ -11,6 +11,10 @@ class Character_Inline(admin.StackedInline):
     raw_id_fields = ('corporation',)
     extra = 0
 
+class Skill_Inline(admin.TabularInline):
+    model = SkillLevel
+    raw_id_fields = ('skill',)
+
 class AccountOptions(admin.ModelAdmin):
     inlines = [Character_Inline]
     list_display = ('user', 'id')
@@ -19,6 +23,7 @@ class AccountOptions(admin.ModelAdmin):
 class CharacterOptions(admin.ModelAdmin):
     list_display = ('name', 'user', 'corporation', 'get_isk_formatted',
                     'get_sp_formatted', 'training_skill', 'training_level')
+    inlines = [Skill_Inline]
     raw_id_fields = ('corporation',)
 
 class SkillLevelOptions(admin.ModelAdmin):
