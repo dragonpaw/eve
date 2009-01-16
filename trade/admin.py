@@ -9,6 +9,7 @@ class MarketIndexValue_Inline(admin.TabularInline):
 class JournalEntryTypeOptions(admin.ModelAdmin):
     list_display = ('id', 'name', 'is_boring',)
     list_display_links = ('name',)
+    list_filter        = ['is_boring']
 
 class MarketIndexOptions(admin.ModelAdmin):
     inlines = [MarketIndexValue_Inline]
@@ -21,7 +22,7 @@ class MarketIndexValueOptions(admin.ModelAdmin):
 
 class BlueprintOwnedOptions(admin.ModelAdmin):
     list_display = ('user', 'blueprint', 'pe', 'me', 'original')
-    search_fields = ('user', 'blueprint')
+    search_fields = ('user__user__username', 'blueprint__name')
     raw_id_fields = ('blueprint',)
 
 class TransactionOptions(admin.ModelAdmin):
