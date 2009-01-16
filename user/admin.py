@@ -14,6 +14,7 @@ class Character_Inline(admin.StackedInline):
 class Skill_Inline(admin.TabularInline):
     model = SkillLevel
     raw_id_fields = ('skill',)
+    extra = 0
 
 class AccountOptions(admin.ModelAdmin):
     inlines = [Character_Inline]

@@ -49,6 +49,7 @@ def update_poses(corp=None, force=False):
 
         print  "-" * 77
         print "Corp: %s" % c
+        print " Director: %s" % director
 
         try:
             ids = []
