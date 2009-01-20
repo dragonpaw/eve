@@ -202,7 +202,10 @@ class EveCentralJob(workerpool.Job):
 
 def update_qtc():
     name = QtcIndustries['name']
-    qtc = MarketIndex(name=name)
+    try:
+        qtc = MarketIndex.objects.get(name=name)
+    except MarketIndex.DoesNotExist:
+        qtc = MarketIndex(name=name)
     qtc.url = QtcIndustries['url']
     qtc.note = QtcIndustries['description']
     qtc.priority = 200
@@ -233,7 +236,10 @@ def update_qtc():
 
 def update_refinables():
     name = 'Derived'
-    index = MarketIndex(name=name)
+    try:
+        index = MarketIndex.objects.get(name=name)
+    except MarketIndex.DoesNotExist:
+        index = MarketIndex(name=name)
     index.note = 'Values calculated from the prevailing mineral prices.'
     index.priority = 250
     index.save()
