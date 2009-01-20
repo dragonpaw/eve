@@ -32,7 +32,9 @@ class MyCacheHandler(object):
         # eveapi is asking us to cache an item
         key = self.key(path, params)
 
-        time = obj.cachedUntil - obj.currentTime or 0
+        time = obj.cachedUntil - obj.currentTime or 300
+        time = max(time, 300) # Make sure we alwyas cache at least a little.
+        # Cache time of 0 would mean 'forever', which we don't want.
         self.log('Cached (%d seconds)' % time)
 
         self.mc.set(key, doc, time=time)
