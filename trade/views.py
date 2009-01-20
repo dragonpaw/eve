@@ -3,6 +3,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.http import HttpResponseRedirect
 
 import re
 
@@ -19,7 +20,7 @@ blueprint_nav = make_nav("Blueprints Owned", "/trade/blueprints/", '09_15',
                           note="The blueprints you can make things with.")
 transaction_nav = make_nav("Transactions", "/trade/transactions/", '64_14',
                             note="Everything you've bought and sold.")
-salvage_nav = make_nav('Salvage', '/trade/salvage/', '69_11', 
+salvage_nav = make_nav('Salvage', '/trade/salvage/', '69_11',
                        'Calculate what rigs you can make with that pile of salvage filling your hangar.')
 
 @login_required
@@ -27,16 +28,16 @@ def transactions(request):
     d = {}
     d['nav'] = [transaction_nav]
     d['user'] = request.user
-    
+
     profile = request.user.get_profile()
-    
+
     t = profile.trade_transactions(days=14)
     j = profile.journal_entries(days=14, is_boring=False)
     t = list(t) + list(j)
     t.sort(key=lambda x:x.time, reverse=True)
-    
+
     d['transactions'] = t
-    
+
     return render_to_response('trade_transactions.html', d)
 
 @login_required
@@ -51,7 +52,7 @@ def journal_detail(request, id=None):
     d = {}
     d['nav'] = [ transaction_nav, transaction ]
     d['transaction'] = transaction
-    
+
     return render_to_response('trade_journal_detail.html', d)
 
 @login_required
@@ -62,11 +63,11 @@ def transaction_detail(request, id=None):
         raise Http404
     else:
         transaction = transaction[0]
-    
+
     d = {}
     d['nav'] = [ transaction_nav, transaction]
     d['transaction'] = transaction
-    
+
     return render_to_response('trade_transaction_detail.html', d)
 
 @login_required
@@ -75,7 +76,7 @@ def blueprint_list(request):
     d['nav'] = [ blueprint_nav ]
     d['user'] = request.user
     d['blueprints'] = request.user.get_profile().blueprints.select_related().order_by('ccp_item.name')
-    
+
     return render_to_response('trade_blueprint_list.html', d)
 
 class BlueprintOwnedForm(forms.ModelForm):
@@ -92,12 +93,12 @@ def blueprint_edit(request, slug):
     template = 'trade_blueprint_edit.html'
     profile = request.user.get_profile()
     blueprint, _ = BlueprintOwned.objects.get_or_create(blueprint=item, user=profile)
-    
+
     if request.method == 'GET':
         form = BlueprintOwnedForm(instance=blueprint)
         d['form'] = form
         return render_to_response(template, d)
-    
+
     assert(request.method == 'POST')
 
     if request.POST.has_key('delete'):
@@ -111,7 +112,7 @@ def blueprint_edit(request, slug):
         return render_to_response(template, d)
     else:
         form.save()
-        return HttpResponseRedirect(blueprint_nav.get_absolute_url() ) 
+        return HttpResponseRedirect(blueprint_nav.get_absolute_url() )
 
 @login_required
 def blueprint_add(request):
@@ -127,11 +128,11 @@ def market_index_list(request):
         q = Q(user__isnull=True) | Q(user=request.user.get_profile())
     d = {}
     d['nav'] = [ index_nav ]
-    
+
     d['indexes'] = MarketIndex.objects.filter(q).select_related().order_by('-trade_marketindex.priority')
-    
-    
-    return render_to_response('trade_indexes.html', d, 
+
+
+    return render_to_response('trade_indexes.html', d,
                               context_instance=RequestContext(request))
 
 def market_index_detail(request, name):
@@ -140,15 +141,15 @@ def market_index_detail(request, name):
         q = (Q(user__isnull=True) | Q(user=profile)) & Q(name=name)
     else:
         q = Q(user__isnull=True) & Q(name=name)
-        
+
     index = get_object_or_404(MarketIndex, q)
-    
+
     d = {}
     d['nav'] = [ index_nav, index ]
     d['index'] = index
     d['values'] = index.items.select_related().order_by('ccp_item.name')
-    
-    return render_to_response('trade_index_detail.html', d, 
+
+    return render_to_response('trade_index_detail.html', d,
                               context_instance=RequestContext(request))
 
 class FixedPriceForm(forms.Form):
@@ -166,7 +167,7 @@ def fixed_price_update(request, id):
     d['item'] = item
     d['buy'] = profile.get_buy_price(item)
     d['sell'] = profile.get_sell_price(item)
-    
+
     if request.method == 'POST':
         form = FixedPriceForm(request.POST)
         if form.is_valid():
@@ -185,10 +186,10 @@ def fixed_price_update(request, id):
             sell_price = item_index.sell
         except MarketIndexValue.DoesNotExist:
             pass
-    
+
         d['form'] = FixedPriceForm(initial={'buy_price':buy_price,'sell_price':sell_price})
-    
-    return render_to_response('trade_index_update.html', d, 
+
+    return render_to_response('trade_index_update.html', d,
                               context_instance=RequestContext(request))
 
 
@@ -196,9 +197,9 @@ def salvage(request):
     d = {}
     d['items'] = Item.objects.filter(group__name='Salvaged Materials')
     d['nav'] = [salvage_nav]
-    
+
     if request.method != 'POST':
-        return render_to_response('trade_salvage.html', d, 
+        return render_to_response('trade_salvage.html', d,
                                   context_instance=RequestContext(request))
 
     assert(request.method=='POST')
@@ -207,26 +208,26 @@ def salvage(request):
         profile = request.user.get_profile()
     else:
         profile = None
-        
+
     bits = {}
     d['bits'] = bits
     d['nav'].append({'name':'Rigs you can make'})
 
     # Make a lookup table out of the salvage available.
     digits = re.compile(r'\d+')
-    
+
     for key in request.POST.keys():
-        
+
         id = int(key)
         if not id > 0:
             continue
-            
+
         match = digits.search(request.POST[key])
         if not match:
             bits[id] = 0
         else:
             bits[id] = int(match.group(0))
-        
+
     q = Q(material__group__name='Salvaged Materials')
     rigs = {}
     for rig in Item.objects.filter(marketgroup__parent__id='955'):
@@ -237,11 +238,11 @@ def salvage(request):
                 rigs[rig.id]['qty'] = min(rigs[rig.id]['qty'], can_make)
             else:
                 rigs[rig.id] = { 'qty': can_make, 'item': rig }
-                
+
             # If we can make 0, it's not going to get higher.
             if rigs[rig.id]['qty'] == 0:
                 break
-            
+
     objects = []
     d['objects'] = objects
     for id in rigs.keys():
@@ -253,11 +254,11 @@ def salvage(request):
         else:
             buy = sell = None
         objects.append({
-                        'item':rigs[id]['item'], 
+                        'item':rigs[id]['item'],
                         'quantity':rigs[id]['qty'],
                         'buy':buy,
                         'sell':sell,
                         })
     objects.sort(key=lambda x:x['item'].name)
-    return render_to_response('ccp_item_list.html', d, 
+    return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
