@@ -70,5 +70,6 @@ def update_poses(corp=None, force=False):
             for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
                 print "  Removed POS: %s will be purged." % pos.moon
                 pos.delete()
-        except RuntimeError, e:
-            print "ERROR"
+        except Exception, e:
+            print "ERROR refreshing corporation: %s" % c
+            print str(e)
