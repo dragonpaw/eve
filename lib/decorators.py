@@ -14,7 +14,7 @@ def require_igb (function):
                                       RequestContext(request))
 
     return wrapper
- 
+
 def require_oog (function):
     def wrapper (request):
         browser = what_browser(request)
@@ -45,6 +45,19 @@ def require_trust (function):
 
     return wrapper
 
+import types
+
+def cachedmethod(f, cache={}):
+    def g(*args, **kwargs):
+        key = ( f, tuple(args), frozenset(kwargs.items()) )
+        if key not in cache:
+            cache[key] = f(*args, **kwargs)
+        return cache[key]
+    return g
+
+
+
+
 #if ($_SERVER['HTTP_EVE_TRUSTED']=='no') {
 #            // request trust from client through headers
 #              header("eve.trustme:".$this_host."/::please allow me to access your pilot information.");
@@ -56,7 +69,7 @@ def require_trust (function):
 #           }
 #        }
 #      }
-#    
+#
 #
 #The following variables are available in from the header in the IGB:
 #

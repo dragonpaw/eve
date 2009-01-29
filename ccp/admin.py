@@ -36,10 +36,10 @@ class CharacterAncestryOptions(admin.ModelAdmin):
 
 class StationOptions(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('name', 'region', 'constellation', 'corporation')
+    list_display = ('name', 'region', 'constellation', 'corporation', 'type')
     fieldsets = (
         (None, {
-            'fields': ('id', 'name', 'corporation', 'security')
+            'fields': ('id', 'name', 'corporation', 'type')
         }),
         ('Corp', {
          'fields': ('dockingcostpervolume', 'maxshipvolumedockable',
@@ -54,7 +54,7 @@ class StationOptions(admin.ModelAdmin):
         }),
     )
     list_filter = ('region',)
-    raw_id_fields = ('solarsystem', 'constellation')
+    raw_id_fields = ('solarsystem', 'constellation', 'type', 'region', 'corporation')
 
 class GroupOptions(admin.ModelAdmin):
     search_fields = ('name',)

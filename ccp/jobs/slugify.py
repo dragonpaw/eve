@@ -3,7 +3,7 @@
 from django_extensions.management.jobs import BaseJob
 from django.template.defaultfilters import slugify
 
-from eve.ccp.models import MarketGroup, Item, Region, Alliance
+from eve.ccp.models import MarketGroup, Item, Region, Alliance, Group
 
 from exceptions import Exception
 
@@ -15,18 +15,30 @@ class Job(BaseJob):
         self.slugify_item()
         self.slugify_marketgroup()
         self.slugify_region()
+        self.slugify_group()
         # No longer needed, as the save handler is taking care of it.
         #self.slugify_alliance()
 
-    def slugify_region(self):
-        print "Slugging the Regions."
-        for r in Region.objects.all():
-            if r.slug:
+    def slugify_something(self, things):
+        for x in things:
+            # print x
+            if x.slug:
                 continue
 
-            r.slug = slugify(r.name)
-            r.save()
-            print "Slugged: %-20s %s" % (r.slug, r.name)
+            try:
+                x.slug = slugify(x.name)
+                x.save()
+                print "Slugged: %-20s %s" % (x.slug, x.name)
+            except Exception, e:
+                print "Unable to slug: %s: '%s'" % (x.name, e)
+
+    def slugify_group(self):
+        print "Slugging the groups."
+        self.slugify_something( Group.objects.all() )
+
+    def slugify_region(self):
+        print "Slugging the Regions."
+        self.slugify_something( Region.objects.all() )
 
     def slugify_alliance(self):
         for a in Alliance.objects.all():
@@ -35,17 +47,7 @@ class Job(BaseJob):
 
     def slugify_item(self):
         print "Slugging the Items."
-        for item in Item.objects.all():
-            if item.slug:
-                continue
-
-            try:
-                item.slug = slugify(item.name)
-                item.save()
-                print "Slugged: %-20s %s" % (item.slug, item.name)
-            except Exception, e:
-                print "Unable to slug: %s: '%s'" % (item.name, e)
-
+        self.slugify_something( Item.objects.all() )
 
     def slugify_marketgroup(self):
         print "Slugging the MarketGroups."

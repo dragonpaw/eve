@@ -88,14 +88,17 @@ def update_alliances():
 
     alliance_ids = []
 
-    results = pool.map(update_alliance, api.eve.AllianceList().alliances)
-    for id, worked, messages in results:
-        if worked:
-            alliance_ids.append(id)
-        else:
-            print "Failed: %s" % id
-            for m in messages:
-                print m
+    try:
+        results = pool.map(update_alliance, api.eve.AllianceList().alliances)
+        for id, worked, messages in results:
+            if worked:
+                alliance_ids.append(id)
+            else:
+                print "Failed: %s" % id
+                for m in messages:
+                    print m
+    except Exception, e:
+        print str(e)
 
     pool.shutdown()
     pool.wait()

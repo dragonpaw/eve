@@ -34,6 +34,7 @@ from eve.lib.alliance_graphics import alliance_graphics
 from eve.lib.formatting import comma, time, unique_slug
 from eve.lib.cachehandler import MyCacheHandler
 from eve import settings
+from eve.lib.decorators import cachedmethod
 
 import os
 
@@ -841,7 +842,8 @@ class Category(Base):
 class Group(Base):
     """This table describes goups like: Ammo and Advanced Torpedo.
 
-    It also contains non-item groups like 'Alliance'."""
+    It also contains non-item groups like 'Alliance' and
+    'Asteroid Angel Cartel Officer'."""
     id = models.IntegerField(primary_key=True, db_column='groupid')
     category = models.ForeignKey(Category, db_column='categoryid', related_name='groups')
     name = models.CharField(max_length=100, db_column='groupname')
@@ -854,9 +856,17 @@ class Group(Base):
     anchorable = models.BooleanField(null=True, blank=True)
     fittablenonsingleton = models.BooleanField(null=True, blank=True)
     published = models.BooleanField(default=True, null=True)
+    slug = models.SlugField()
 
     def get_icon(self, size):
         return self.graphic.get_icon(size)
+
+    def get_absolute_url(self):
+        if self.category.name == 'Entity':
+            # I am an NPC.
+            return u'/npc/%s' % self.slug
+        else:
+            return 'x'
 
 
 class BlueprintDetail(Base):
@@ -1024,6 +1034,7 @@ class Item(Base):
 
 
     # Fancy way to get the attributes and their values.
+    @cachedmethod
     def attributes(self):
         set = Attribute.objects.extra(
             select={
@@ -1053,28 +1064,97 @@ class Item(Base):
 
         # Limit to the published attributes.
         # (If done in Attribute, then we don't get the skill levels above.)
-        set = [x for x in set if x.published]
+        #set = [x for x in set if x.published]
         return set
 
+    @cachedmethod
+    def attributes_by_name(self):
+        return dict([(a.attributename, a) for a in self.attributes()])
+
+    @cachedmethod
     def attribute_by_name(self, name):
-        set = Attribute.objects.extra(
-            select={
-                'valueint':'ccp_typeattribute.valueint',
-                'valuefloat':'ccp_typeattribute.valuefloat',
-            },
-            tables=['ccp_typeattribute'],
-            where=[
-                'ccp_typeattribute.attributeid = ccp_attribute.attributeid',
-                'ccp_typeattribute.typeid = %s',
-                'ccp_attribute.attributeName = %s',
-            ],
-            params=[self.id, name]
-        )
-        if set.count() > 0:
-            return set[0]
+        d = self.attributes_by_name()
+        if name in d:
+            return d[name]
         else:
             return None
+        #set = Attribute.objects.extra(
+        #    select={
+        #        'valueint':'ccp_typeattribute.valueint',
+        #        'valuefloat':'ccp_typeattribute.valuefloat',
+        #    },
+        #    tables=['ccp_typeattribute'],
+        #    where=[
+        #        'ccp_typeattribute.attributeid = ccp_attribute.attributeid',
+        #        'ccp_typeattribute.typeid = %s',
+        #        'ccp_attribute.attributeName = %s',
+        #    ],
+        #    params=[self.id, name]
+        #)
+        #if set.count() > 0:
+        #    return set[0]
+        #else:
+        #    return None
 
+    @cachedmethod
+    def dps(self):
+        d = self.attributes_by_name()
+        if 'speed' not in d:
+            return dict()
+        rate = d['speed'].value
+        # Convert to seconds.
+        if rate > 100.0:
+                rate = rate / 1000.0
+
+        if 'damageMultiplier' in d:
+            mult = d['damageMultiplier'].value
+        else:
+            mult = 1.00
+
+        dps = dict()
+        if 'emDamage' in d:
+            dps['em'] = d['emDamage'].value * mult / rate
+        if 'explosiveDamage' in d:
+            dps['explosive'] = d['explosiveDamage'].value * mult / rate
+        if 'kineticDamage' in d:
+            dps['kinetic'] = d['kineticDamage'].value * mult / rate
+        if 'thermalDamage' in d:
+            dps['thermal'] = d['thermalDamage'].value * mult / rate
+
+        # Does it have missles?
+        if 'entityMissileTypeID' in d and 'missileLaunchDuration' in d:
+            if 'missileDamageMultiplier' in d:
+                mult = d['missileDamageMultiplier'].value
+            else:
+                mult = 1.00
+            rate = d['missileLaunchDuration'].value
+            # Sometimes the rate really IS in seconds.
+            if rate > 100.0:
+                rate = rate / 1000.0
+
+            type = Item.objects.get(id=d['entityMissileTypeID'].value)
+            attributes = type.attributes_by_name()
+            if 'emDamage' in attributes:
+                dps['missile_em'] = attributes['emDamage'].value * mult / rate
+            if 'explosiveDamage' in attributes:
+                dps['missile_explosive'] = attributes['explosiveDamage'].value * mult / rate
+            if 'kineticDamage' in attributes:
+                dps['missile_kinetic'] = attributes['kineticDamage'].value * mult / rate
+            if 'thermalDamage' in attributes:
+                dps['missile_thermal'] = attributes['thermalDamage'].value * mult / rate
+
+        for type in ('em', 'explosive', 'kinetic', 'thermal'):
+            if type in dps:
+                total = dps[type]
+            else:
+                total = 0
+            if 'missile_' + type in dps:
+                total = total + dps['missile_'+type]
+            dps['total_' + type] = total
+
+        return dps
+
+    @cachedmethod
     def effects(self):
         set = Effect.objects.extra(
             tables=['dgmtypeeffects'],

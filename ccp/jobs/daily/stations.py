@@ -1,6 +1,6 @@
 from django_extensions.management.jobs import DailyJob
 
-from eve.ccp.models import Station, Corporation, SolarSystem
+from eve.ccp.models import Station, Corporation, SolarSystem, Item
 
 from eve.lib import eveapi
 
@@ -30,6 +30,7 @@ def update_stations():
             solarsystem = SolarSystem.objects.get(id=s.solarSystemID)
             station = Station(id=s.stationID, solarsystem=solarsystem,
                               region=solarsystem.region, constellation=solarsystem.constellation)
+        station.type = Item.objects.get(id=s.stationTypeID)
         station.name = s.stationName
         station.corporation = corporation
         station.save()

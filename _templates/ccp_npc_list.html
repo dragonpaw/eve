@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load trade %}
+
+{% block content %}
+<ul class="links" >
+{% for o in objects %}{% spaceless %}
+    <li class="npc">
+        <a href="{{ o.get_absolute_url }}">
+            <span class="name">{{ o.name }}</span><br>
+            <span class="note">
+                {% ifequal browser 'iphone' %}
+                <span class="em">EM</span>
+                <span class="thermal">Therm</span>
+                <span class="kinetic">Kin</span>
+                <span class="explosive">Expl</span>
+                {% else %}
+                <span class="em">EM</span>
+                <span class="thermal">Thermal</span>
+                <span class="kinetic">Kinetic</span>
+                <span class="explosive">Explosive</span>
+                {% endifequal %}
+            </span>
+            <br/>
+            <span class="dps note">
+                Guns:
+                {% if o.dps.em %}<span class="em">{{ o.dps.em|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.thermal %}<span class="thermal">{{ o.dps.thermal|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.kinetic %}<span class="kinetic">{{ o.dps.kinetic|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.explosive %}<span class="explosive">{{ o.dps.explosive|floatformat:0 }}</span>{% endif %}
+            </span>
+            {% if o.attributes_by_name.entityMissileTypeID.value %}
+            <span class="missile_dps note">
+                Missile:
+                {% if o.dps.missile_em %}<span class="em">{{ o.dps.missile_em|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.missile_thermal %}<span class="thermal">{{ o.dps.missile_thermal|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.missile_kinetic %}<span class="kinetic">{{ o.dps.missile_kinetic|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.missile_explosive %}<span class="explosive">{{ o.dps.missile_explosive|floatformat:0 }}</span>{% endif %}
+            </span>
+            <span class="dps dps-total note">
+                Total:
+                {% if o.dps.total_em %}<span class="em">{{ o.dps.total_em|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.total_thermal %}<span class="thermal">{{ o.dps.total_thermal|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.total_kinetic %}<span class="kinetic">{{ o.dps.total_kinetic|floatformat:0 }}</span>{% endif %}
+                {% if o.dps.total_explosive %}<span class="explosive">{{ o.dps.total_explosive|floatformat:0 }}</span>{% endif %}
+            </span>
+            {% endif %}
+            <span class="resistances note">
+                Resist:
+                <span class="em">{{ o.attributes_by_name.armorEmDamageResonance.display_value }}</span>
+                <span class="thermal">{{ o.attributes_by_name.armorThermalDamageResonance.display_value }}</span>
+                <span class="kinetic">{{ o.attributes_by_name.armorKineticDamageResonance.display_value }}</span>
+                <span class="explosive">{{ o.attributes_by_name.armorExplosiveDamageResonance.display_value }}</span>
+            <br/>
+            {% if o.attributes_by_name.entityKillBounty %}
+            <span class="note">Bounty:
+                <span class="bounty value">{{ o.attributes_by_name.entityKillBounty.value|comma }} isk</span>
+            </span>
+            <br/>
+            {% endif %}
+            {% if o.attributes_by_name.warpScrambleStrength.value %}
+            <span class="scramble note">Warp Scramble:
+                <span class="value">Strength {{ o.attributes_by_name.warpScrambleStrength.value }},
+                Range: {{ o.attributes_by_name.warpScrambleRange.display_value }}
+                </span>
+            </span>
+            {% endif %}
+            {% if o.attributes_by_name.entityTargetJamMaxRange.value %}
+            <span class="jam note">Target Jam:
+            <span class="value">Range: {{  o.attributes_by_name.entityTargetJamMaxRange.display_value }}</span>
+            </span>
+            {% endif %}
+            {% if o.attributes_by_name.modifyTargetSpeedRange.value %}
+            <span class="webify note">Webify:
+            <span class="value">Range: {{  o.attributes_by_name.modifyTargetSpeedRange.display_value }}</span>
+            </span>
+            {% endif %}
+            {% if o.attributes_by_name.entitySensorDampenMaxRange.value %}
+            <span class="dampen note">Dampen:
+            <span class="value">Range: {{  o.attributes_by_name.entitySensorDampenMaxRange.display_value }}</span>
+            </span>
+            {% endif %}
+
+        </a>
+    </li>
+{% endspaceless %}
+{% endfor %}
+</ul>
+{% endblock %}

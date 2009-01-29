@@ -130,6 +130,8 @@
 		</ul>
 	{% endif %}
 
+    {% if item.marketgroup %}
+
     <h3>Market Indexes</h3>
     {% if indexes %}
     <p>Red value is highest buy offer price, green value is lowest sell offer price.</p>
@@ -211,5 +213,6 @@ collection, and sell some of the item.</p>
       <p>You have to log in if you want to see your transaction data.</p>
     {% endif %}
     </div>{% endspaceless %}
+    {% endif %}
 </div>
 {% endblock %}
