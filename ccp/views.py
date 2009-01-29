@@ -19,7 +19,7 @@ npc_nav = make_nav('NPCs', '/npc/', '07_07', note='All the things to blow up, or
 def generate_navigation(object):
     """Build up a heiracy of objects"""
     # IS it an NPC?
-    if object.group.category.name == 'Entity':
+    if isinstance(object, Item) and object.group.category.name == 'Entity':
         nav = (npc_nav, object.group, object)
     else:
         nav = [object]
