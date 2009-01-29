@@ -8,15 +8,15 @@
 	{% for o in item.stations.all %}{% spaceless %}
     	<li class="stations">
         	<a href="{{ o.solarsystem.get_absolute_url }}">
-            <img src="{{ o.icon32 }}">
-            {% expr o.solarsystem.security < 0.5 as lowsec %}
-            <span class="name">{{ o.name }}</span>
-	    <span class="solarsystem">{{ o.solarsystem }}</span>
-            <br>
-	    <span class="note corporation">{{ o.corporation }}</span>
-            {% if o.corporation.is_player_corp %}<span class="note alliance">{{ o.corporation.alliance }}</span>{% endif %}
-            <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">
-            ({{ o.solarsystem.security|floatformat:3 }})</span>
+                    <img src="{{ o.icon32 }}">
+                    {% expr o.solarsystem.security < 0.5 as lowsec %}
+                    <span class="name">{{ o.name }}</span>
+                    <br/>
+                    <span class="note corporation">{{ o.corporation }}</span>
+                    <span class="note solarsystem">{{ o.solarsystem }}</span>
+                    <br/>
+                    {% if o.corporation.is_player_corp %}<span class="note">{{ o.corporation.alliance }}</span>{% endif %}
+                    <span class="note right">{{ o.type }}
         	</a>
     	</li>
     {% endspaceless %}

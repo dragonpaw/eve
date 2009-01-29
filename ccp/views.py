@@ -4,7 +4,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.db.models import Q
 
-from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute
+from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute, Category, Group
 from eve.trade.models import BlueprintOwned
 from eve.lib.formatting import make_nav
 
@@ -14,16 +14,21 @@ from decimal import Decimal
 item_nav = make_nav("Items", "/items/", '24_05', note='All items in the game.')
 region_nav = make_nav("Regions", "/regions/", '17_03', note='The universe, and everything in it.')
 sov_nav = make_nav('Sovereignty Changes', '/sov/changes/', '70_11', note='Who lost and gained systems.')
+npc_nav = make_nav('NPCs', '/npc/', '07_07', note='All the things to blow up, or be blown up by.')
 
 def generate_navigation(object):
     """Build up a heiracy of objects"""
-    nav = [object]
-    current = object
-    while current.parent is not None:
-        nav.append(current.parent)
-        current = current.parent
-    nav.append( item_nav )
-    nav.reverse()
+    # IS it an NPC?
+    if object.group.category.name == 'Entity':
+        nav = (npc_nav, object.group, object)
+    else:
+        nav = [object]
+        current = object
+        while current.parent is not None:
+            nav.append(current.parent)
+            current = current.parent
+        nav.append( item_nav )
+        nav.reverse()
     return nav
 
 
@@ -353,4 +358,24 @@ def sov_changes(request, days=14):
     d['nav'] = [ sov_nav ]
 
     return render_to_response('sov_changes.html', d,
+                              context_instance=RequestContext(request))
+
+def npc_groups(request):
+    """Show all of the available groups of NPCs out there."""
+    d = {}
+    cat = Category.objects.get(name='Entity')
+    # Template needs the objects as dicts.
+    d['objects'] = [{ 'item':x, 'quantity':x.items.count() } for x in cat.groups.all() if x.items.count() > 0]
+    d['nav'] = [ npc_nav ]
+    return render_to_response('ccp_item_list.html', d,
+                              context_instance=RequestContext(request))
+
+def npc_group(request, slug):
+    """Show all the members of a single group"""
+    d = {}
+    group = Group.objects.get(slug=slug)
+    # Template needs the objects as dicts.
+    d['objects'] = group.items.all()
+    d['nav'] = [ npc_nav, group ]
+    return render_to_response('ccp_npc_list.html', d,
                               context_instance=RequestContext(request))

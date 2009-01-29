@@ -7,7 +7,7 @@
 {% for o in objects %}{% spaceless %}
 <tr>
 	<td rowspan="2"><img src="{{ o.item.icon32 }}"></td>
-	<th colspan="2"><a href="{{ o.item.get_absolute_url }}">{{ o.item.name }}</a> 
+	<th colspan="2"><a href="{{ o.item.get_absolute_url }}">{{ o.item.name }}</a>
 	{% if o.quantity %}<span class="quantity"> x{{ o.quantity }}</span>{% endif %}
 	</th>
 	<td rowspan="2">{{ o.item.description }}</td>
@@ -38,4 +38,3 @@
 </ul>
 {% endifequal %}
 {% endblock %}
-
