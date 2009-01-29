@@ -15,8 +15,13 @@
                     <span class="note corporation">{{ o.corporation }}</span>
                     <span class="note solarsystem">{{ o.solarsystem }}</span>
                     <br/>
-                    {% if o.corporation.is_player_corp %}<span class="note">{{ o.corporation.alliance }}</span>{% endif %}
+                    <span class="note">
+                        {% if o.corporation.is_player_corp %}{{ o.corporation.alliance }}
+                        {% else %}{{ o.corporation.faction }}
+                        {% endif %}
+                    </span>
                     <span class="note right">{{ o.type }}
+                    <br/>
         	</a>
     	</li>
     {% endspaceless %}
