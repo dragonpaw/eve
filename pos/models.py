@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import math
 import time
+from settings import logging
 
 from eve.ccp.models import MapDenormalize, SolarSystem, Item
 
@@ -224,6 +225,7 @@ class PlayerStation(models.Model):
             return True
 
     def refresh(self, record, api, corp=None, force=False):
+        log = logging.getLogger('pos.refresh')
         messages = []
 
         moon = MapDenormalize.objects.get(id=record.moonID)
@@ -234,6 +236,7 @@ class PlayerStation(models.Model):
             messages.append("Cached: POS: %s at %s." % (tower, moon))
             return messages
 
+        log.info('Reloading:', self)
         messages.append("Reloading: POS: %s at %s." % (tower, moon))
 
         detail = api.StarbaseDetail(itemID=record.itemID)
@@ -259,8 +262,10 @@ class PlayerStation(models.Model):
             assert isinstance(state_time, datetime)
             assert isinstance(self.state_time, datetime)
             #print "ID:", self.id, "s.st:", self.state_time, "st", state_time
-            hours_since_update = state_time - self.state_time
-            hours_since_update = hours_since_update.seconds / 60**2
+            delta = state_time - self.state_time
+            hours_since_update = (delta.seconds / 60**2) + (delta.days * 24)
+        log.debug('Time now: %s, Then: %s' % (self.state_time, state_time))
+        log.debug("Hours since update: %d." % hours_since_update)
 
         self.state = record.state
         self.online_time = online_time
@@ -289,10 +294,18 @@ class PlayerStation(models.Model):
             type = Item.objects.get(id=fuel_type.typeID)
             fuel = self.fuel.get(type=type)
             purpose = fuel.purpose
+            messages.append(' %s (%s): %s' % (type.name, purpose, fuel.quantity) )
+            log.info('%s (%s): %s' % (type.name, purpose, fuel.quantity) )
 
-            if (purpose == 'CPU' or purpose == 'Power') and hours_since_update > 0:
+            #if purpose in (u'CPU', u'Power'):
+            #    log.debug('Matched cpu/power test.')
+            #if hours_since_update > 0:
+            #    log.debug('Matched hours > 0 test.')
+            if purpose in ('CPU', 'Power') and hours_since_update > 0:
+                log.debug('Recalculating consumption.')
                 consumed = (fuel.quantity - fuel_type.quantity) / hours_since_update
                 max = Decimal(fuel.max_consumption)
+                log.debug('Consumed: %s', consumed)
                 if consumed < 0:
                     continue
                 if consumed > max:
@@ -300,10 +313,12 @@ class PlayerStation(models.Model):
 
                 if purpose == 'CPU':
                     self.cpu_utilization = consumed / max
-                    messages.append("Calculated: CPU Utilization: %0.2f" % self.cpu_utilization)
+                    messages.append("  Calculated: CPU Utilization: %0.2f" % self.cpu_utilization)
+                    log.debug('CPU Util:', self.cpu_percent)
                 else:
                     self.power_utilization = consumed / max
-                    messages.append("Calculated: Power Utilization: %0.2f" % self.power_utilization)
+                    messages.append("  Calculated: Power Utilization: %0.2f" % self.power_utilization)
+                    log.debug('Power Util:', self.power_percent)
                 self.save()
 
             fuel.quantity=fuel_type.quantity
@@ -352,7 +367,7 @@ class FuelSupply(models.Model):
     @property
     def purpose(self):
         fuel_info = self.station.tower.fuel.get(type=self.type)
-        return fuel_info.purpose
+        return fuel_info.purpose.name
 
     @property
     def max_consumption(self):
@@ -365,18 +380,19 @@ class FuelSupply(models.Model):
 
     @property
     def consumption(self):
-        fuel_info = self.fuel_info
-        burn_rate = self.max_consumption
+        purpose = self.purpose
 
-        if fuel_info.purpose == 'Power':
-            burn_rate = math.ceil(burn_rate * self.station.power_utilization)
-        elif fuel_info.purpose == 'CPU':
-            burn_rate = math.ceil(burn_rate * self.station.cpu_utilization)
+        if purpose == 'Power':
+            burn_rate = math.ceil(self.max_consumption * self.station.power_utilization)
+        elif purpose == 'CPU':
+            burn_rate = math.ceil(self.max_consumption * self.station.cpu_utilization)
+        else:
+            burn_rate = self.max_consumption
 
         return int(burn_rate)
 
     def goal(self, days):
-        if self.fuel_info.purpose == 'Reinforce':
+        if self.purpose == 'Reinforce':
             attrib = self.station.tower.attribute_by_name('capacitySecondary')
             max_volume = attrib.value
             need = int(max_volume / self.type.volume)
@@ -413,9 +429,7 @@ class FuelSupply(models.Model):
             else:
                 return remaining
         else:
-            #remaining += timedelta(hours=1) # Add the remainder of the hour already paid for.
-            remaining += self.station.state_time
-            remaining -= now
+            remaining += (self.station.state_time - now)
             return max(remaining, timedelta(0))
 
     @property

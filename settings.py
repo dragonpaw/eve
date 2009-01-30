@@ -5,6 +5,11 @@ from database_settings import *
 import sys
 import deseb
 import os
+from eve.lib.log import logging, setup_log
+
+LOGDIR = os.path.abspath(os.path.dirname(__file__))
+LOGFILE = "django.log"
+setup_log(os.path.join(LOGDIR, LOGFILE))
 
 os.environ['TZ'] = 'UTC'
 
@@ -65,7 +70,8 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
-    'eve.tracker.middleware.ChangeLogMiddleware'
+    #'eve.lib.debug_middleware.DebugFooter',
+    'eve.tracker.middleware.ChangeLogMiddleware',
 )
 
 ROOT_URLCONF = 'eve.urls'
