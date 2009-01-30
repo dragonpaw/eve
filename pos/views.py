@@ -401,7 +401,7 @@ def monkey_list(request):
 
     profile = request.user.get_profile()
     for character in profile.characters.all():
-        if not character.is_director or character.is_pos_monkey:
+        if not (character.is_director or character.is_pos_monkey):
             continue
         corporations.append(character.corporation)
 

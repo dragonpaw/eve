@@ -236,7 +236,7 @@ class PlayerStation(models.Model):
             messages.append("Cached: POS: %s at %s." % (tower, moon))
             return messages
 
-        log.info('Reloading:', self)
+        log.info('Reloading: %s' % self)
         messages.append("Reloading: POS: %s at %s." % (tower, moon))
 
         detail = api.StarbaseDetail(itemID=record.itemID)
@@ -305,7 +305,7 @@ class PlayerStation(models.Model):
                 log.debug('Recalculating consumption.')
                 consumed = (fuel.quantity - fuel_type.quantity) / hours_since_update
                 max = Decimal(fuel.max_consumption)
-                log.debug('Consumed: %s', consumed)
+                log.debug('Consumed: %s' % consumed)
                 if consumed < 0:
                     continue
                 if consumed > max:
@@ -314,11 +314,11 @@ class PlayerStation(models.Model):
                 if purpose == 'CPU':
                     self.cpu_utilization = consumed / max
                     messages.append("  Calculated: CPU Utilization: %0.2f" % self.cpu_utilization)
-                    log.debug('CPU Util:', self.cpu_percent)
+                    log.debug('CPU Util:' % self.cpu_percent)
                 else:
                     self.power_utilization = consumed / max
                     messages.append("  Calculated: Power Utilization: %0.2f" % self.power_utilization)
-                    log.debug('Power Util:', self.power_percent)
+                    log.debug('Power Util:' % self.power_percent)
                 self.save()
 
             fuel.quantity=fuel_type.quantity
