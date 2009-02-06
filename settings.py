@@ -5,11 +5,13 @@ from database_settings import *
 import sys
 import deseb
 import os
-from eve.lib.log import logging, setup_log
+import pwd
+from lib.log import logging, setup_log
 
 LOGDIR = os.path.abspath(os.path.dirname(__file__))
 LOGFILE = "django.log"
-setup_log(os.path.join(LOGDIR, LOGFILE))
+user = pwd.getpwuid(os.getuid())[0]
+setup_log(os.path.join(LOGDIR, 'log', user+"-"+LOGFILE))
 
 os.environ['TZ'] = 'UTC'
 

@@ -163,7 +163,9 @@ class PlayerStation(models.Model):
 
     @property
     def sov_level(self):
-        if self.corporation.alliance_id == self.constellation.alliance_id:
+        if self.corporation.alliance_id is None:
+            return 'None'
+        elif self.corporation.alliance_id == self.constellation.alliance_id:
             return 'Constellation'
         elif self.corporation.alliance_id == self.solarsystem.alliance_id:
             return 'System'
@@ -236,7 +238,7 @@ class PlayerStation(models.Model):
             messages.append("Cached: POS: %s at %s." % (tower, moon))
             return messages
 
-        log.info('Reloading: %s' % self)
+        log.info('Reloading: %s' % self.id)
         messages.append("Reloading: POS: %s at %s." % (tower, moon))
 
         detail = api.StarbaseDetail(itemID=record.itemID)
@@ -264,8 +266,16 @@ class PlayerStation(models.Model):
             #print "ID:", self.id, "s.st:", self.state_time, "st", state_time
             delta = state_time - self.state_time
             hours_since_update = (delta.seconds / 60**2) + (delta.days * 24)
-        log.debug('Time now: %s, Then: %s' % (self.state_time, state_time))
+        log.debug('Time then: %s, Now: %s' % (self.state_time, state_time))
         log.debug("Hours since update: %d." % hours_since_update)
+        messages.append('Hours since update: %d.' % hours_since_update)
+
+        if hours_since_update == 0:
+            messages.append('Bypassing update as 0 hours elapsed, so avoid CCP bug with StationDetaiil API.')
+            self.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)
+            self.last_updated = datetime.utcnow()
+            self.save()
+            return messages
 
         self.state = record.state
         self.online_time = online_time
@@ -295,7 +305,7 @@ class PlayerStation(models.Model):
             fuel = self.fuel.get(type=type)
             purpose = fuel.purpose
             messages.append(' %s (%s): %s' % (type.name, purpose, fuel.quantity) )
-            log.info('%s (%s): %s' % (type.name, purpose, fuel.quantity) )
+            log.info('%s: %s (%s): %s -> %s (%d hours)' % (self.id, type.name, purpose, fuel.quantity, fuel_type.quantity, hours_since_update) )
 
             #if purpose in (u'CPU', u'Power'):
             #    log.debug('Matched cpu/power test.')
@@ -313,12 +323,12 @@ class PlayerStation(models.Model):
 
                 if purpose == 'CPU':
                     self.cpu_utilization = consumed / max
-                    messages.append("  Calculated: CPU Utilization: %0.2f" % self.cpu_utilization)
-                    log.debug('CPU Util:' % self.cpu_percent)
+                    messages.append("  Calculated: CPU Utilization: %d%%" % self.cpu_percent)
+                    log.info('%s: CPU Util: %0.2f' % (self.id, self.cpu_utilization))
                 else:
                     self.power_utilization = consumed / max
-                    messages.append("  Calculated: Power Utilization: %0.2f" % self.power_utilization)
-                    log.debug('Power Util:' % self.power_percent)
+                    messages.append("  Calculated: Power Utilization: %d%%" % self.power_percent)
+                    log.info('%s: Power Util: %0.2f' % (self.id, self.power_utilization))
                 self.save()
 
             fuel.quantity=fuel_type.quantity
