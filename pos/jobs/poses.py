@@ -67,9 +67,11 @@ def update_poses(corp=None, force=False):
                     print "  " + m
 
             # Look for POSes that got taken down.
-            for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
+            for pos in PlayerStation.objects.filter(corporation=c).exclude(id__in=ids):
                 print "  Removed POS: %s will be purged." % pos.moon
                 pos.delete()
         except Exception, e:
-            print "ERROR refreshing corporation: %s" % c
-            print str(e)
+            print "ERROR refreshing corporation '%s': %s" % (c, e)
+            print '-'*60
+            traceback.print_exc()
+            print '-'*60
