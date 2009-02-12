@@ -13,7 +13,6 @@ urlpatterns = patterns('eve.pos.views',
     #(r'^(?P<station_id>\d+)/revoke/(?P<character_name>.+)/$', 'delegate_delete'),
 
     (r'^profit/$', 'profits'),
-    (r'^consumption/$', 'consumption'),
 
     (r'^helpers/$', 'monkey_list'),
 )
