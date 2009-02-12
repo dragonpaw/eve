@@ -74,7 +74,6 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     #'django.middleware.cache.CacheMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -82,6 +81,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
     #'eve.lib.debug_middleware.DebugFooter',
     'eve.tracker.middleware.ChangeLogMiddleware',
+    'eve.debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
 ROOT_URLCONF = 'eve.urls'
@@ -116,7 +116,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.markup',
     'django_extensions',
-    'debug_toolbar',
+    'eve.debug_toolbar',
     'eve.mining',
     'eve.tracker',
     'eve.ccp',
@@ -126,7 +126,7 @@ INSTALLED_APPS = (
     'eve.pos',
 )
 
-CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=60"
+CACHE_BACKEND = "memcached://127.0.0.1:11211/"
 CACHE_MIDDLEWARE_KEY_PREFIX = 'eve_widget'
 
 if sys.platform == 'win32':

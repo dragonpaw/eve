@@ -47,7 +47,7 @@ def solarsystem(request, name):
     d['title'] = "Solar System: %s" % item.name
     d['item'] = item
 
-    return render_to_response('ccp_solarsystem.html', d,
+    return render_to_response('solarsystem.html', d,
                               context_instance=RequestContext(request))
 
 @cache_page(60 * 60 * 2)
@@ -66,7 +66,7 @@ def constellation(request, name):
     d['item'] = item
 
 
-    return render_to_response('ccp_constellation.html', d,
+    return render_to_response('constellation.html', d,
                               context_instance=RequestContext(request))
 
 @cache_page(60 * 60 * 2)
@@ -84,7 +84,7 @@ def region(request, slug):
     d['item'] = item
 
 
-    return render_to_response('ccp_region.html', d,
+    return render_to_response('region.html', d,
                               context_instance=RequestContext(request))
 
 @cache_page(60 * 60 * 2)
@@ -103,7 +103,7 @@ def region_list(request):
 
     d['inline_nav'] = regions
 
-    return render_to_response('ccp_regions.html', d,
+    return render_to_response('regions.html', d,
                               context_instance=RequestContext(request))
 
 @cache_page(60 * 60 * 2)
@@ -114,7 +114,7 @@ def group_index(request):
     d['nav'] = [ item_nav ]
     d['objects'] = [{'item':x} for x in root_objects]
 
-    return render_to_response('ccp_item_list.html', d,
+    return render_to_response('item_list.html', d,
                               context_instance=RequestContext(request))
 
 # Cannot cache as it depends on user prices.
@@ -136,7 +136,7 @@ def group(request, slug):
     d['objects'] = groups + items
 
     d['objects'].sort(key=lambda x:x['item'].name)
-    return render_to_response('ccp_item_list.html', d,
+    return render_to_response('item_list.html', d,
                               context_instance=RequestContext(request))
 
 
@@ -355,7 +355,7 @@ def item(request, slug, days=30):
 
     d['blueprint'] = my_blueprint
 
-    return render_to_response('ccp_item.html', d,
+    return render_to_response('item.html', d,
                               context_instance=RequestContext(request))
 
 @cache_page(60 * 60 * 4)
@@ -381,7 +381,7 @@ def npc_groups(request):
     ).select_related()
     d['objects'] = [{ 'item':x, 'quantity':x.item_count } for x in groups if x.item_count > 0]
     d['nav'] = [ npc_nav ]
-    return render_to_response('ccp_item_list.html', d,
+    return render_to_response('item_list.html', d,
                               context_instance=RequestContext(request))
 
 @cache_page(60 * 60 * 4)
@@ -392,5 +392,5 @@ def npc_group(request, slug):
     # Template needs the objects as dicts.
     d['objects'] = group.items.all()
     d['nav'] = [ npc_nav, group ]
-    return render_to_response('ccp_npc_list.html', d,
+    return render_to_response('npc_list.html', d,
                               context_instance=RequestContext(request))

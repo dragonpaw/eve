@@ -17,8 +17,6 @@ features_nav = make_nav('Features', '/features/', '06_07',
                         note='Reasons why you want to use the Widget.')
 
 def home(request):
-    d = {}
-
     user = request.user
 
     objects = [about_nav, changelog_nav,
@@ -27,7 +25,10 @@ def home(request):
                features_nav, salvage_nav,
                status_nav, npc_nav,
     ]
-    d['inline_nav'] = objects
+
+    d = {
+        'inline_nav': objects
+    }
 
     if user.is_authenticated() and user.username in ('ash', 'Ductape'):
         objects.append(ship_fit_nav)

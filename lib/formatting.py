@@ -2,6 +2,7 @@ import datetime
 import re
 from decimal import Decimal, InvalidOperation
 from django.template.defaultfilters import slugify
+import logging
 
 comma_regex = re.compile(r'^(-?\d+)(\d{3})')
 def comma(num, separator=','):
@@ -85,6 +86,9 @@ def title(nav):
 
 class NavigationElement:
     def __init__(self, name, url, icon, note=None, id=None):
+        self.log = logging.getLogger('eve.lib.formatting.NavigationElement')
+        self.log.info('Initializing new NavElement: %s' % name)
+
         from eve.ccp.models import get_graphic
         if icon is None:
             graphic = get_graphic('09_14')
@@ -98,6 +102,7 @@ class NavigationElement:
         self.id = id
         self.icons = {}
         if self.graphic:
+            self.log.debug('Caching icons.')
             for size in (16, 32, 64, 128):
                 self.icons[size] = self.graphic.get_icon(size)
 
@@ -109,8 +114,10 @@ class NavigationElement:
 
     def get_icon(self, size):
         if self.graphic is None:
+            self.log.debug('Returning None graphic.')
             return None
         else:
+            self.log.debug('Returning cached graphic.')
             return self.icons[size]
 
     @property

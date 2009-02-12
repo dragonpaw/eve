@@ -53,6 +53,8 @@ class PublishedManager(models.Manager):
 
 
 class Base(models.Model):
+    deleteable = False
+
     def get_icon(self, size):
         return None
 
@@ -79,6 +81,12 @@ class Base(models.Model):
             return self.name
         else:
             return u'Undefined __unicode__'
+
+    def delete(self):
+        if self.deleteable:
+            super(Base, self).delete()
+        else:
+            raise NotImplementedError('Tried to remove an immutable.')
 
     class Meta:
         abstract = True
@@ -139,6 +147,8 @@ class Alliance(Base):
     member_count = models.IntegerField()
     slug = models.SlugField(max_length=100)
     objects = models.Manager()
+
+    deleteable = True
 
     def get_icon(self, size):
         if alliance_graphics.has_key(self.id):
@@ -282,7 +292,7 @@ class Attribute(CachedGet, Base):
         else:
             return self.attributename
 
-    @cachedmethod(60*60*4)
+    @cachedmethod(60*4)
     def get_icon(self, size):
         if self.displayname == 'Used with (chargegroup)':
             return Group.objects.get(pk=self.get_value()).get_icon(size)
@@ -495,9 +505,6 @@ class Constellation(Base):
         else:
             return None
 
-    def delete(self):
-        raise 'ERROR: Tried to remove an immutable.'
-
 
 class ContrabandType(Base):
     factionid = models.IntegerField()
@@ -554,6 +561,7 @@ class Corporation(Base):
     cached_until = models.DateTimeField(blank=True, null=True)
 
     _name = None
+    deleteable = True
 
     class Meta:
         ordering = ('id',)
@@ -768,7 +776,7 @@ class Group(Base):
     published = models.BooleanField(default=True, null=True)
     slug = models.SlugField()
 
-    @cachedmethod(60*60*24)
+    @cachedmethod(60*24)
     def get_icon(self, size):
         return self.graphic.get_icon(size)
 
@@ -881,7 +889,6 @@ class ItemSkillManager(models.Manager):
             published = True,
         )
 
-
 class Item(Base):
     """This table contains information about each item that you can aquire in
     EVE. Weapons, Ammo, etc...
@@ -920,6 +927,12 @@ class Item(Base):
     slug = models.SlugField(max_length=100)
     objects = models.Manager()
 
+    object_cache = {}
+
+    #def __init__(self, *args, **kwargs):
+    #    super(Item, self).__init__(*args, **kwargs)
+    #    self.icon_cache = {}
+
     #class Meta:
         #pass
         # If I use 'name' instead of 'typename', then the BlueprintDetails model dies
@@ -927,6 +940,7 @@ class Item(Base):
         #ordering = ['name', ]
 
     @property
+    @cachedmethod(60*6, '%(id)d')
     def category(self):
         return self.group.category.name
 
@@ -946,7 +960,17 @@ class Item(Base):
 
     # All things iconic.
 
+    #@cachedmethod(60*6)
     def get_icon(self, size):
+        from django.core.cache import cache
+        key = 'eve.ccp.models.Item.get_icon(%d,%d)' % (self.id, size)
+        value = cache.get(key)
+        if value:
+            return value
+
+        #if size in self.icon_cache:
+        #    return self.icon_cache[size]
+
         '''
         Get icons for all of the items.
         # Find some objects.
@@ -959,23 +983,29 @@ class Item(Base):
         >>> Item.objects.get(name='Deep Core Mining').icon128
         u'/static/ccp-icons/white/128_128/icon50_11.png'
         '''
-        name = self.category
-        if name in ('Blueprint', 'Drone', 'Ship', 'Station',
-                    'Structure', 'Deployable', 'Entity'):
+        cats = (
+            'Blueprint', 'Drone', 'Ship', 'Station',
+            'Structure', 'Deployable', 'Entity'
+        )
+        cat = self.category
+        if cat in cats:
             d = {
-                'cat':     name.lower(),
+                'cat':     cat.lower(),
                 'dir':     Graphic.dir,
                 'size':    size,
                 'color':   Graphic.color,
                 'item_id': self.id,
             }
-            return "%(dir)s/%(cat)s/%(size)d_%(size)d/%(item_id)d.png" % d
+            icon = "%(dir)s/%(cat)s/%(size)d_%(size)d/%(item_id)d.png" % d
         else:
-            return self.graphic.get_icon(size)
+            icon = self.graphic.get_icon(size)
+
+        cache.set(key, icon, 60*60*6)
+        return icon
 
 
     # Fancy way to get the attributes and their values.
-    @cachedmethod(60*60, '%(id)d')
+    @cachedmethod(60, '%(id)d')
     def attributes(self):
         set = Attribute.objects.extra(
             select={
@@ -998,7 +1028,7 @@ class Item(Base):
                     s.graphic = get_graphic('50_11')
                     s.valuefloat = set.filter(attributename='requiredSkill2Level')[0].valueint
                 if s.attributename == 'requiredSkill3':
-                    s.graphic = get_graphic(icon='50_14')
+                    s.graphic = get_graphic('50_14')
                     s.valuefloat = set.filter(attributename='requiredSkill3Level')[0].valueint
             except IndexError:
                 s.valuefloat = 1
@@ -1008,7 +1038,7 @@ class Item(Base):
         #set = [x for x in set if x.published]
         return set
 
-    @cachedmethod(60*60, '%(id)d')
+    @cachedmethod(60, '%(id)d')
     def attributes_by_name(self):
         return dict([(a.attributename, a) for a in self.attributes()])
 
@@ -1036,7 +1066,7 @@ class Item(Base):
         #else:
         #    return None
 
-    @cachedmethod(60*60, '%(id)d')
+    @cachedmethod(60, '%(id)d')
     def dps(self):
         d = self.attributes_by_name()
         if 'speed' not in d:
@@ -1094,7 +1124,7 @@ class Item(Base):
 
         return dps
 
-    @cachedmethod(60*60, '%(id)d')
+    @cachedmethod(60, '%(id)d')
     def effects(self):
         set = Effect.objects.extra(
             tables=['dgmtypeeffects'],
@@ -1163,7 +1193,7 @@ class Item(Base):
         item = self
         if self.is_blueprint is False:
             item = self.blueprint
-        assert(item.blueprint_details_qs.count() == 1)
+        #assert(item.blueprint_details_qs.count() == 1)
         return item.blueprint_details_qs.all()[0]
 
     @property
@@ -1182,17 +1212,19 @@ class Item(Base):
         None
 
         '''
-        if self.is_blueprint:
-            return self
+        if hasattr(self, '_blueprint'):
+            return self._blueprint
+        elif self.is_blueprint:
+            blueprint = self
         elif self.blueprint_madeby_qs.count() > 0:
-            assert(self.blueprint_madeby_qs.count() == 1)
+            #assert(self.blueprint_madeby_qs.count() == 1)
             blueprint = self.blueprint_madeby_qs.all()[0].id
-            if blueprint.published:
-                return blueprint
-            else:
-                return None
+            if not blueprint.published:
+                blueprint = None
         else:
-            return None
+            blueprint = None
+        self._blueprint = blueprint
+        return blueprint
 
     @property
     def blueprint_makes(self):
@@ -1230,6 +1262,7 @@ class Item(Base):
     def refines(self):
         return self.materials(activity='Refining')
 
+
 class MapDenormalize(Base):
     id = models.IntegerField(primary_key=True, db_column='itemid')
     type = models.ForeignKey('Item', db_column='typeid')
@@ -1249,6 +1282,7 @@ class MapDenormalize(Base):
     security = models.FloatField(null=True, blank=True)
     celestialindex = models.IntegerField(null=True, blank=True)
     orbitindex = models.IntegerField(null=True, blank=True)
+
 
 class MapLandmark(Base):
     id = models.IntegerField(primary_key=True, db_column='landmarkid')
@@ -1300,9 +1334,17 @@ class MarketGroup(Base):
     def get_absolute_url(self):
         return "/items/%s/" % self.slug
 
-    @cachedmethod(60*60)
     def get_icon(self, size):
-        return self.graphic.get_icon(size)
+        from django.core.cache import cache
+        key = 'eve.ccp.models.MarketGroup.get_icon(%d,%d)' % (self.id, size)
+        value = cache.get(key)
+        if value:
+            return value
+
+        value = self.graphic.get_icon(size)
+        cache.set(key, value)
+        return value
+
 
 class MaterialPublishedManager(models.Manager):
     def get_query_set(self):
@@ -1356,6 +1398,7 @@ class Name(Base):
     group = models.ForeignKey('Group', db_column='groupid', related_name='names')
     type = models.ForeignKey('Item', db_column='typeid', related_name='names',)
 
+
 class Race(Base):
     """Table contains the basic races in the game:
 
@@ -1370,9 +1413,6 @@ class Race(Base):
     typequantity = models.IntegerField(null=True, blank=True)
     graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
     shortdescription = models.TextField()
-
-    def delete(self):
-        raise 'ERROR: Tried to remove an immutable.'
 
 
 class Reaction(Base):
@@ -1463,9 +1503,6 @@ class Region(Base):
         else:
             return owner.get_icon(size)
 
-    def delete(self):
-        raise 'ERROR: Tried to remove an immutable.'
-
 
 class School(Base):
     id = models.IntegerField(primary_key=True, db_column='schoolid')
@@ -1520,8 +1557,6 @@ class SolarSystem(Base):
     sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDate')
     alliance_old = models.ForeignKey('Alliance', null=True, blank=True, related_name='solarsystems_lost')
 
-    def delete(self):
-        raise 'ERROR: Tried to remove an immutable.'
 
     def moons(self):
         return self.map.filter(type__name='Moon')
@@ -1574,8 +1609,6 @@ class Station(Base):
         #else:
         #    return self.type.get_icon(size)
 
-    def delete(self):
-        raise 'ERROR: Tried to remove an immutable.'
 
 
 class StationResource(Base):

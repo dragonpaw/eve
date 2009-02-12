@@ -6,12 +6,13 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect
 
 import re
+import logging
 
 from decimal import Decimal
 #from datetime import date
 
 from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue, JournalEntry
-from eve.ccp.models import Item
+from eve.ccp.models import Item, Material
 from eve.lib.formatting import make_nav
 
 index_nav = make_nav("Indexes", "/trade/indexes/", '25_08',
@@ -22,6 +23,16 @@ transaction_nav = make_nav("Transactions", "/trade/transactions/", '64_14',
                             note="Everything you've bought and sold.")
 salvage_nav = make_nav('Salvage', '/trade/salvage/', '69_11',
                        'Calculate what rigs you can make with that pile of salvage filling your hangar.')
+
+# Cache this crap!
+salvage_mat_q = Q(item__group__slug__startswith='rig-')
+salvage_mat_q &= ~Q(material__group__category__name='Skill')
+salvage_mat_q &= Q(activity__name='Manufacturing')
+SALVAGE_MATS = {}
+for m in Material.objects.filter(salvage_mat_q).select_related('item'):
+    if m.item not in SALVAGE_MATS:
+        SALVAGE_MATS[m.item] = []
+    SALVAGE_MATS[m.item].append((m.material_id, m.quantity))
 
 @login_required
 def transactions(request):
@@ -38,7 +49,7 @@ def transactions(request):
 
     d['transactions'] = t
 
-    return render_to_response('trade_transactions.html', d)
+    return render_to_response('transactions.html', d)
 
 @login_required
 def journal_detail(request, id=None):
@@ -53,7 +64,7 @@ def journal_detail(request, id=None):
     d['nav'] = [ transaction_nav, transaction ]
     d['transaction'] = transaction
 
-    return render_to_response('trade_journal_detail.html', d)
+    return render_to_response('journal_detail.html', d)
 
 @login_required
 def transaction_detail(request, id=None):
@@ -68,7 +79,7 @@ def transaction_detail(request, id=None):
     d['nav'] = [ transaction_nav, transaction]
     d['transaction'] = transaction
 
-    return render_to_response('trade_transaction_detail.html', d)
+    return render_to_response('transaction_detail.html', d)
 
 @login_required
 def blueprint_list(request):
@@ -77,7 +88,7 @@ def blueprint_list(request):
     d['user'] = request.user
     d['blueprints'] = request.user.get_profile().blueprints.select_related().order_by('ccp_item.name')
 
-    return render_to_response('trade_blueprint_list.html', d)
+    return render_to_response('blueprint_list.html', d)
 
 class BlueprintOwnedForm(forms.ModelForm):
     class Meta:
@@ -90,14 +101,13 @@ def blueprint_edit(request, slug):
     form = None
     d['item'] = item = get_object_or_404(Item, slug=slug)
     d['nav'] = [ blueprint_nav, {'name':'Add'} ]
-    template = 'trade_blueprint_edit.html'
     profile = request.user.get_profile()
     blueprint, _ = BlueprintOwned.objects.get_or_create(blueprint=item, user=profile)
 
     if request.method == 'GET':
         form = BlueprintOwnedForm(instance=blueprint)
         d['form'] = form
-        return render_to_response(template, d)
+        return render_to_response('blueprint_edit.html', d)
 
     assert(request.method == 'POST')
 
@@ -132,7 +142,7 @@ def market_index_list(request):
     d['indexes'] = MarketIndex.objects.filter(q).select_related().order_by('-trade_marketindex.priority')
 
 
-    return render_to_response('trade_indexes.html', d,
+    return render_to_response('indexes.html', d,
                               context_instance=RequestContext(request))
 
 def market_index_detail(request, name):
@@ -149,7 +159,7 @@ def market_index_detail(request, name):
     d['index'] = index
     d['values'] = index.items.select_related().order_by('ccp_item.name')
 
-    return render_to_response('trade_index_detail.html', d,
+    return render_to_response('index_detail.html', d,
                               context_instance=RequestContext(request))
 
 class FixedPriceForm(forms.Form):
@@ -189,7 +199,7 @@ def fixed_price_update(request, id):
 
         d['form'] = FixedPriceForm(initial={'buy_price':buy_price,'sell_price':sell_price})
 
-    return render_to_response('trade_index_update.html', d,
+    return render_to_response('index_update.html', d,
                               context_instance=RequestContext(request))
 
 
@@ -197,9 +207,10 @@ def salvage(request):
     d = {}
     d['items'] = Item.objects.filter(group__name='Salvaged Materials')
     d['nav'] = [salvage_nav]
+    log = logging.getLogger('eve.trade.views.salvage')
 
     if request.method != 'POST':
-        return render_to_response('trade_salvage.html', d,
+        return render_to_response('salvage.html', d,
                                   context_instance=RequestContext(request))
 
     assert(request.method=='POST')
@@ -217,7 +228,6 @@ def salvage(request):
     digits = re.compile(r'\d+')
 
     for key in request.POST.keys():
-
         id = int(key)
         if not id > 0:
             continue
@@ -228,37 +238,42 @@ def salvage(request):
         else:
             bits[id] = int(match.group(0))
 
-    q = Q(material__group__name='Salvaged Materials')
     rigs = {}
-    for rig in Item.objects.filter(marketgroup__parent__id='955'):
-        for m in rig.materials(activity='Manufacturing').filter(q):
-            id = m.material.id
-            can_make = int(bits[id] / m.quantity)
-            if rigs.has_key(rig.id):
-                rigs[rig.id]['qty'] = min(rigs[rig.id]['qty'], can_make)
+    for rig in SALVAGE_MATS:
+        log.debug('Trying: %s' % rig.name)
+        can_make = None
+        for id, quantity in SALVAGE_MATS[rig]:
+            log.debug('Material ID: %d, Qty: %d' % (id, quantity))
+            if id not in bits:
+                can_make = 0
+            elif can_make is None:
+                can_make = int(bits[id] / quantity)
             else:
-                rigs[rig.id] = { 'qty': can_make, 'item': rig }
+                can_make = min(bits[id] / quantity, can_make)
 
             # If we can make 0, it's not going to get higher.
-            if rigs[rig.id]['qty'] == 0:
+            if can_make == 0:
                 break
+        if can_make > 0:
+            rigs[rig] = can_make
+            log.debug('Can make: %s' % rig.name)
+
 
     objects = []
     d['objects'] = objects
-    for id in rigs.keys():
-        if rigs[id]['qty'] == 0:
-            continue
+    for rig in rigs.keys():
+        item = rig.blueprint_makes # We're actually storing the BP ID, not the item.
         if profile:
-            buy = profile.get_buy_price(rigs[id]['item'])
-            sell =  profile.get_sell_price(rigs[id]['item'])
+            buy = profile.get_buy_price(item)
+            sell =  profile.get_sell_price(item)
         else:
             buy = sell = None
         objects.append({
-                        'item':rigs[id]['item'],
-                        'quantity':rigs[id]['qty'],
+                        'item':item,
+                        'quantity':rigs[rig],
                         'buy':buy,
                         'sell':sell,
                         })
     objects.sort(key=lambda x:x['item'].name)
-    return render_to_response('ccp_item_list.html', d,
+    return render_to_response('item_list.html', d,
                               context_instance=RequestContext(request))

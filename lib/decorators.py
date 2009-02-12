@@ -58,6 +58,17 @@ def require(expr):
         return wrapper
     return decorator
 
+def render_to(template_name):
+    def renderer(func):
+        def wrapper(request, *args, **kw):
+            output = func(request, *args, **kw)
+            if not isinstance(output, dict):
+                return output
+            return render_to_response(request, template_name, output)
+        return wrapper
+    return renderer
+
+
 #from django.core.cache import cache
 #
 #def cachedmethod(cache_key, timeout=3600):
@@ -80,7 +91,7 @@ def require(expr):
 import cPickle as pickle
 import md5
 
-def cachedmethod(length=60*5, cache_key=None):
+def cachedmethod(length=5, cache_key=None):
     """
     A variant of the snippet posted by Jeff Wheeler at
     http://www.djangosnippets.org/snippets/109/
@@ -88,6 +99,8 @@ def cachedmethod(length=60*5, cache_key=None):
     Caches a function, using the function and its arguments as the key, and the return
     value as the value saved. It passes all arguments on to the function, as
     it should.
+
+    Length is specified in minutes. (Converted to second for cache backend.)
 
     The decorator itself takes a length argument, which is the number of
     seconds the cache will keep the result around.
@@ -124,7 +137,7 @@ def cachedmethod(length=60*5, cache_key=None):
                 #), length)
                 result = func(self, *args, **kwargs)
                 pickled = pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
-                cache.set(key, result, length)
+                cache.set(key, result, length*60)
                 return result
         wrapper.__module__ = func.__module__
         wrapper.__name__ = func.__name__

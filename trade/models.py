@@ -204,8 +204,11 @@ class BlueprintOwned(models.Model):
     def waste(self):
         base = Decimal(self.blueprint.blueprint_details.wastefactor)
         # Base is stored as full percentage.
-        base = base / 100
-        return Decimal(str(base))/(1+self.me)
+        base /= 100
+        if self.me >= 0:
+            return base / (1+self.me)
+        else:
+            return base * abs(self.me)
 
     def waste_display(self):
         return "%0.2f %%" % (self.waste()*100)

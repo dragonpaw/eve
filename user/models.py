@@ -13,7 +13,6 @@ from django.db.models.signals import post_save
 from eve.lib import eveapi
 from eve.lib.formatting import comma
 
-from eve.ccp.models import Corporation, Item, Station
 from eve.trade.models import Transaction, JournalEntry, MarketIndexValue, MarketIndex
 from eve.pos.models import PlayerStation
 from eve.lib.decorators import cachedmethod
@@ -505,6 +504,8 @@ class Character(models.Model):
         return messages
 
     def refresh_character(self, force=False):
+        from eve.ccp.models import Corporation
+
         messages = []
         if not force and self.cached_until and self.cached_until > datetime.utcnow():
             messages.append("Character: %s (%d): Still cached." % (self.name, self.id))
@@ -591,6 +592,8 @@ class Character(models.Model):
         return ['Wallet balance: %s ISK' % comma(self.isk)]
 
     def refresh_skills(self):
+        from eve.ccp.models import Item
+
         me = self.api_character()
         skills = 0
         points = 0
@@ -675,6 +678,8 @@ class Character(models.Model):
                 raise
 
     def update_transactions_single(self, t):
+        from eve.ccp.models import Item, Station
+
         if t.transactionType == 'buy':
             sold = False
         else:
