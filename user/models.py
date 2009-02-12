@@ -16,6 +16,7 @@ from eve.lib.formatting import comma
 from eve.ccp.models import Corporation, Item, Station
 from eve.trade.models import Transaction, JournalEntry, MarketIndexValue, MarketIndex
 from eve.pos.models import PlayerStation
+from eve.lib.decorators import cachedmethod
 
 API = eveapi.get_api()
 
@@ -144,6 +145,7 @@ class UserProfile(models.Model):
         indexes = indexes.order_by('-trade_marketindex.priority')
         return indexes
 
+    @cachedmethod(60*5)
     def get_buy_price(self, type):
         indexes = self.get_indexes(type).filter(buy__gt=0)
 
@@ -152,6 +154,7 @@ class UserProfile(models.Model):
         else:
             return None
 
+    @cachedmethod(60*5)
     def get_sell_price(self, type):
         indexes = self.get_indexes(type).filter(sell__gt=0)
 

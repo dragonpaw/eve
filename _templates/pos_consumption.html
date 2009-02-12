@@ -3,33 +3,30 @@
 {% load markup %}
 
 {% block content %}
-<!-- fuels: {{ fuels|pprint|safe }} --> 
-{% for corp in fuels %}
-<h3>{{ corp.name }}</h3>
+{% for corp in fuels.values %}
+<h2>{{ corp.corp.name }}</h2>
 
-<h4>Shopping list for next {{ days }} days</h4>
+<h3>Shopping list for next {{ days }} days.</h3>
 
 <table class="pos-fuel">
     <tr>
     	<th>Fuel</th>
     	<th class="number">Need</th>
-    	<th class="number">Price</th>
-    	<th class="number">Total</th>
+    	<th class="number">Weekly</th>
     </tr>
-	{% for fuel in corp.fuel %}{% spaceless %}
+	{% for fuel in corp.fuels.values %}{% spaceless %}
 	{% if fuel.needed %}
 	<tr>
 	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
 	  <td>{{ fuel.needed|comma }}</td>
-	  <td>{{ fuel.buy_price|floatformat:2|comma }}</td>
-	  <td>{{ fuel.cost_needed|isk }}</td>
+	  <td>{{ fuel.weekly_consumption|comma }}</td>
 	</tr>
 	{% endif %}
 	{% endspaceless %}
 	{% endfor %}
-	<tr><th>Total cost:</th><td colspan="3">{{ corp.cost_total|floatformat:0|comma }} ISK</td></tr>
+	<tr><th>Total weekly fuel cost:</th><td colspan="3">{{ corp.weekly_cost|floatformat:0|comma }} ISK</td></tr>
 </table>
-	
+
 <p>Strontium need is based on the assumption that you wish to completely
 fill the Strontium bay on the towers.</p>
 
@@ -45,29 +42,38 @@ you will show a large need for robotics that you would not have if you
 balanced the fuel supplies. Please make sure your towers have a
 well-balanced fuel supply.</p>
 
-
-<h4>Weekly fuel use</h4>
-<table class="pos-fuel">
-    <tr>
-    	<th>Fuel</th>
-    	<th class="number">Loaded</th>
-    	<th class="number">Burn</th>
-    	<th class="number">Week</th>
-    </tr>
-	{% for fuel in corp.fuel %}{% spaceless %}
-	{% if fuel.weekly %}
-	<tr>
-	  <th><a href="{{ fuel.type.get_absolute_url }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
-	  <td>{{ fuel.quantity|comma }}</td>
-	  <td>{{ fuel.consumption|comma }}</td>
-	  <td>{{ fuel.weekly|comma }}</td>
-	</tr>
-	{% endif %}
-	{% endspaceless %}
-	{% endfor %}
-	<tr><th>Weekly cost:</th><td colspan="4">{{ corp.cost_weekly|floatformat:0|comma }} ISK</td></tr>
-</table>
-	
 {% endfor %}
+
+<h4>Tower detail</h4>
+<ul class="links">
+	{% for pos in poses %}
+	<li class="pos-cost">
+	<a href="{{ pos.get_absolute_url }}">
+	<img src="{{ pos.icon32 }}">
+	<span class="name">{{ pos.moon }}</span>
+	{% if pos.is_profitable %}
+	<span class="right profit">+ {{ pos.weekly_net|floatformat:0|comma }}</span>
+	{% else %}
+	<span class="right cost">{{ pos.weekly_net|floatformat:0|comma }}</span>
+	{% endif %}
+        <br/>
+	{% if pos.reactions.count %}
+        <span class="note buy">Cost: {{ pos.weekly_cost|isk }}</span>
+        <span class="note sell right">Value: {{ pos.weekly_value|isk }}</span>
+	{% for r in pos.reactions.all %}
+            <br/><span class="note">
+	    {% if r.is_mining %}
+		Mining: {{ r.type }}
+	    {% else %}
+		Reacting: {{ r.type }}
+	    {% endif %}
+            </span>
+	{% endfor %}
+	{% else %}
+        <span class="no-mining">No reactions or mining.</span>
+	{% endif %}
+	</a></li>
+	{% endfor %}
+</ul>
 
 {% endblock %}

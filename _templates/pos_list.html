@@ -3,18 +3,21 @@
 {% load markup %}
 
 {% block content %}
-<!-- poses: {{ poses|pprint }} -->
 {% if poses %}
 {% include "include_inlinenav.html" %}
 
-{% for corp in poses %}
-<!-- corp: {{ corp|pprint }} -->
-<h3>{{ corp.name }}</h3>
-{% regroup corp.pos by owner as owner_list %}
-{% for owner in owner_list %}
-<h4>{% ifequal owner.grouper None %}Corporate Use{% else %}{{ owner.grouper }}{% endifequal %}</h4>
-	<ul class="links">
-	{% for pos in owner.list %}
+<ul class="links">
+{% for pos in poses %}
+    {% ifchanged pos.corporation_id %}<h3>{{ pos.corporation.name }}</h3>{% endifchanged %}
+    {% ifchanged pos.owner_id %}
+        <h4>
+            {% if pos.owner_id %}
+                {{ pos.owner.name }}
+            {% else %}
+                Corporate Use
+            {% endif %}
+        </h4>
+    {% endifchanged %}
 		<li class="pos">{% spaceless %}
 			<a href="{{ pos.get_absolute_url }}">
 			<img src="{{ pos.tower.icon32 }}">
@@ -35,10 +38,8 @@
         {% endif %}
     		</a>
     	</li>{% endspaceless %}
-	{% endfor %}
-	</ul>
 {% endfor %}
-{% endfor %}
+</ul>
 {% else %}
 <p>You are not director in any corporation owning a station.</p>
 {% endif %}

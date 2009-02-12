@@ -5,9 +5,16 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 import math
 import time
-from settings import logging
+from eve.settings import logging
+from eve.lib.decorators import cachedmethod
 
 from eve.ccp.models import MapDenormalize, SolarSystem, Item
+
+MOON_MINERALS = [x.id for x in Item.objects.filter(group__name = 'Moon Materials')]
+STRONT = Item.objects.get(name='Strontium Clathrates')
+VOLUME_CACHE = {
+    STRONT.id: STRONT.volume,
+}
 
 #class FuelDepot(models.Model):
 #    location = models.ForeignKey('ccp.SolarSystem')
@@ -78,10 +85,12 @@ class PlayerStation(models.Model):
     cpu_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
     power_utilization = models.DecimalField(default=1, max_digits=6, decimal_places=4)
 
-    note = models.CharField(max_length=200, blank=True)
+    note = models.CharField(max_length=200, default='', blank=True)
     owner = models.ForeignKey('user.Character', blank=True, null=True)
 
     fueled_until = models.DateTimeField(blank=True, null=True)
+    sov_fuel_rate = models.DecimalField(default=1, max_digits=6, decimal_places=4)
+    sov_level = models.CharField(max_length=20, default='None')
 
     class Meta:
         ordering = ['moon']
@@ -112,20 +121,22 @@ class PlayerStation(models.Model):
     @property
     def state_name(self):
         return [s for s in self.POS_STATES if s[0] == self.state][0][1]
+        #return self.POS_STATES[self.state]
 
     def get_absolute_url(self):
-        return "/pos/%d/fuel/" % self.id
+        return "/pos/%d/detail/" % self.id
 
-    def get_profit_url(self):
-        return "/pos/%d/profit/" % self.id
+    #def get_profit_url(self):
+    #    return "/pos/%d/profit/" % self.id
 
     @property
     def cache_remaining(self):
         return max(self.cached_until - datetime.utcnow(), timedelta(0))
 
     @property
+    @cachedmethod(60*15, '%(id)d')
     def hours_of_fuel(self):
-        x = [f.hours_of_fuel for f in self.fuel.exclude(type__name='Strontium Clathrates')
+        x = [f.hours_of_fuel for f in self.fuel.exclude(purpose='Reinforce')
                     if f.consumption > 0]
         if len(x) == 0:
             return 0
@@ -133,9 +144,10 @@ class PlayerStation(models.Model):
             return min(x)
 
     @property
+    @cachedmethod(60*15, '%(id)d')
     def fuel_needed(self):
         hours = self.hours_of_fuel
-        fuels = [f.type for f in self.fuel.exclude(type__name='Strontium Clathrates')
+        fuels = [f.type for f in self.fuel.exclude(purpose='Reinforce')
                  if f.hours_of_fuel == hours and f.consumption > 0]
         return fuels
 
@@ -152,6 +164,7 @@ class PlayerStation(models.Model):
             self.fueled_until = self.state_time + remaining
 
     @property
+    @cachedmethod(60*15, '%(id)d')
     def time_remaining(self):
         if self.state_time is None:
             return None
@@ -160,26 +173,6 @@ class PlayerStation(models.Model):
         else:
             remaining = self.fueled_until - datetime.utcnow()
             return max(remaining, timedelta(0))
-
-    @property
-    def sov_level(self):
-        if self.corporation.alliance_id is None:
-            return 'None'
-        elif self.corporation.alliance_id == self.constellation.alliance_id:
-            return 'Constellation'
-        elif self.corporation.alliance_id == self.solarsystem.alliance_id:
-            return 'System'
-        else:
-            return 'None'
-
-    @property
-    def sov_fuel_rate(self):
-        if self.sov_level == 'Constellation':
-            return Decimal('0.70')
-        elif self.sov_level == 'System':
-            return Decimal('0.75')
-        else:
-            return Decimal(1)
 
     def setup_fuel_supply(self):
         for f in self.tower.fuel.all():
@@ -192,14 +185,11 @@ class PlayerStation(models.Model):
                 self.fuel.get(station=self, type=f.type)
             except FuelSupply.DoesNotExist:
                 self.fuel.create(
-                    type     = f.type,
-                    quantity = 0,
+                    type            = f.type,
+                    quantity        = 0,
+                    purpose         = f.purpose.name,
+                    max_consumption =  0,
                 )
-                #fuel.solarsystem = self.solarsystem,
-                #fuel.constellation = self.moon.constellation
-                #fuel.region = self.moon.region
-                #fuel.corporation = self.corporation
-
 
     @property
     def icon32(self):
@@ -208,16 +198,18 @@ class PlayerStation(models.Model):
     def reacted_quantities(self):
         d = {}
         for r in self.reactions.all():
-            for item, quantity in r.consumes():
-                if d.has_key(item.id):
-                    d[item.id]['quantity'] -= quantity
+            for item_id, quantity in r.inputs():
+                if item_id in d:
+                    d[item_id]['quantity'] -= quantity
                 else:
-                    d[item.id] = { 'quantity':-quantity, 'item':item }
-            for item, quantity in r.produces():
-                if d.has_key(item.id):
-                    d[item.id]['quantity'] += quantity
+                    item = Item.objects.get(id=item_id)
+                    d[item_id] = { 'quantity':-quantity, 'item':item }
+            for item_id, quantity in r.output():
+                if item_id in d:
+                    d[item_id]['quantity'] += quantity
                 else:
-                    d[item.id] = { 'quantity': quantity, 'item': item }
+                    item = Item.objects.get(id=item_id)
+                    d[item_id] = { 'quantity': quantity, 'item': item }
         return [(x['item'], x['quantity']) for x in d.values()]
 
     def refresh_needed(self):
@@ -277,6 +269,21 @@ class PlayerStation(models.Model):
             self.save()
             return messages
 
+        # Setup the sov level and fuel rate.
+        if self.corporation.alliance_id is None:
+            # This check covers non-alliance systems without sov.
+            self.sov_level = 'None'
+            self.sov_fuel_rate = Decimal(1)
+        elif self.corporation.alliance_id == self.constellation.alliance_id:
+            self.sov_level = 'Constellation'
+            self.sov_fuel_rate = Decimal('0.70')
+        elif self.corporation.alliance_id == self.solarsystem.alliance_id:
+            self.sov_level = 'System'
+            self.sov_fuel_rate = Decimal('0.75')
+        else:
+            self.sov_level = 'None'
+            self.sov_fuel_rate = Decimal(1)
+
         self.state = record.state
         self.online_time = online_time
         self.state_time = state_time
@@ -304,7 +311,8 @@ class PlayerStation(models.Model):
             type = Item.objects.get(id=fuel_type.typeID)
             fuel = self.fuel.get(type=type)
             purpose = fuel.purpose
-            messages.append(' %s (%s): %s' % (type.name, purpose, fuel.quantity) )
+
+            messages.append(' %s (%s): %s -> %s' % (type.name, purpose, fuel.quantity, fuel_type.quantity) )
             log.info('%s: %s (%s): %s -> %s (%d hours)' % (self.id, type.name, purpose, fuel.quantity, fuel_type.quantity, hours_since_update) )
 
             #if purpose in (u'CPU', u'Power'):
@@ -314,8 +322,8 @@ class PlayerStation(models.Model):
             if purpose in ('CPU', 'Power') and hours_since_update > 0:
                 log.debug('Recalculating consumption.')
                 consumed = (fuel.quantity - fuel_type.quantity) / hours_since_update
-                max = Decimal(fuel.max_consumption)
-                log.debug('Consumed: %s' % consumed)
+                max = Decimal(fuel.max_consumption * self.fuel_rate())
+                log.debug('Consumed: %s units.' % consumed)
                 if consumed < 0:
                     continue
                 if consumed > max:
@@ -357,11 +365,13 @@ class PlayerStation(models.Model):
 class FuelSupply(models.Model):
     station = models.ForeignKey(PlayerStation, related_name='fuel')
     type = models.ForeignKey('ccp.Item', related_name='active_stations_using')
+    quantity = models.IntegerField(default=0)
+    max_consumption = models.IntegerField(default=0)
+    purpose = models.CharField(max_length=10, default='Online')
     #solarsystem = models.ForeignKey('ccp.SolarSystem')
     #constellation = models.ForeignKey('ccp.Constellation')
     #region = models.ForeignKey('ccp.Region')
     #corporation = models.ForeignKey('ccp.Corporation', related_name='pos_fuels')
-    quantity = models.IntegerField()
 
     class Meta:
         ordering = ['type']
@@ -370,47 +380,51 @@ class FuelSupply(models.Model):
         return u"%s: %s (%d)" % (self.station, self.type, self.quantity)
 
     @property
+    @cachedmethod(60*60, '%(id)d')
     def fuel_info(self):
         fuel_info = self.station.tower.fuel.get(type=self.type)
         return fuel_info
 
-    @property
-    def purpose(self):
-        fuel_info = self.station.tower.fuel.get(type=self.type)
-        return fuel_info.purpose.name
+    #@property
+    #@cachedmethod(60*60, '%(id)d')
+    #def _purpose(self):
+    #    return self.fuel_info.purpose.name
+
+    #@property
+    #@cachedmethod(60*5, '%(id)d')
+    #def max_consumption(self):
+    #    fuel_info = self.fuel_info
+    #    burn_rate = int(fuel_info.quantity)
+    #    if fuel_info.purpose != 'Reinforce':
+    #        burn_rate = math.ceil(burn_rate * self.station.sov_fuel_rate)
+    #
+    #    return int(burn_rate)
 
     @property
-    def max_consumption(self):
-        fuel_info = self.fuel_info
-        burn_rate = int(fuel_info.quantity)
-        if fuel_info.purpose != 'Reinforce':
-            burn_rate = math.ceil(burn_rate * self.station.sov_fuel_rate)
-
-        return int(burn_rate)
-
-    @property
+    #@cachedmethod(60*5, '%(id)d')
     def consumption(self):
         purpose = self.purpose
+        if purpose == 'Reinforce':
+            rate = self.max_consumption
+        else:
+            rate = self.max_consumption * self.station.sov_fuel_rate
 
         if purpose == 'Power':
-            burn_rate = math.ceil(self.max_consumption * self.station.power_utilization)
+            rate = math.ceil(rate * self.station.power_utilization)
         elif purpose == 'CPU':
-            burn_rate = math.ceil(self.max_consumption * self.station.cpu_utilization)
-        else:
-            burn_rate = self.max_consumption
+            rate = math.ceil(rate * self.station.cpu_utilization)
 
-        return int(burn_rate)
+        return int(rate)
 
     def goal(self, days):
+        # The goal of stront is always to be full.
         if self.purpose == 'Reinforce':
             attrib = self.station.tower.attribute_by_name('capacitySecondary')
             max_volume = attrib.value
-            need = int(max_volume / self.type.volume)
+            need = int(max_volume / VOLUME_CACHE[self.type_id])
             return need
-
-        hours = days*24
-        need = self.consumption * hours
-        return need
+        else:
+            return self.consumption * 24 * days
 
     def need(self, days):
         need = self.goal(days) - self.quantity
@@ -432,7 +446,7 @@ class FuelSupply(models.Model):
         #remaining = max(remaining, 0) # Don't show negative values.
         now = datetime.utcnow()
 
-        if self.type.name == 'Strontium Clathrates':
+        if self.purpose == 'Reinforce':
             if self.station.is_reinforced:
                 remaining = self.station.state_time - now
                 return max(remaining, timedelta(0))
@@ -469,43 +483,43 @@ class Reaction(models.Model):
 
     @property
     def is_mining(self):
-        return self.type.group.name == 'Moon Materials'
+        return self.type_id in MOON_MINERALS
 
     @property
     def is_reaction(self):
-        if self.type.group.name == 'Moon Materials':
+        if self.type_id in MOON_MINERALS:
             return False
         else:
             return True
 
-    def reaction(self):
-        return self.type.reacts.all()[0].reaction
-
-    def inputs(self):
-        return self.reaction().reactions.filter(input=True)
-
-    def output(self):
-        return self.reaction().reactions.filter(input=False)[0]
-
     @property
-    def quantity(self):
+    @cachedmethod(60*60)
+    def reaction(self):
         if self.is_mining:
-            return 100
+            return None
         else:
-            return self.output().quantity
+            return self.type.reacts.filter(input=False)[0].reaction
 
-    def consumes(self):
+    @cachedmethod(60*60)
+    def inputs(self):
         '''
-        Return a tuple of (item, quantity) for all items consumed by this
+        Return a tuple of (item_id, quantity) for all items consumed by this
         reaction.
         '''
         if self.is_mining:
-            return ()
+            return []
         else:
-            return [(i.item, i.quantity) for i in self.inputs()]
+            inputs = self.reaction.reactions.filter(input=True)
+            return [ (i.item_id, i.quantity) for i in inputs ]
 
-    def produces(self):
+    @cachedmethod(60*60)
+    def output(self):
         '''
-        Return a tuple of (item, quantity) for what this reacton outputs.
+        Return a tuple of (item_id, quantity) for what this reacton outputs.
         '''
-        return [(self.type, self.quantity)]
+
+        if self.is_mining:
+            return [ (self.type.id, 100) ]
+        else:
+            outputs = self.reaction.reactions.filter(input=False)
+            return [ (i.item_id, i.quantity) for i in outputs ]

@@ -3,6 +3,7 @@
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.db.models import Q
+from django.views.decorators.cache import cache_page
 
 from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute, Category, Group
 from eve.trade.models import BlueprintOwned
@@ -31,7 +32,7 @@ def generate_navigation(object):
         nav.reverse()
     return nav
 
-
+@cache_page(60 * 60 * 2)
 def solarsystem(request, name):
     item = get_object_or_404(SolarSystem, name=name)
 
@@ -49,7 +50,7 @@ def solarsystem(request, name):
     return render_to_response('ccp_solarsystem.html', d,
                               context_instance=RequestContext(request))
 
-
+@cache_page(60 * 60 * 2)
 def constellation(request, name):
     item = get_object_or_404(Constellation, name=name)
     #item = Constellation.objects.get(name=name)
@@ -68,6 +69,7 @@ def constellation(request, name):
     return render_to_response('ccp_constellation.html', d,
                               context_instance=RequestContext(request))
 
+@cache_page(60 * 60 * 2)
 def region(request, slug):
     item = get_object_or_404(Region, slug=slug)
     #item = Constellation.objects.get(name=name)
@@ -85,6 +87,7 @@ def region(request, slug):
     return render_to_response('ccp_region.html', d,
                               context_instance=RequestContext(request))
 
+@cache_page(60 * 60 * 2)
 def region_list(request):
     d = {}
     d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
@@ -103,6 +106,7 @@ def region_list(request):
     return render_to_response('ccp_regions.html', d,
                               context_instance=RequestContext(request))
 
+@cache_page(60 * 60 * 2)
 def group_index(request):
     root_objects = MarketGroup.objects.filter(parent__isnull=True)
     #output = ', '.join([m.name for m in root_objects])
@@ -113,6 +117,7 @@ def group_index(request):
     return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
+# Cannot cache as it depends on user prices.
 def group(request, slug):
     group = get_object_or_404(MarketGroup, slug=slug)
     profile = None
@@ -124,10 +129,11 @@ def group(request, slug):
     d['nav'] = generate_navigation(group)
     d['title'] = "Market Group: %s" % group.name
 
-    objects = list(MarketGroup.objects.filter(parent=group)) + list(group.item_set.all())
-    d['objects'] = [{'item':x,
-                     'buy':get_buy_price(profile, x),
-                     'sell':get_sell_price(profile, x)} for x in objects]
+    groups = [ {'item': x } for x in MarketGroup.objects.filter(parent=group)]
+    items  = [{'item':x,
+               'buy':get_buy_price(profile, x),
+               'sell':get_sell_price(profile, x)} for x in group.item_set.all()]
+    d['objects'] = groups + items
 
     d['objects'].sort(key=lambda x:x['item'].name)
     return render_to_response('ccp_item_list.html', d,
@@ -163,6 +169,7 @@ def get_buy_price(profile, item):
 
     return get_index_price(profile, item, type='buy')
 
+# Cannot cache as it depends on user prices.
 def item(request, slug, days=30):
     item = get_object_or_404(Item, slug=slug)
     d = {}
@@ -328,9 +335,11 @@ def item(request, slug, days=30):
     # Setup the attributes of an item.
     d['attributes'] = []
     temp = {}
-    attributes.sort(lambda a, b: cmp(a.id,  b.id))
+    attributes.sort(key=lambda x: x.id)
     for a in attributes:
         if a.value == 0 or a.value == 0.0 or a.category is None:
+            continue
+        if not a.published:
             continue
         if not temp.has_key(a.category):
             temp[a.category] = []
@@ -349,7 +358,7 @@ def item(request, slug, days=30):
     return render_to_response('ccp_item.html', d,
                               context_instance=RequestContext(request))
 
-
+@cache_page(60 * 60 * 4)
 def sov_changes(request, days=14):
     """Show all of the changes in system sov since the last update."""
     old_date = datetime.utcnow() - timedelta(days)
@@ -360,16 +369,22 @@ def sov_changes(request, days=14):
     return render_to_response('sov_changes.html', d,
                               context_instance=RequestContext(request))
 
+@cache_page(60 * 60 * 4)
 def npc_groups(request):
     """Show all of the available groups of NPCs out there."""
     d = {}
     cat = Category.objects.get(name='Entity')
     # Template needs the objects as dicts.
-    d['objects'] = [{ 'item':x, 'quantity':x.items.count() } for x in cat.groups.all() if x.items.count() > 0]
+    groups = cat.groups.extra(
+        select = {'item_count': 'SELECT COUNT(*) item_count from ccp_item where ccp_item.groupID = ccp_group.groupID'},
+        #where = ['item_count > 0'],
+    ).select_related()
+    d['objects'] = [{ 'item':x, 'quantity':x.item_count } for x in groups if x.item_count > 0]
     d['nav'] = [ npc_nav ]
     return render_to_response('ccp_item_list.html', d,
                               context_instance=RequestContext(request))
 
+@cache_page(60 * 60 * 4)
 def npc_group(request, slug):
     """Show all the members of a single group"""
     d = {}

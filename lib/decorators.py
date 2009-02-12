@@ -1,6 +1,8 @@
 #from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from eve.settings import logging
+from django.core.cache import cache
 
 from eve.lib.context_processors import what_browser
 
@@ -45,17 +47,124 @@ def require_trust (function):
 
     return wrapper
 
-import types
+def require(expr):
+    def decorator(func):
+        def wrapper(*__args,**__kw):
+            assert eval(expr),"Precondition failed"
+            return func(*__args,**__kw)
+        wrapper.__name__ = func.__name__
+        wrapper.__dict__ = func.__dict__
+        wrapper.__doc__ = func.__doc__
+        return wrapper
+    return decorator
 
-def cachedmethod(f, cache={}):
-    def g(*args, **kwargs):
-        key = ( f, tuple(args), frozenset(kwargs.items()) )
-        if key not in cache:
-            cache[key] = f(*args, **kwargs)
-        return cache[key]
-    return g
+#from django.core.cache import cache
+#
+#def cachedmethod(cache_key, timeout=3600):
+#    def paramed_decorator(func):
+#        def decorated(self):
+#            key = cache_key % self.__dict__
+#            res = cache.get(key)
+#            if res == None:
+#                #self._logger.debug('Cache miss, Added: %s' % key)
+#                res = func(self)
+#                cache.set(key, res, timeout)
+#            #self._logger.debug('Cache hit: %s' % key)
+#            return res
+#        decorated.__doc__ = func.__doc__
+#        decorated.__dict__ = func.__dict__
+#        #decorated._logger = logging.getLogger('CACHE')
+#        return decorated
+#    return paramed_decorator
+
+import cPickle as pickle
+import md5
+
+def cachedmethod(length=60*5, cache_key=None):
+    """
+    A variant of the snippet posted by Jeff Wheeler at
+    http://www.djangosnippets.org/snippets/109/
+
+    Caches a function, using the function and its arguments as the key, and the return
+    value as the value saved. It passes all arguments on to the function, as
+    it should.
+
+    The decorator itself takes a length argument, which is the number of
+    seconds the cache will keep the result around.
+
+    It will put in a MethodNotFinishedError in the cache while the function is
+    processing. This should not matter in most cases, but if the app is using
+    threads, you won't be able to get the previous value, and will need to
+    wait until the function finishes. If this is not desired behavior, you can
+    remove the first two lines after the ``else``.
+    """
+    def decorator(func):
+        def wrapper(self, *args, **kwargs):
+            from django.core.cache import cache
+            key = "%s.%s.%s:" % (func.__module__, self.__class__.__name__, func.__name__)
+
+            if cache_key:
+                key += cache_key % self.__dict__
+            else:
+                raw = [self, args, kwargs]
+                pickled = pickle.dumps(raw, protocol=pickle.HIGHEST_PROTOCOL)
+                key += md5.new(pickled).hexdigest()
+            value = cache.get(key)
+            if value:
+                return value
+            else:
+                # This will set a temporary value while ``func`` is being
+                # processed. When using threads, this is vital, as otherwise
+                # the function can be called several times before it finishes
+                # and is put into the cache.
+                #class MethodNotFinishedError(Exception): pass
+                #cache.set(key, MethodNotFinishedError(
+                #    'The function %s has not finished processing yet. This \
+                # value will be replaced when it finishes.' % (func.__name__)
+                #), length)
+                result = func(self, *args, **kwargs)
+                pickled = pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
+                cache.set(key, result, length)
+                return result
+        wrapper.__module__ = func.__module__
+        wrapper.__name__ = func.__name__
+        wrapper.__dict__ = func.__dict__
+        wrapper.__doc__ = func.__doc__
+        return wrapper
+    return decorator
 
 
+# Usage:
+
+#
+#def cachedmethod(timeout=60):
+#    def decorator(func):
+#        def wrapper(*__args,**__kw):
+#            log = logging.getLogger('lib.decorators.cachedmethod')
+#            key = hash( (f, tuple(args), frozenset(kwargs.items())) )
+#            log.debug('Key: %s', (key))
+#            return func(*__args,**__kw)
+#        wrapper.__name__ = func.__name__
+#        wrapper.__dict__ = func.__dict__
+#        wrapper.__doc__ = func.__doc__
+#        return wrapper
+#    return decorator
+#
+#
+#        #print 'Key: %s' % key
+#        value = cache.get(key)
+#        if not value:
+#            log.debug('Cache miss, Added.')
+#            #print 'Cache miss, Added.'
+#            value = f(*args, **kwargs)
+#            cache.add(key, value, timeout)
+#        else:
+#            log.debug('Cache hit.')
+#            #print 'Cache hit.'
+#        return value
+#    return g
+#
+#
 
 
 #if ($_SERVER['HTTP_EVE_TRUSTED']=='no') {

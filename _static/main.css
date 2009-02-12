@@ -217,13 +217,15 @@ input[type='submit'], input[type='text'],input[type='password'],select {
 	color: gray;
 }
 
+.buy,
 .index-buy {
-	color: red;
+	color: red !important;
 	font-size: 1.1em;
 }
 
+.sell,
 .index-sell {
-	color: green;
+	color: green !important;
 	font-size: 1.1em;
 }
 
@@ -657,8 +659,13 @@ li.character a {
 	text-align: left;
 }
 
-.messages .error,.errorlist {
+.error,
+.errorlist {
 	color: red;
+}
+
+.warning {
+        color: rgb(240, 83, 47) !important;
 }
 
 .messages li {
@@ -738,207 +745,3 @@ li.character a {
         width: 64px;
         height: 64px;
 }
-
-/************************************************************************************************/
-.panel {
-	box-sizing: border-box;
-	padding: 10px;
-	background: #c8c8c8 url("pinstripes.png");
-}
-/************************************************************************************************/
-	/*
-body > div.content,
-body > form,
-body > ul.links {
-    left: 0;
-    width: 100%;
-    min-height: 418px;
-    margin: 0;
-    padding: 0;
-}
-
-body > *[selected="true"] {
-    display: block;
-}
-
-.home {
-	display: block;
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 200px;
-	height: 28px;
-    border-width: 0 5px 0 5px;
-    padding: 6px 10px;
-	text-decoration: none;
-    line-height: 28px;
-    font-size: 1.4em;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: rgba(0, 0, 0, 0.6) 0px -1px 0;
-}
-
-.button {
-    position: absolute;
-    top: 0;
-    right: 15px;
-    -webkit-border-image: url(/img/iphone/iPhoneButton.png) 0 5 0 5;
-    -webkit-border-radius: 0;
-    border-width: 0 5px 0 5px;
-    padding: 6px 10px;
-    height: 28px;
-    line-height: 28px;
-    font-size: 1.4em;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: rgba(0, 0, 0, 0.6) 0px -1px 0;
-    text-decoration: none;
-    background: none;
-}
-
-.settings {
-    position: absolute;
-    top: 0;
-    right: 85px;
-    -webkit-border-image: url(iPhoneButton.png) 0 5 0 5;
-    -webkit-border-radius: 0;
-    border-width: 0 5px 0 5px;
-    padding: 6px 10px;
-    height: 28px;
-    line-height: 28px;
-    font-size: 1.4em;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: rgba(0, 0, 0, 0.6) 0px -1px 0;
-    text-decoration: none;
-    background: none;
-}
-
-#homeButton {
-    display: none;
-    left: 6px;
-    right: auto;
-    -webkit-border-image: url(iPhoneBackButton.png) 0 8 0 14;
-    border-width: 0 8px 0 14px;
-}
-
-.goButton {
-    -webkit-border-image: url(iPhoneGoButton.png) 0 5 0 5;
-    border-width: 0 5px;
-}
-
-.dialog {
-    position: absolute;
-    top: 0;
-    width: 100%;
-    min-height: 468px;
-    z-index: 2;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 0;
-    text-align: right;
-}
-
-fieldset {
-    box-sizing: border-box;
-    width: 100%;
-    margin: 0;
-    border: none;
-    padding: 10px 6px;
-    background: url(iPhoneToolbar.png) #7388a5 repeat-x;
-}
-
-fieldset > h1 {
-    margin: 0 10px 0 10px;
-    padding: 0;
-    font-size: 2.0em;
-    font-weight: bold;
-    color: #fff;
-    text-shadow: rgba(0, 0, 0, 0.6) 0px -1px 0;
-    text-align: center;
-}
-
-label {
-	font-size: 1.4em;
-	text-align: left;
-	display: block;
-	margin: 5px 0 2px 4px;
-	font-weight: bold;
-	color: #fff;
-	text-shadow: rgba(0, 0, 0, 0.6) 0px -1px 0;
-}
-
-label.inside {
-    position: absolute;
-    margin: 14px 0 0 6px;
-    color: #BBB;
-    text-shadow: none;
-}
-
-input {
-	box-sizing: border-box;
-    margin: 6px;
-    padding: 6px;
-    font-size: 1.6em;
-    font-weight: normal;
-}
-
-input[type='text'], input[type='password'], select {
-    width: 100%;
-    font-size: 1.6em;
-}
-
-
-.choice {
-	display: block;
-	text-decoration: none;
-	font-size: 1.6em;
-	font-weight: bold;
-	padding: 16px 0;
-	background: #629b00;
-	color: #fff;
-	-webkit-border-radius: 5px;
-	margin: 30px;
-	text-align: center;
-}
-
-.choice-normal {
-	background: #666;
-}
-
-li.pagination {
-	background: none;
-	border: none;
-	text-align: center;
-}
-
-li.pagination strong {
-	font-size: 3.5em;
-	color: #ccc;
-	position: relative;
-	top: 20px;
-}
-
-.next, .previous {
-	display: block;
-	text-decoration: none;
-	font-size: 1.8em;
-	padding: 7px 0;
-	background: #629b00 url(previous.gif);
-	color: #fff;
-	margin: 8px 12px;
-	width: 110px;
-	height: 21px;
-	text-align: center;
-	margin-bottom: 30px;
-}
-
-.next {
-	float: right;
-	background: #629b00 url(next.gif);
-}
-
-.previous {
-	float: left;
-	opacity: 0.6;
-}
-*/
