@@ -222,8 +222,15 @@ class PlayerStation(models.Model):
         log = logging.getLogger('pos.refresh')
         messages = []
 
-        moon = MapDenormalize.objects.get(id=record.moonID)
-        solarsystem = SolarSystem.objects.get(id=record.locationID)
+        try:
+            moon = MapDenormalize.objects.get(id=record.moonID)
+            solarsystem = SolarSystem.objects.get(id=record.locationID)
+        except MapDenormalize.DoesNotExist:
+            log.error('Error looking up Moon! ID: %s' % record.moonID)
+            raise
+        except SolarSystem.DoesNotExist:
+            log.error('Error looking up SolarSystem! ID: %s' % record.locationID)
+            raise
         tower = Item.objects.get(pk=record.typeID)
 
         if not force and not self.refresh_needed():
@@ -251,23 +258,22 @@ class PlayerStation(models.Model):
         else:
             online_time = None
 
-        hours_since_update = 0
+        hours_since_update = None
         if self.state_time and state_time:
             assert isinstance(state_time, datetime)
             assert isinstance(self.state_time, datetime)
             #print "ID:", self.id, "s.st:", self.state_time, "st", state_time
             delta = state_time - self.state_time
             hours_since_update = (delta.seconds / 60**2) + (delta.days * 24)
-        log.debug('Time then: %s, Now: %s' % (self.state_time, state_time))
-        log.debug("Hours since update: %d." % hours_since_update)
-        messages.append('Hours since update: %d.' % hours_since_update)
-
-        if hours_since_update == 0:
+            log.debug('Time then: %s, Now: %s' % (self.state_time, state_time))
+            log.debug("Hours since update: %d." % hours_since_update)
+            messages.append('Hours since update: %d.' % hours_since_update)
+        if hours_since_update is 0:
             messages.append('Bypassing update as 0 hours elapsed, so avoid CCP bug with StationDetaiil API.')
-            self.cached_until = datetime.utcfromtimestamp(detail._meta.cachedUntil)
-            self.last_updated = datetime.utcnow()
-            self.save()
             return messages
+        elif hours_since_update is None:
+            log.debug('Either the tower is new, or offline or something. Updating.')
+            messages.append('Unable to compute last update. Forcing refresh.')
 
         # Setup the sov level and fuel rate.
         if self.corporation.alliance_id is None:
@@ -306,6 +312,7 @@ class PlayerStation(models.Model):
         self.save()
         self.setup_fuel_supply()
 
+
         # Now, the fuel.
         for fuel_type in detail.fuel:
             type = Item.objects.get(id=fuel_type.typeID)
@@ -313,7 +320,7 @@ class PlayerStation(models.Model):
             purpose = fuel.purpose
 
             messages.append(' %s (%s): %s -> %s' % (type.name, purpose, fuel.quantity, fuel_type.quantity) )
-            log.info('%s: %s (%s): %s -> %s (%d hours)' % (self.id, type.name, purpose, fuel.quantity, fuel_type.quantity, hours_since_update) )
+            log.info('%s: %s (%s): %s -> %s (%s hours)' % (self.id, type.name, purpose, fuel.quantity, fuel_type.quantity, hours_since_update) )
 
             #if purpose in (u'CPU', u'Power'):
             #    log.debug('Matched cpu/power test.')
@@ -410,11 +417,11 @@ class FuelSupply(models.Model):
             rate = self.max_consumption * self.station.sov_fuel_rate
 
         if purpose == 'Power':
-            rate = math.ceil(rate * self.station.power_utilization)
+            rate = rate * self.station.power_utilization
         elif purpose == 'CPU':
-            rate = math.ceil(rate * self.station.cpu_utilization)
+            rate = rate * self.station.cpu_utilization
 
-        return int(rate)
+        return int(math.ceil(rate))
 
     def goal(self, days):
         # The goal of stront is always to be full.

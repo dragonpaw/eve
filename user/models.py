@@ -163,13 +163,10 @@ class UserProfile(models.Model):
             return None
 
     def update_personal_index(self):
-        index, _ = MarketIndex.objects.get_or_create(name="Personal Trade History",
-                                                     user=self)
-        index.priority = 400
-        index.note = 'Prices based on transactions from all of your characters.'
-        index.save()
+        index = MarketIndex.objects.get(name="Personal Trade History",
+                                        user=self)
         items = {}
-        for t in Transaction.objects.filter(character__account__user__exact=self):
+        for t in Transaction.objects.filter(character__account__user=self):
             id = t.item_id
             quantity = Decimal(t.quantity)
             price = Decimal("%0.2f" % t.price)
@@ -189,11 +186,6 @@ class UserProfile(models.Model):
             index.set_value(v['type'], buy=v['buy'], sell=v['sell'],
                             buy_qty=v['buy_qty'], sell_qty=v['sell_qty'])
         index.items.exclude( item__id__in=items.keys() ).delete()
-
-        custom, _ = MarketIndex.objects.get_or_create(name='Custom Prices', user=self)
-        custom.priority = 500
-        custom.note = 'Prices that you explicitly set.'
-        custom.save()
 
     #-------------------------------------------------------------------------
     # Market transactions. (Need to add user-specific code.)
@@ -260,10 +252,21 @@ def create_profile_for_user(sender, instance, created, **kwargs):
     try:
         UserProfile.objects.get(user=instance)
     except UserProfile.DoesNotExist:
-        UserProfile(
-                    user=instance
-                    ).save()
-
+        profile = UserProfile.objects.create(
+            user=instance
+        )
+        MarketIndex.objects.create(
+            name     = 'Custom Prices',
+            user     = profile,
+            priority = 500,
+            note     = 'Prices that you explicitly set.',
+        )
+        MarketIndex.objects.create(         
+            name     = 'Personal Trade History',
+            user     = profile,
+            priority = 400,
+            note     = 'Prices based on transactions from all of your characters.',
+        )
 
 post_save.connect(create_profile_for_user, sender=User)
 
