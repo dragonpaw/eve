@@ -8,7 +8,6 @@ urlpatterns = patterns('eve.user.views.',
 
     (r'^api-log/$', 'account_log'),
 
-    (r'^account/(\d+)/$', 'account_overview'),
     (r'^account/(\d+)/edit/$', 'account_edit'),
     (r'^account/(\d+)/refreshing/$', 'account_refresh_warning'),
     (r'^account/(\d+)/refresh/$', 'account_refresh'),

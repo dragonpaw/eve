@@ -28,13 +28,14 @@ logout_nav = make_nav('Logout', '/logout/', '09_13',
 
 @login_required
 def main(request):
-    d = {}
-    d['nav'] = [ user_nav ]
-    d['characters'] = request.user.get_profile().characters.all()
-    d['accounts'] = request.user.get_profile().accounts.all()
-    d['inline_nav'] = [ account_add_nav, log_nav ]
+    profile = request.user.get_profile()
 
-    return render_to_response('user_main.html', d, context_instance=RequestContext(request))
+    return render_to_response('user_main.html', {
+        'nav':        ( user_nav, ),
+        'characters': profile.characters.all(),
+        'accounts':   profile.accounts.all(),
+        'inline_nav': ( account_add_nav, log_nav ),
+    }, context_instance=RequestContext(request))
 
 @login_required
 def character(request, id):
@@ -42,15 +43,10 @@ def character(request, id):
     if character.user != request.user.get_profile():
         raise Http404
 
-    log_nav = make_nav('Refresh Log', character.account.get_log_url(), '22_42',
-                       'View API refresh log of this account.')
-
-    d = {}
-    d['nav'] = [ user_nav, character ]
-    #d['inline_nav'] = [ log_nav ]
-    d['c'] = character
-
-    return render_to_response('user_character_detail.html', d, context_instance=RequestContext(request))
+    return render_to_response('user_character_detail.html', {
+        'nav': ( user_nav, character ),
+        'c': character,
+    }, context_instance=RequestContext(request))
 
 class ApiFormAdd(forms.Form):
     id = forms.IntegerField(label='User ID')
@@ -65,78 +61,68 @@ def account_refresh_warning(request, id):
     if account.user != request.user.get_profile():
         raise Http404
 
-    d = {}
-    d['account'] = account
-    d['nav'] = [ user_nav, account, { 'name':'Refreshing' }]
-
-
-    return render_to_response('user_account_refresh_pending.html', d,
-                                   context_instance=RequestContext(request))
+    return render_to_response('user_account_refresh_pending.html', {
+        'account': account,
+        'nav': ( user_nav, account, { 'name':'Refreshing' }),
+    }, context_instance=RequestContext(request))
 
 @login_required
 def account_refresh(request, id):
-    d = {}
-
     account = get_object_or_404(Account, id=id)
     if account.user != request.user.get_profile():
         raise Http404
 
-    d['nav'] = [user_nav, account, { 'name': 'Refresh Completed'} ]
-    d['messages'] = account.refresh()
-    d['account'] = account
-    d['inline_nav'] = [ user_nav ]
+    return render_to_response('user_account_refreshed.html', {
+        'nav': [user_nav, account, { 'name': 'Refresh Completed'} ],
+        'messages': account.refresh(),
+        'account': account,
+        'inline_nav': [ user_nav ],
+    }, context_instance=RequestContext(request))
 
-    return render_to_response('user_account_refreshed.html', d,
-                                   context_instance=RequestContext(request))
-
-@login_required
-def account_overview(request, id):
-    account = get_object_or_404(Account, id=id)
-    if account.user != request.user.get_profile():
-        raise Http404
-
-    log_nav = make_nav('Refresh Log', account.get_log_url(), '22_42',
-                       'View API refresh log of this account.')
-    edit_nav = make_nav('Edit', account.get_edit_url(), '09_03',
-                        'Edit the API key on this account.')
-
-    d = {'nav': [ user_nav, account ],
-         'inline_nav' : [ log_nav, edit_nav ] }
-
-    return render_to_response('generic_menu.html', d,
-                                   context_instance=RequestContext(request))
+#@login_required
+#def account_overview(request, id):
+#    account = get_object_or_404(Account, id=id)
+#    if account.user != request.user.get_profile():
+#        raise Http404
+#
+#    log_nav = make_nav('Refresh Log', account.get_log_url(), '22_42',
+#                       'View API refresh log of this account.')
+#    edit_nav = make_nav('Edit', account.get_edit_url(), '09_03',
+#                        'Edit the API key on this account.')
+#
+#    return render_to_response('generic_menu.html', {
+#        'nav': ( user_nav, account ),
+#        'inline_nav' : ( log_nav, edit_nav ),
+#    }, context_instance=RequestContext(request))
 
 @login_required
 def account_log(request):
-
-    d = {'user':request.user.get_profile(),
-         'nav':[user_nav, log_nav]}
-
-    return render_to_response('user_api_log.html', d,
-                                   context_instance=RequestContext(request))
-
+    return render_to_response('user_api_log.html', {
+        'user': request.user.get_profile(),
+        'nav' : [user_nav, log_nav],
+    }, context_instance=RequestContext(request))
 
 @login_required
 def account_edit(request, id=None):
-    d = {}
-    d['id'] = id
-    d['request'] = request
-
     if id:
         account = get_object_or_404(Account, id=id)
         if account.user != request.user.get_profile():
             raise Http404
-        d['nav'] = [user_nav, account]
+        nav = (user_nav, account)
     else:
-        d['nav'] = [user_nav, account_add_nav]
+        nav = (user_nav, account_add_nav)
 
     if request.method == 'GET':
         if id:
-            d['form'] = ApiFormEdit()
+            form = ApiFormEdit()
         else:
-            d['form'] = ApiFormAdd()
-        return render_to_response('user_account_edit.html', d,
-                                   context_instance=RequestContext(request))
+            form = ApiFormAdd()
+        return render_to_response('user_account_edit.html', {
+            'id'      : id,
+            'request' : request,
+            'form'    : form,
+            'nav'     : nav,
+        }, context_instance=RequestContext(request))
 
     # OK, here on out, it's a post.
     assert(request.method == 'POST')
@@ -151,9 +137,12 @@ def account_edit(request, id=None):
         form = ApiFormAdd(request.POST)
 
     if form.is_valid() == False:
-        d['form'] = form
-        return render_to_response('user_account_edit.html', d,
-                                   context_instance=RequestContext(request))
+        return render_to_response('user_account_edit.html', {
+            'id'      : id,
+            'request' : request,
+            'form'    : form,
+            'nav'     : nav,
+        },context_instance=RequestContext(request))
     if not id:
         id = form.cleaned_data['id']
         account = Account(id=id)
@@ -348,6 +337,8 @@ class UserLoginForm(forms.Form):
         return self.cleaned_data
 
 def login(request):
+    import logging
+
     d = {}
     d['nav'] = [ login_nav ]
     d['inline_nav'] = [ user_create_nav, lost_password_nav ]
@@ -356,6 +347,7 @@ def login(request):
         form = UserLoginForm(request.POST)
         if form.is_valid():
             auth.login(request, form.user)
+            logging.getLogger('user.views.login').info('Logged in: %s' % form.user)
             return HttpResponseRedirect(form.cleaned_data['next'])
         else:
             d['form'] = form

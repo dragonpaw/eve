@@ -14,21 +14,16 @@ from eve.lib.formatting import make_nav, NavigationElement
 
 pos_nav = make_nav("Player-Owned Structures", "/pos/", '40_14',
                    note='Fuel status for all of your POSes.')
-#pos_consumption_nav = make_nav('Consumption', '/pos/consumption/', '10_07',
-#                               'Consumption and shopping list for all of your POSes')
 pos_profit_nav = make_nav('Profits', '/pos/profit/', '06_03',
                           'Profits and consumption for all of your POSes')
 pos_monkey_nav = make_nav('POS Helpers', '/pos/helpers/','02_16',
                           'Check who is able to see POS status.')
-
 REFUEL_NAV = make_nav('Update Fuel Quantities', '/pos/%d/refuel/', '10_07',
                       'The EVE Widget automatically refreshes all POS data every 6 hours. '
                       + 'Click here to update quantities if you have just refueled the tower and do not wish '
                       + 'to wait.')
 REACTION_NAV = make_nav('Configure Reactions', '/pos/%d/reactions/', '50_04',
                         'Update what mining/reactions this POS is running.')
-#PROFIT_NAV = make_nav('View Profit & Loss', '/pos/%d/profit/', '06_03',
-#                      'View the profit/loss for this POS.')
 
 DEFAULT_DAYS = 30
 
@@ -71,7 +66,7 @@ def pos_list(request):
     d['poses'] = get_poses(profile)
     d['inline_nav'] = [ pos_profit_nav, pos_monkey_nav ]
 
-    return render_to_response('pos_list.html', d, context_instance=RequestContext(request))
+    return render_to_response('list.html', d, context_instance=RequestContext(request))
 
 #
 #@login_required
@@ -269,7 +264,7 @@ def detail(request, station_id, days=DEFAULT_DAYS):
         'profitable': weekly_total > 0,
     }
 
-    return render_to_response('pos_detail.html', d,
+    return render_to_response('detail.html', d,
                               context_instance=RequestContext(request))
 
 @login_required
@@ -380,7 +375,7 @@ def profits(request, days=DEFAULT_DAYS):
     d['poses'] = poses
     d['fuels'] = corps
     d['days'] = days
-    return render_to_response('pos_consumption.html', d, context_instance=RequestContext(request))
+    return render_to_response('profits.html', d, context_instance=RequestContext(request))
 
 #@login_required
 #def profit_list(request):
@@ -459,7 +454,6 @@ class ReactionForm(forms.Form):
 
 @login_required
 def setup_reactions(request, station_id):
-    template = 'pos_edit_reactions.html'
     pos = get_object_or_404(PlayerStation, id=station_id)
     profile = request.user.get_profile()
     pos_allowed(profile, pos)
@@ -490,7 +484,7 @@ def setup_reactions(request, station_id):
             index += 1
 
         d['form'] = ReactionForm(reactions)
-        return render_to_response(template, d,
+        return render_to_response('edit_reactions.html', d,
                                   context_instance=RequestContext(request))
 
 
@@ -518,7 +512,7 @@ def refuel(request, station_id, days=DEFAULT_DAYS):
         d['fuel'] = [x for x in pos.fuel.all()]
         d['fuel'].sort(key=lambda x:x.type.name)
         d['days'] = days
-        return render_to_response('pos_refuel.html', d,
+        return render_to_response('refuel.html', d,
                                   context_instance=RequestContext(request))
 
 @login_required
@@ -536,7 +530,7 @@ def monkey_list(request):
         corporations.append(character.corporation)
 
 
-    return render_to_response('pos_helpers.html', d,
+    return render_to_response('roles.html', d,
                                   context_instance=RequestContext(request))
 
 def is_director_of(me, you):
@@ -590,5 +584,5 @@ def owner(request, station_id):
 
 
     d['nav'] = [pos_nav, pos, {'name':'Owner'}]
-    return render_to_response('pos_owner.html', d,
+    return render_to_response('owner.html', d,
                               context_instance=RequestContext(request))
