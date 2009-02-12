@@ -556,7 +556,7 @@ def is_director_of_or_404(me, you):
 def owner_set(request, station_id, character_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     profile = request.user.get_profile()
-    pos_allowed(request, pos)
+    pos_allowed(profile, pos)
     if character_id == '0':
         pos.owner = None
     else:
@@ -566,13 +566,13 @@ def owner_set(request, station_id, character_id):
             raise Http404
         pos.owner = character
     pos.save()
-    return HttpResponseRedirect( '/pos/%s/fuel/' % pos.id )
+    return HttpResponseRedirect( pos.get_absolute_url() )
 
 @login_required
 def owner(request, station_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     profile = request.user.get_profile()
-    pos_allowed(request, pos)
+    pos_allowed(profile, pos)
 
     d = {}
     d['pos'] = pos
