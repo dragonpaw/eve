@@ -96,6 +96,10 @@ class NavigationElement:
         self.graphic = graphic
         self.note = note
         self.id = id
+        self.icons = {}
+        if self.graphic:
+            for size in (16, 32, 64, 128):
+                self.icons[size] = self.graphic.get_icon(size)
 
     def get_absolute_url(self):
         if self.id:
@@ -107,7 +111,7 @@ class NavigationElement:
         if self.graphic is None:
             return None
         else:
-            return self.graphic.get_icon(size)
+            return self.icons[size]
 
     @property
     def icon32(self):

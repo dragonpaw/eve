@@ -5,12 +5,16 @@ from database_settings import *
 import sys
 import deseb
 import os
-import pwd
+try:
+    import pwd
+    user = pwd.getpwuid(os.getuid())[0]
+except ImportError:
+    user = 'none'
+
 from lib.log import logging, setup_log
 
 LOGDIR = os.path.abspath(os.path.dirname(__file__))
 LOGFILE = "django.log"
-user = pwd.getpwuid(os.getuid())[0]
 setup_log(os.path.join(LOGDIR, 'log', user+"-"+LOGFILE))
 
 os.environ['TZ'] = 'UTC'
@@ -19,6 +23,8 @@ ADMINS = (
     ('Ash', 'ash@dragonpaw.org'),
     # ('Your Name', 'your_email@domain.com'),
 )
+
+INTERNAL_IPS = ('127.0.0.1', '10.0.2.2')
 
 MANAGERS = ADMINS
 
@@ -67,6 +73,8 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    #'django.middleware.cache.CacheMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -108,6 +116,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.markup',
     'django_extensions',
+    'debug_toolbar',
     'eve.mining',
     'eve.tracker',
     'eve.ccp',
@@ -116,6 +125,9 @@ INSTALLED_APPS = (
     'eve.trade',
     'eve.pos',
 )
+
+CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=60"
+CACHE_MIDDLEWARE_KEY_PREFIX = 'eve_widget'
 
 if sys.platform == 'win32':
     STATIC_DIR = 'C:/django-sites/eve/_static/'

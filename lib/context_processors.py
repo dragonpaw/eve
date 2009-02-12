@@ -1,22 +1,22 @@
 # $Id$
 def what_browser(request):
     # The test client doesn't set a header.
-    if not request.META.has_key('HTTP_USER_AGENT'):
+    if not 'HTTP_USER_AGENT' in request.META:
         return 'unknown'
-    
+
     ua = request.META['HTTP_USER_AGENT']
-    if ua.count('Firefox'):
+    if 'Firefox' in ua:
         return 'firefox'
-    elif ua.count('MSIE 7.0'):
+    elif 'MSIE 7.0' in ua:
         return 'ie7'
-    elif ua.count('MSIE'):
+    elif 'MSIE' in ua:
         return 'ie'
-    elif ua.count('iPhone'):
+    elif 'iPhone' in ua:
         return 'iphone'
-    elif ua.count('EVE-minibrowser'):
+    elif 'EVE-minibrowser' in ua:
         return 'eve'
     else:
         return 'unknown'
-        
+
 def borwser_id(request):
     return { 'browser' : what_browser(request) }
