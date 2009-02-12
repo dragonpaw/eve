@@ -188,7 +188,7 @@ class PlayerStation(models.Model):
                     type            = f.type,
                     quantity        = 0,
                     purpose         = f.purpose.name,
-                    max_consumption =  0,
+                    max_consumption = f.quantity,
                 )
 
     @property
@@ -322,7 +322,7 @@ class PlayerStation(models.Model):
             if purpose in ('CPU', 'Power') and hours_since_update > 0:
                 log.debug('Recalculating consumption.')
                 consumed = (fuel.quantity - fuel_type.quantity) / hours_since_update
-                max = Decimal(fuel.max_consumption * self.fuel_rate())
+                max = Decimal(fuel.max_consumption * self.sov_fuel_rate)
                 log.debug('Consumed: %s units.' % consumed)
                 if consumed < 0:
                     continue
