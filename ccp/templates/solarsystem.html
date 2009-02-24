@@ -1,8 +1,4 @@
 {% extends "base.html" %}
-{% load trade %}
-{% load markup %}
-
-{% block title %} {{ item.name }}) {% endblock %}
 
 {% block content %}
 <div class="item">
@@ -14,15 +10,15 @@
     </div>
     <h4>Details</h4>
     <table class="item-details">
-        <tr><th>Security:</th><td>{{ item.security|floatformat:"-3" }}</td></tr>
-        <tr><th>Region:</th><td><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></td></tr>
+        <tr><th>Security:</th><td>{{ item.security|floatformat(-3) }}</td></tr>
+        <tr><th>Region:</th><td><a href="{{ item.region.get_absolute_url() }}">{{ item.region }}</a></td></tr>
         <tr><th>Constelation:</th>
-        <td><a href="{{ item.constellation.get_absolute_url }}">{{ item.constellation }}</a></td></tr>
+        <td><a href="{{ item.constellation.get_absolute_url() }}">{{ item.constellation }}</a></td></tr>
         <tr><th>Soverignity:</th>
         <td>{% if item.alliance %}{{ item.alliance }}, Sov: {{ item.sov }}
             {% else %}Unclaimed{% endif %}</td>
-        <tr><th>Asteroid Belts:</th><td>{{ item.belts.count }}</td></tr>
-        <tr><th>Moons:</th><td>{{ item.moons.count }}</td></tr>
+        <tr><th>Asteroid Belts:</th><td>{{ item.belts().count() }}</td></tr>
+        <tr><th>Moons:</th><td>{{ item.moons().count() }}</td></tr>
         <tr><th>Security Class:</th><td>{{ item.securityclass }}</td></tr>
     </table>
 
@@ -31,24 +27,25 @@
     <div class="item-materials">
     <h4>Asteroid Belts</h4>
         <table>
-        {% spaceless %}{% for s in item.belts %}
+        {% for s in item.belts() -%}
             <tr>
             	<td class="left">{{ s.name }}</td>
             </tr>
-        {% endfor %}
-        </tr>{% endspaceless %}
+        {%- endfor %}
+        </tr>
         </table>
     </div>
 
     <div class="item-materials">
     <h4>Moons</h4>
         <table>
-        {% spaceless %}{% for i in item.moons %}
+        {% for i in item.moons() -%}
             <tr>
             	<td class="left">{{ i.name }}</td>
+                <td class="right">{% if poses[i] %}POS: {{ poses[i].corporation }}{% endif %}</td>
             </tr>
-        {% endfor %}
-        </tr>{% endspaceless %}
+        {%- endfor %}
+        </tr>
         </table>
     </div>
 </div>

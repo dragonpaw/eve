@@ -1,8 +1,9 @@
 #from django.contrib.auth.models import User
 from django.db import models
-from eve.lib.formatting import comma
+from eve.lib.jfilters import filter_comma as comma
 from datetime import date
 from decimal import Decimal
+from eve.ccp.models import get_graphic
 
 #from eve.ccp.models import Item
 
@@ -16,6 +17,18 @@ class JournalEntryType(models.Model):
 
     def __unicode__(self):
         return self.name
+
+JOURNAL_DEFAULT_ICON = get_graphic('06_03')
+JOURNAL_TYPE_ICONS = {
+    JournalEntryType.objects.get(name='Bounty Prizes'): get_graphic('07_10'),
+    JournalEntryType.objects.get(name='Player Trading'): get_graphic('17_02'),
+    JournalEntryType.objects.get(name='Player Donation'): get_graphic('17_02'),
+    JournalEntryType.objects.get(name='Clone Activation'): get_graphic('18_03'),
+    JournalEntryType.objects.get(name='Clone Transfer'): get_graphic('18_03'),
+    JournalEntryType.objects.get(name='Insurance'): get_graphic('33_04'),
+    JournalEntryType.objects.get(name='Manufacturing'): get_graphic('57_09'),
+    JournalEntryType.objects.get(name='War Fee'): get_graphic('07_05'),
+}
 
 class JournalEntry(models.Model):
     transaction_id = models.IntegerField('ID')
@@ -52,14 +65,20 @@ class JournalEntry(models.Model):
 
     @property
     def value(self):
-        if self.sold:
+        if self.price > 0:
             return self.price
         else:
             return (self.price * Decimal(-1))
 
+    def get_icon(self, size):
+        if self.type in JOURNAL_TYPE_ICONS:
+            return JOURNAL_TYPE_ICONS[self.type].get_icon(size)
+        else:
+            return JOURNAL_DEFAULT_ICON.get_icon(size)
+
     @property
     def icon32(self):
-        return '/static/ccp-icons/white/32_32/icon06_03.png'
+        return self.get_icon(32)
 
 class Transaction(models.Model):
     transaction_id = models.IntegerField('ID')

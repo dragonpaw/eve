@@ -11,7 +11,7 @@ from django.db import models
 from django.db.models.signals import post_save
 
 from eve.lib import eveapi
-from eve.lib.formatting import comma
+from eve.lib.jfilters import filter_comma as comma
 
 from eve.trade.models import Transaction, JournalEntry, MarketIndexValue, MarketIndex
 from eve.pos.models import PlayerStation
@@ -261,7 +261,7 @@ def create_profile_for_user(sender, instance, created, **kwargs):
             priority = 500,
             note     = 'Prices that you explicitly set.',
         )
-        MarketIndex.objects.create(         
+        MarketIndex.objects.create(
             name     = 'Personal Trade History',
             user     = profile,
             priority = 400,

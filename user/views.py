@@ -4,12 +4,13 @@ from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect, Http404
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 
 from eve.user.models import Character, Account, UserProfile
 
 from eve.lib.formatting import make_nav
+from eve.lib.jinja import render_to_response
 
 user_nav = make_nav("Characters", "/user/", '34_12', 'Your characters and accounts.')
 user_create_nav = make_nav("Create Login", "/user/create/", '07_03',
@@ -20,9 +21,9 @@ log_nav = make_nav('Refresh Log', '/user/api-log/', '22_42',
                    'View API refresh log.')
 lost_password_nav = make_nav('Lost Password', '/user/lost/', '04_16',
                              'Recover a lost password.')
-login_nav = make_nav('Login', '/login/', '09_06',
+login_nav = make_nav('Login', '/user/login/', '09_06',
                      'Log yourself in for full use.')
-logout_nav = make_nav('Logout', '/logout/', '09_13',
+logout_nav = make_nav('Logout', '/user/logout/', '09_13',
                       note='Log out if you like. (Or if you share your computer.)')
 
 
@@ -35,7 +36,7 @@ def main(request):
         'characters': profile.characters.all(),
         'accounts':   profile.accounts.all(),
         'inline_nav': ( account_add_nav, log_nav ),
-    }, context_instance=RequestContext(request))
+    }, request)
 
 @login_required
 def character(request, id):
@@ -46,7 +47,7 @@ def character(request, id):
     return render_to_response('user_character_detail.html', {
         'nav': ( user_nav, character ),
         'c': character,
-    }, context_instance=RequestContext(request))
+    }, request)
 
 class ApiFormAdd(forms.Form):
     id = forms.IntegerField(label='User ID')
@@ -64,7 +65,7 @@ def account_refresh_warning(request, id):
     return render_to_response('user_account_refresh_pending.html', {
         'account': account,
         'nav': ( user_nav, account, { 'name':'Refreshing' }),
-    }, context_instance=RequestContext(request))
+    }, request)
 
 @login_required
 def account_refresh(request, id):
@@ -77,7 +78,7 @@ def account_refresh(request, id):
         'messages': account.refresh(),
         'account': account,
         'inline_nav': [ user_nav ],
-    }, context_instance=RequestContext(request))
+    }, request)
 
 #@login_required
 #def account_overview(request, id):
@@ -93,14 +94,14 @@ def account_refresh(request, id):
 #    return render_to_response('generic_menu.html', {
 #        'nav': ( user_nav, account ),
 #        'inline_nav' : ( log_nav, edit_nav ),
-#    }, context_instance=RequestContext(request))
+#    }, request)
 
 @login_required
 def account_log(request):
     return render_to_response('user_api_log.html', {
-        'user': request.user.get_profile(),
+        'profile': request.user.get_profile(),
         'nav' : [user_nav, log_nav],
-    }, context_instance=RequestContext(request))
+    }, request)
 
 @login_required
 def account_edit(request, id=None):
@@ -122,7 +123,7 @@ def account_edit(request, id=None):
             'request' : request,
             'form'    : form,
             'nav'     : nav,
-        }, context_instance=RequestContext(request))
+        }, request)
 
     # OK, here on out, it's a post.
     assert(request.method == 'POST')
@@ -142,7 +143,7 @@ def account_edit(request, id=None):
             'request' : request,
             'form'    : form,
             'nav'     : nav,
-        },context_instance=RequestContext(request))
+        },request)
     if not id:
         id = form.cleaned_data['id']
         account = Account(id=id)
@@ -159,7 +160,7 @@ def account_password_lost(request):
 
     if request.method == 'POST':
         try:
-            user = User.objects.get(username=request.POST['username'])
+            user = User.objects.get(email=request.POST['email'])
             profile = user.get_profile()
             profile.lost_password()
 
@@ -171,7 +172,7 @@ def account_password_lost(request):
 
     d['message'] = message
     return render_to_response('user_password_lost.html', d,
-                              context_instance=RequestContext(request))
+                              request)
 
 class PasswordResetForm(forms.Form):
     password = forms.CharField(label='Password', min_length=5, widget=forms.PasswordInput,
@@ -206,7 +207,7 @@ def account_password_found(request, key):
         if not form.is_valid():
             d['form'] = form
             return render_to_response(template, d,
-                              context_instance=RequestContext(request))
+                              request)
 
         user = profile.user
         password = form.cleaned_data['password']
@@ -225,7 +226,7 @@ def account_password_found(request, key):
         d['form'] = PasswordResetForm(initial={'key':key})
 
         return render_to_response(template, d,
-                                  context_instance=RequestContext(request))
+                                  request)
 
 class UserCreationForm(forms.Form):
     username = forms.CharField(label="Desired Username", max_length=30)
@@ -275,7 +276,7 @@ def user_creation(request):
     if request.method == 'GET':
         d['form'] = UserCreationForm()
         return render_to_response('user_account_edit.html', d,
-                                   context_instance=RequestContext(request))
+                                   request)
 
     assert(request.method == 'POST')
     form = UserCreationForm(request.POST)
@@ -285,7 +286,7 @@ def user_creation(request):
             for error in form[field].errors:
                 errors.append('%s: %s' % (form[field].label, error))
         return render_to_response('user_account_edit.html', d,
-                                   context_instance=RequestContext(request))
+                                   request)
 
     # OK, let's make a user.
     username = form.cleaned_data['username']
@@ -355,4 +356,8 @@ def login(request):
         d['form'] = UserLoginForm(initial={'next': '/'})
 
     return render_to_response('user_login.html', d,
-                              context_instance=RequestContext(request))
+                              request)
+
+def logout(request):
+    auth.logout(request)
+    return HttpResponseRedirect( '/' )

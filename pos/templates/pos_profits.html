@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% for corp in fuels.values() %}
+<h2>{{ corp.corp.name|e }}</h2>
+
+<h3>Shopping list for next {{ days }} days.</h3>
+
+<table class="pos-fuel">
+    <tr>
+    	<th>Fuel</th>
+    	<th class="number">Need</th>
+    	<th class="number">Weekly</th>
+    </tr>
+	{% for fuel in corp.fuels.values() %}{% if fuel.needed -%}
+	<tr>
+	  <th><a href="{{ fuel.type.get_absolute_url() }}"> <img src="{{ fuel.type.icon16 }}"> {{ fuel.type }}</a></th>
+	  <td>{{ fuel.needed|comma }}</td>
+	  <td>{{ fuel.weekly_consumption|comma }}</td>
+	</tr>
+	{%- endif -%}
+	{% endfor %}
+	<tr><th>Total weekly fuel cost:</th><td colspan="3">{{ corp.weekly_cost|int|comma }} ISK</td></tr>
+</table>
+
+<p>Strontium need is based on the assumption that you wish to completely
+fill the Strontium bay on the towers.</p>
+
+<p>This table only takes into account those fuels within the control
+towers. Remember to subtract any fuel you may have in a hangar or fuel
+depo before you go on a shopping spree.</p>
+
+<p>It is possible to have a 'need' even when you appear to have a
+surplus of a fuel. This is because the values shown here do not take
+into account any surplus that you may have in various towers. So if one
+tower has 300 days of robotics, and the others all have 2 days worth,
+you will show a large need for robotics that you would not have if you
+balanced the fuel supplies. Please make sure your towers have a
+well-balanced fuel supply.</p>
+
+{% endfor %}
+
+<h4>Tower detail</h4>
+<ul class="links">
+	{% for pos in poses %}
+	<li class="pos-cost">
+	<a href="{{ pos.get_absolute_url() }}">
+	<img src="{{ pos.icon32 }}">
+	<span class="name">{{ pos.moon }}</span>
+	{% if pos.is_profitable %}
+	<span class="right profit">+ {{ pos.weekly_net|int|comma }}</span>
+	{% else %}
+	<span class="right cost">{{ pos.weekly_net|int|comma }}</span>
+	{% endif %}
+        <br/>
+	{% if pos.reactions.count %}
+        <span class="note buy">Cost: {{ pos.weekly_cost|isk }}</span>
+        <span class="note sell right">Value: {{ pos.weekly_value|isk }}</span>
+	{% for r in pos.reactions.all() %}
+            <br/><span class="note">
+	    {% if r.is_mining %}
+		Mining: {{ r.type }}
+	    {% else %}
+		Reacting: {{ r.type }}
+	    {% endif %}
+            </span>
+	{% endfor %}
+	{% else %}
+        <span class="no-mining">No reactions or mining.</span>
+	{% endif %}
+	</a></li>
+	{% endfor %}
+</ul>
+
+{% endblock %}

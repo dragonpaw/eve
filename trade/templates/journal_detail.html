@@ -1,8 +1,7 @@
 {% extends "base.html" %}
-{% load trade %}
+{% import 'include_inlinenav.html' as inline %}
 
 {% block content %}
-{% spaceless %}
 <h4>Who</h4>
 <table class="transaction">
 	<tr><th>Character</th><td>{{ transaction.character }}</td></tr>
@@ -18,21 +17,20 @@
 	<img src="{{ transaction.icon32 }}">
 	<span class="name">{{ transaction.type }}</span>
 	{% if transaction.sold %}
-    	<span class="sold right">+ {{ transaction.value|floatformat:2|comma }}</span>
+    	<span class="sold right">+ {{ transaction.value|floatformat(2)|comma }}</span>
     {% else %}
-    	<span class="bought right">- {{ transaction.value|floatformat:2|comma }}</span>
+    	<span class="bought right">- {{ transaction.value|floatformat(2)|comma }}</span>
     {% endif %}
 	</a></li>
 </ul>
 <table class="transaction">
 	<tr><th>Sold?</th><td>{% if transaction.sold %} Yes {% else %} No {% endif %}</td></tr>
-	<tr><th>Price</th><td>{{ transaction.price|floatformat:"-2"|comma }} ISK</td></tr>
+	<tr><th>Price</th><td>{{ transaction.price|floatformat(-2)|comma }} ISK</td></tr>
 </table>
 <h4>Why</h4>
 <table class="transaction">
 	<tr><th>Type</th><td>{{ transaction.type }}</td></tr>
-	<tr><th>Reason</th><td>{{ transaction.reason|default:"None" }}</td></tr>
-	<tr><th>Is Boring?</th><td>{{ transaction.type.is_boring|yesno:"Yes,No" }}</td></tr>
+	<tr><th>Reason</th><td>{{ transaction.reason|default("None") }}</td></tr>
+	<tr><th>Is Boring?</th><td>{{ transaction.type.is_boring|yesno("Yes","No") }}</td></tr>
 </table>
-{% endspaceless %}
 {% endblock %}

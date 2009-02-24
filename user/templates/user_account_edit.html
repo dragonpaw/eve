@@ -1,0 +1,49 @@
+# extends 'base.html'
+# import 'include_inlinenav.html' as inline
+
+{% block content %}
+<h4>Where to get the Key</h4>
+<p>Go to <a href="http://myeve.eve-online.com/api/">http://myeve.eve-online.com/api/</a>
+and click on the button for the <strong>Full</strong> API key. Enter those two items below,
+the User ID, and the API Key.</p>
+
+<p>The full key is needed in order to be able to show you items such as your market
+transactions. Without this, we would not be able to generate many of the useful statistics
+for this site. If you do not feel comfortable providing it, that's fine. You can still get
+a lot of out the widget as an anonymous user.</p>
+
+<p>The API Key permits <strong>read-only</strong> access to your account data. It is not possible
+for us to steal your ISK or assets by providing this. There is no way to change anything within
+your account without actually logging into EVE Online. We cannot change your skills for you.</p>
+
+<p><strong>Do not ever use your EVE username and password on this, or any other site. Pick a
+different password at least.</strong></p>
+
+<p>Your email address is required in case of problems with your account,
+such as giving an invalid key, or if you change your key.</p>
+
+<h4>Account</h4>
+{%- if errors -%}
+<ul class="messages">
+{%- for message in errors -%}
+<li class="error">{{- message|e -}}</li>
+{%- endfor -%}
+</ul>
+{%- endif -%}
+
+<FORM method="post">
+<TABLE class="account">
+    {%- if id -%}<TR><TH>User ID:</TH><TD>{{- id|e -}}</TD></TR>{%- endif -%}
+	{{- form -}}
+</TABLE>
+{%- if id -%}<INPUT type="submit" value="Update" />
+{%- else -%}<INPUT type="submit" value="Add" />
+{%- endif -%}
+</FORM>
+{%- if id -%}
+<FORM method="post">
+<INPUT type="hidden" name="delete" value="1">
+<INPUT type="hidden" name="id" value="{{- id|e -}}">
+<INPUT type="submit" value="Delete" /></TD>
+</FORM>
+{%- endif -%} {% endblock %}</FORM>

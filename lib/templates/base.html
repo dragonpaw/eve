@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+<title>
+{%- if flatpage -%}
+    {{ flatpage.title }}
+{%- elif nav -%}
+    {{ nav|navtitle }}
+{%- else -%}
+    EVE Magic Widget
+{%- endif -%}
+</title>
+
+<meta name="viewport" content="width=320; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+<!-- browser = {{ browser }} -->
+{% if browser == 'eve' -%}
+    <link rel="stylesheet" href="/static/eve.css">
+{%- elif browser == 'iphone' -%}
+    <link rel="stylesheet" href="/static/main.css">
+    <link rel="stylesheet" href="/static/iphone.css">
+{%- else -%}
+    <link rel="stylesheet" href="/static/main.css">
+{%- endif %}
+{% block head %}{% endblock -%}
+</head>
+<body>
+<div class="page">
+<h1>EVE Magic Widget</h1>
+{% if browser == 'eve' %}<hr>{% endif %}
+<div class="trail">
+{%- if nav -%}<a href="/">Menu</a>
+    {%- for n in nav %} &raquo;
+    	{% if not loop.last -%}<a href="{{ n.get_absolute_url() }}">{{- n.name -}}</a>
+    	{%- else %} {{ n.name }} {% endif -%}
+    {%- endfor -%}
+{%- else -%}
+    {%- if flatpage -%}
+    	<a href="/">Menu</a> &raquo; {{ flatpage.title|e }}
+    {%- else -%}
+    	<a href="/">Menu</a>
+    {%- endif -%}
+{%- endif -%}
+</div>
+{% if browser == 'eve' %}<hr>{% endif %}
+<div class="content">{% block content %}{% endblock %}</div>
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-3183901-2");
+pageTracker._initData();
+pageTracker._trackPageview();
+{% if user %}pageTracker._setVar("{{ user|e }}"); {% endif %}
+</script>
+</body></html>

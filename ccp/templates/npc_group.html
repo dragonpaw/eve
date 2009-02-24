@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% import 'include_inlinenav.html' as inline %}
+
+{% macro cell(value) -%}
+{% if value %}{{ value|int|comma }}{% else %}&nbsp;{% endif %}
+{%- endmacro %}
+
+{% macro cell0(value) -%}
+{% if value %}{{ value|int|comma }}{% else %}0{% endif %}
+{%- endmacro %}
+
+{% macro cell_ewar(o, type) -%}
+{% if o.ewar[type] -%}
+    {{ inline.icon16(icon['ewar_'+type]) }}
+{%- else -%}
+    &nbsp;
+{%- endif -%}
+{%- endmacro %}
+
+{% block content %}
+<table class="npc">
+    <tr>
+        <td class="no_top"></td>
+        <td class="no_top left">Name</td>
+        <td class="no_top"></td>
+        <td class="center no_top icon">{{ inline.icon16(icon.dps_em) }}</td>
+        <td class="center no_top icon">{{ inline.icon16(icon.dps_th) }}</td>
+        <td class="center no_top icon">{{ inline.icon16(icon.dps_ki) }}</td>
+        <td class="center no_top icon">{{ inline.icon16(icon.dps_ex) }}</td>
+        <td></td>
+        <td class="center no_top icon">{{ inline.icon16(icon.tank_em) }}</td>
+        <td class="center no_top icon">{{ inline.icon16(icon.tank_th) }}</td>
+        <td class="center no_top icon">{{ inline.icon16(icon.tank_ki) }}</td>
+        <td class="center no_top icon">{{ inline.icon16(icon.tank_ex) }}</td>
+        <td class="center no_top">HP</td>
+        <td class="center no_top">ISK</td>
+    </tr>
+{% for o in objects -%}
+    {% if o.ewar|count > 0 %}{% set rows = 3 %}{% else %}{% set rows = 2 %}{% endif %}
+    <tr>
+        <td rowspan="{{rows}}" class="center">{{ inline.icon32(o) }}</td>
+        <td rowspan="{{rows}}" class="left"><a href="{{ o.get_absolute_url() }}">{{ o.name }}</a></td>
+        <td class="no_bottom icon">{{ inline.icon16(o.gun_icon) }}</td>
+            <td class="center no_bottom em">{{ cell(o.dps.em) }}</td>
+            <td class="center no_bottom thermal">{{ cell(o.dps.thermal) }}</td>
+            <td class="center no_bottom kinetic">{{ cell(o.dps.kinetic) }}</td>
+            <td class="center no_bottom explosive">{{ cell(o.dps.explosive) }}</td>
+        <td class="no_bottom icon">{{ inline.icon16(icon.shield) }}</td>
+            <td class="center no_bottom em">{{ cell0(o.dps.shield_resist_em) }}</td>
+            <td class="center no_bottom thermal">{{ cell0(o.dps.shield_resist_thermal) }}</td>
+            <td class="center no_bottom kinetic">{{ cell0(o.dps.shield_resist_kinetic) }}</td>
+            <td class="center no_bottom explosive">{{ cell0(o.dps.shield_resist_explosive) }}</td>
+            <td class="center no_bottom">{{ cell0(o.shield_hp) }}</td>
+        <td rowspan=2 class="loot center no_bottom" colspan=1>{{ o.bounty|isk|default(0) }}</td>
+
+    </tr>
+    # set class = 'no_top'
+    <tr>
+        <td class="{{class}} icon">{{ inline.icon16(o.missile_icon) }}</td>
+            <td class="center {{class}} em">{{ cell(o.dps.missile_em) }}</td>
+            <td class="center {{class}} thermal">{{ cell(o.dps.missile_thermal) }}</td>
+            <td class="center {{class}} kinetic">{{ cell(o.dps.missile_kinetic) }}</td>
+            <td class="center {{class}} explosive">{{ cell(o.dps.missile_explosive) }}</td>
+        <td class="{{class}} icon">{{ inline.icon16(icon.armor) }}</td>
+            <td class="center {{class}} em">{{ cell0(o.dps.armor_resist_em) }}</td>
+            <td class="center {{class}} thermal">{{ cell0(o.dps.armor_resist_thermal) }}</td>
+            <td class="center {{class}} kinetic">{{ cell0(o.dps.armor_resist_kinetic) }}</td>
+            <td class="center {{class}} explosive">{{ cell0(o.dps.armor_resist_explosive) }}</td>
+            <td class="center {{class}}">{{ cell0(o.armor_hp) }}</td>
+    </tr>
+    # if rows == 3
+    <tr class="ewar">
+        <td class="left">EWar</td>
+        <td>{{ cell_ewar(o,'scramble') }}</td>
+        <td>{{ cell_ewar(o,'web') }}</td>
+        <td>{{ cell_ewar(o,'jam') }}</td>
+        <td>{{ cell_ewar(o,'tracking') }}</td>
+        <td>{{ cell_ewar(o,'damp') }}</td>
+        <td>{{ cell_ewar(o,'neut') }}</td>
+        <td>{{ cell_ewar(o,'paint') }}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+    # endif
+{%- endfor %}
+</table>
+{% endblock %}

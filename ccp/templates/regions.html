@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% import 'include_inlinenav.html' as inline %}
 
 {% block content %}
-{% include "include_inlinenav.html" %}
+{{ inline.nav(inline_nav) }}
 <p>Alliance ownership of a region is given when only one alliance holds
 one or more sovereign constellations within the region. If two or more
 alliances hold constellations, it will show as None.</p>

@@ -25,11 +25,6 @@ urlpatterns = patterns('',
 
     (r'^changelog/$', 'eve.tracker.views.changelog'),
     (r'^changelog/(?P<when>\d{4}-\d\d-\d\d-\d\d:\d\d)/$', 'eve.tracker.views.changelog'),
-
-    (r'^login/$', 'eve.user.views.login'),
-    (r'^logout/$', 'django.contrib.auth.views.logout',
-        {'template_name': 'user_logout.html'}),
-
 )
 
 if DEBUG:

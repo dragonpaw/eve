@@ -32,7 +32,8 @@ from django.template.defaultfilters import slugify
 from eve.settings import DEBUG, logging
 from eve.lib import eveapi, evelogo
 from eve.lib.alliance_graphics import alliance_graphics
-from eve.lib.formatting import comma, time, unique_slug
+from eve.lib.jfilters import filter_comma as comma, filter_time as time
+from eve.lib.formatting import unique_slug
 from eve.lib.cachehandler import MyCacheHandler
 from eve import settings
 from eve.lib.decorators import cachedmethod
@@ -276,6 +277,13 @@ class Attribute(CachedGet, Base):
         elif name == 'typeID':
             value = Item.objects.get(pk=value)
         elif name == 'attributeID':
+            # What the hell happened to this attribute?! It's now 165-168,
+            # and not off by 164 either. (Int = 166 instead of 4)
+            # Intelligence(1): 165
+            # Charisma(2): 164
+            # Perception(3): 167
+            # Memory(4): 166
+            # Willpower(5): 168
             value = CharacterAttribute.objects.get(pk=value)
         elif name == 'Inverse Absolute Percent':
             value = "%d %%" % int((1 - value) * 100)
@@ -504,6 +512,20 @@ class Constellation(Base):
             return self.region.faction.get_icon(size)
         else:
             return None
+
+    @property
+    def note(self):
+        return self.owner()
+
+    def owner(self):
+        if self.faction:
+            return self.faction
+        else:
+            alliance = self.alliance
+            if alliance:
+                return alliance
+            else:
+                return None
 
 
 class ContrabandType(Base):
@@ -778,14 +800,23 @@ class Group(Base):
 
     @cachedmethod(60*24)
     def get_icon(self, size):
-        return self.graphic.get_icon(size)
+        if self.is_npc():
+            try:
+                x = self.items.all()[0]
+            except IndexError:
+                return None
+            return x.get_icon(size)
+        else:
+            return self.graphic.get_icon(size)
 
     def get_absolute_url(self):
-        if self.category.name == 'Entity':
-            # I am an NPC.
+        if self.is_npc():
             return u'/npc/%s' % self.slug
         else:
             return 'x'
+
+    def is_npc(self):
+        return self.category.name == 'Entity'
 
 
 class Graphic(CachedGet, Base):
@@ -996,6 +1027,9 @@ class Item(Base):
                 'color':   Graphic.color,
                 'item_id': self.id,
             }
+            if cat == 'Entity' and self.marketgroup is None:
+                d['cat'] = 'npc'
+                d['item_id'] = self.graphic_id
             icon = "%(dir)s/%(cat)s/%(size)d_%(size)d/%(item_id)d.png" % d
         else:
             icon = self.graphic.get_icon(size)
@@ -1101,17 +1135,20 @@ class Item(Base):
             # Sometimes the rate really IS in seconds.
             if rate > 100.0:
                 rate = rate / 1000.0
-
-            type = Item.objects.get(id=d['entityMissileTypeID'].value)
-            attributes = type.attributes_by_name()
-            if 'emDamage' in attributes:
-                dps['missile_em'] = attributes['emDamage'].value * mult / rate
-            if 'explosiveDamage' in attributes:
-                dps['missile_explosive'] = attributes['explosiveDamage'].value * mult / rate
-            if 'kineticDamage' in attributes:
-                dps['missile_kinetic'] = attributes['kineticDamage'].value * mult / rate
-            if 'thermalDamage' in attributes:
-                dps['missile_thermal'] = attributes['thermalDamage'].value * mult / rate
+            try:
+                type = Item.objects.get(id=d['entityMissileTypeID'].value)
+                dps['missile_type'] = type
+                attributes = type.attributes_by_name()
+                if 'emDamage' in attributes:
+                    dps['missile_em'] = attributes['emDamage'].value * mult / rate
+                if 'explosiveDamage' in attributes:
+                    dps['missile_explosive'] = attributes['explosiveDamage'].value * mult / rate
+                if 'kineticDamage' in attributes:
+                    dps['missile_kinetic'] = attributes['kineticDamage'].value * mult / rate
+                if 'thermalDamage' in attributes:
+                    dps['missile_thermal'] = attributes['thermalDamage'].value * mult / rate
+            except Item.DoesNotExist:
+                pass
 
         for type in ('em', 'explosive', 'kinetic', 'thermal'):
             if type in dps:
@@ -1482,6 +1519,7 @@ class Region(Base):
             else:
                 return None
 
+    @property
     def note(self):
         return self.owner()
 
@@ -1569,6 +1607,20 @@ class SolarSystem(Base):
 
     def get_icon(self, size):
         return self.alliance.get_icon(size)
+
+    @property
+    def note(self):
+        return self.owner()
+
+    def owner(self):
+        if self.faction:
+            return self.faction
+        else:
+            alliance = self.alliance
+            if alliance:
+                return alliance
+            else:
+                return None
 
 
 class Station(Base):

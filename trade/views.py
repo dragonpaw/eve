@@ -1,9 +1,10 @@
 from django import forms
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseRedirect
+from eve.lib.jinja import render_to_response
 
 import re
 import logging
@@ -36,50 +37,51 @@ for m in Material.objects.filter(salvage_mat_q).select_related('item'):
 
 @login_required
 def transactions(request):
-    d = {}
-    d['nav'] = [transaction_nav]
-    d['user'] = request.user
-
     profile = request.user.get_profile()
 
-    t = profile.trade_transactions(days=14)
-    j = profile.journal_entries(days=14, is_boring=False)
+    t = profile.trade_transactions(days=14).select_related('item', 'character', 'station__solarsystem')
+    j = profile.journal_entries(days=14, is_boring=False).select_related('character','type')
     t = list(t) + list(j)
     t.sort(key=lambda x:x.time, reverse=True)
 
-    d['transactions'] = t
+    return render_to_response('transactions.html', {
+        'nav': (transaction_nav,),
+        'user': request.user,
+        'transactions': t,
+    }, request)
 
-    return render_to_response('transactions.html', d)
+#@login_required
+#def journal_detail(request, id=None):
+#    profile = request.user.get_profile()
+#    transaction = JournalEntry.objects.filter(transaction_id=id, character__user=profile)
+#    if transaction.count() == 0:
+#        raise Http404
+#    else:
+#        transaction = transaction[0]
+#
+#    return render_to_response('journal_detail.html', {
+#        'nav': ( transaction_nav, transaction ),
+#        'transaction': transaction,
+#    }, request)
 
 @login_required
-def journal_detail(request, id=None):
+def transaction_detail(request, type, id=None):
     profile = request.user.get_profile()
-    transaction = JournalEntry.objects.filter(transaction_id=id, character__user=profile)
+    if type == 'transaction':
+        transaction = Transaction.objects.filter(transaction_id=id, character__user=profile).select_related()
+        template = 'transaction_detail.html'
+    else:
+        transaction = JournalEntry.objects.filter(transaction_id=id, character__user=profile).select_related()
+        template = 'journal_detail.html'
     if transaction.count() == 0:
         raise Http404
     else:
         transaction = transaction[0]
 
-    d = {}
-    d['nav'] = [ transaction_nav, transaction ]
-    d['transaction'] = transaction
-
-    return render_to_response('journal_detail.html', d)
-
-@login_required
-def transaction_detail(request, id=None):
-    profile = request.user.get_profile()
-    transaction = Transaction.objects.filter(transaction_id=id, character__user=profile)
-    if transaction.count() == 0:
-        raise Http404
-    else:
-        transaction = transaction[0]
-
-    d = {}
-    d['nav'] = [ transaction_nav, transaction]
-    d['transaction'] = transaction
-
-    return render_to_response('transaction_detail.html', d)
+    return render_to_response(template, {
+        'nav': ( transaction_nav, transaction ),
+        'transaction': transaction,
+    }, request)
 
 @login_required
 def blueprint_list(request):
@@ -88,7 +90,7 @@ def blueprint_list(request):
     d['user'] = request.user
     d['blueprints'] = request.user.get_profile().blueprints.select_related().order_by('ccp_item.name')
 
-    return render_to_response('blueprint_list.html', d)
+    return render_to_response('blueprint_list.html', d, request)
 
 class BlueprintOwnedForm(forms.ModelForm):
     class Meta:
@@ -107,7 +109,7 @@ def blueprint_edit(request, slug):
     if request.method == 'GET':
         form = BlueprintOwnedForm(instance=blueprint)
         d['form'] = form
-        return render_to_response('blueprint_edit.html', d)
+        return render_to_response('blueprint_edit.html', d, request)
 
     assert(request.method == 'POST')
 
@@ -119,7 +121,7 @@ def blueprint_edit(request, slug):
     d['form'] = form
 
     if form.is_valid() is False:
-        return render_to_response(template, d)
+        return render_to_response(template, d, request)
     else:
         form.save()
         return HttpResponseRedirect(blueprint_nav.get_absolute_url() )
@@ -142,8 +144,7 @@ def market_index_list(request):
     d['indexes'] = MarketIndex.objects.filter(q).select_related().order_by('-trade_marketindex.priority')
 
 
-    return render_to_response('indexes.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('indexes.html', d, request)
 
 def market_index_detail(request, name):
     if request.user.is_anonymous() == False:
@@ -159,8 +160,7 @@ def market_index_detail(request, name):
     d['index'] = index
     d['values'] = index.items.select_related().order_by('ccp_item.name')
 
-    return render_to_response('index_detail.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('index_detail.html', d, request)
 
 class FixedPriceForm(forms.Form):
     buy_price = forms.DecimalField(label='Buy Price', initial=0)
@@ -199,19 +199,17 @@ def fixed_price_update(request, id):
 
         d['form'] = FixedPriceForm(initial={'buy_price':buy_price,'sell_price':sell_price})
 
-    return render_to_response('index_update.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('index_update.html', d, request)
 
 
 def salvage(request):
     d = {}
-    d['items'] = Item.objects.filter(group__name='Salvaged Materials')
+    d['items'] = Item.objects.filter(group__name='Salvaged Materials').select_related('graphic', 'group')
     d['nav'] = [salvage_nav]
     log = logging.getLogger('eve.trade.views.salvage')
 
     if request.method != 'POST':
-        return render_to_response('salvage.html', d,
-                                  context_instance=RequestContext(request))
+        return render_to_response('salvage.html', d, request)
 
     assert(request.method=='POST')
 
@@ -258,7 +256,6 @@ def salvage(request):
             rigs[rig] = can_make
             log.debug('Can make: %s' % rig.name)
 
-
     objects = []
     d['objects'] = objects
     for rig in rigs.keys():
@@ -275,5 +272,4 @@ def salvage(request):
                         'sell':sell,
                         })
     objects.sort(key=lambda x:x['item'].name)
-    return render_to_response('item_list.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('item_list.html', d, request)

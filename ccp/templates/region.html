@@ -1,27 +1,24 @@
 {% extends "base.html" %}
-{% load trade %}
-{% load markup %}
 
 {% block content %}
-<h2{{ item.name }}</h2>
+<h2>{{ item.name }}</h2>
 <h3>Details</h3>
 <table>
-  <tr><th>Constellations:</th><td>{{ item.constellations.count }}</td></tr>
-  <tr><th>Systems:</th><td>{{ item.solarsystems.count }}</td></tr>
-  <tr><th>Stations:</th><td>{{ item.stations.count }}</td></tr>
+  <tr><th>Constellations:</th><td>{{ item.constellations.count() }}</td></tr>
+  <tr><th>Systems:</th><td>{{ item.solarsystems.count() }}</td></tr>
+  <tr><th>Stations:</th><td>{{ item.stations.count() }}</td></tr>
   <tr><th>Faction:</th><td>{{ item.faction }}</td></tr>
 </table>
 <h3>Constellations</h3>
 <ul class="links">
-    {% for c in item.constellations.all %}{% spaceless %}
-		<li class="region"><a href="{{ c.get_absolute_url }}">
+    {% for c in item.constellations.all() -%}
+		<li class="region"><a href="{{ c.get_absolute_url() }}">
 		{% if c.icon32 %}<img src="{{ c.icon32 }}">{% endif %}
 		<span class="name">{{ c.name }}</span><br>
-		<span class="systems">Systems: {{ c.solarsystems.count }}</span>
-		{% if c.stations.count %}<span class="stations">Stations: {{ c.stations.count }}</span>{% endif %}
+		<span class="systems">Systems: {{ c.solarsystems.count() }}</span>
+		{% if c.stations.count() %}<span class="stations">Stations: {{ c.stations.count() }}</span>{% endif %}
 		</a></li>
-    {% endspaceless %}
-    {% endfor %}
+    {%- endfor %}
 </ul>
 {% include "include_stations.html" %}
 {% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+# import 'include_inlinenav.html' as inline
+
+{% block content %}
+<h3>Refresh Completed</h3>
+
+{% if account.id %}
+<p>A data refresh for your account, {{ account.id }}, has been
+completed.</p>
+{% else %}
+<p>A data refresh for your account was run, however it was an invalid
+key and could not be added.</p>
+{% endif %}
+
+{% for m in messages %}
+<h4>{{ m.name|e }}</h4>
+<ul>
+{% for message in m.messages %}
+    <li>{{ message|e }}</li>
+{% endfor %}
+</ul>
+{% endfor %}
+
+{{ inline.nav(inline_nav) }}
+{% endblock %}

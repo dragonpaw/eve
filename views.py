@@ -1,4 +1,4 @@
-from django.shortcuts import render_to_response
+from eve.lib.jinja import render_to_response
 from django.template import RequestContext
 from eve.trade.views import blueprint_nav, index_nav, transaction_nav, salvage_nav
 from eve.ccp.views import region_nav, item_nav, sov_nav, npc_nav
@@ -26,27 +26,22 @@ def home(request):
                status_nav, npc_nav,
     ]
 
-    d = {
-        'inline_nav': objects
-    }
-
-    if user.is_authenticated() and user.username in ('ash', 'Ductape'):
-        objects.append(ship_fit_nav)
-
-    if user.is_authenticated() and user.is_staff:
-        objects.append(admin_nav)
-        objects.append(debug_nav)
-
     if user.is_authenticated():
-        objects.extend([blueprint_nav,
-                       user_nav,
-                       transaction_nav,
-                       pos_nav,
-                       logout_nav,
-                       ])
+        objects.append(blueprint_nav)
+        objects.append(user_nav)
+        objects.append(transaction_nav)
+        objects.append(pos_nav)
+        objects.append(logout_nav)
+        if user.is_staff:
+            objects.append(admin_nav)
+            objects.append(debug_nav)
     else:
-        objects.extend([login_nav, user_create_nav])
+        objects.append(login_nav)
+        objects.append(user_create_nav)
 
     objects.sort(key=lambda x: x.name)
 
-    return render_to_response('generic_menu.html', d, context_instance=RequestContext(request))
+    return render_to_response('generic_menu.html', {
+        'inline_nav': objects,
+        'request': request,
+    }, request)
