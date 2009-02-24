@@ -488,6 +488,27 @@ class Reaction(models.Model):
     def __unicode__(self):
         return u"%s: %s" % (self.station, self.type)
 
+    def get_absolute_url(self):
+        return self.type.get_absolute_url()
+
+    @property
+    def name(self):
+        return self.type.name
+
+    @property
+    def note(self):
+        if self.is_mining:
+            return u'Mining'
+        else:
+            return u'Reacting'
+
+    def get_icon(self, size):
+        return self.type.get_icon(size)
+
+    @property
+    def icon32(self):
+        return self.get_icon(32)
+
     @property
     def is_mining(self):
         return self.type_id in MOON_MINERALS

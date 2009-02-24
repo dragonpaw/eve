@@ -1,15 +1,11 @@
-{% load trade %}
-
-{% expr item.stations.count() < 20 as shouldprint %}
-{% if shouldprint %}
+{% if item.stations.count() < 20  %}
     <h4>Stations</h4>
-    {% if item.stations.count %}
+    {% if item.stations.count() %}
     <ul class="links" >
-	{% for o in item.stations.all %}{% spaceless %}
+	{% for o in item.stations.all() -%}
     	<li class="stations">
-        	<a href="{{ o.solarsystem.get_absolute_url }}">
+        	<a href="{{ o.solarsystem.get_absolute_url() }}">
                     <img src="{{ o.icon32 }}">
-                    {% expr o.solarsystem.security < 0.5 as lowsec %}
                     <span class="name">{{ o.name }}</span>
                     <br/>
                     <span class="note corporation">{{ o.corporation }}</span>
@@ -24,8 +20,7 @@
                     <br/>
         	</a>
     	</li>
-    {% endspaceless %}
-    {% endfor %}
+    {%- endfor %}
     </ul>
     {% else %}
       <p>No staitons.</p>

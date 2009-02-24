@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% load trade %}
+{% import 'include_inlinenav.html' as inline %}
 
 {% block content %}
 <p>Only certain 'interesting' journal entries are shown. Sales tax,
 contract fees, etc, are filtered out for brevity.</p>
 <ul class="links">
-{% for t in transactions %}{% spaceless %}
-	<li class="transaction"><a href="{{ t.get_absolute_url }}">
-	<img src="{{ t.icon32 }}">
+{% for t in transactions %}
+	<li class="transaction"><a href="{{ t.get_absolute_url() }}">
+	{{ inline.icon32(t) }}
 	{% if t.is_transaction %}
 		<span class="name">{{ t.item }}</span><br/>
 		<span class="quantity">x{{ t.quantity|comma }}</span>
@@ -19,9 +19,9 @@ contract fees, etc, are filtered out for brevity.</p>
 		<span class="quantity">&nbsp;</span>
 	{% endif %}
 	{% if t.sold %}
-		<span class="sold right">+ {{ t.value|floatformat:2|comma }}</span>
+		<span class="sold right">+ {{ t.value|floatformat(2)|comma }}</span>
 	{% else %}
-		<span class="bought right">- {{ t.value|floatformat:2|comma }}</span>
+		<span class="bought right">- {{ t.value|floatformat(2)|comma }}</span>
 	{% endif %}
 	<br><span class="note">{{ t.character.name }}</span>
 	{% if t.is_transaction %}
@@ -29,7 +29,7 @@ contract fees, etc, are filtered out for brevity.</p>
 	{% else %}
 		<span class="note right">{{ t.type }}</span><br/>
 	{% endif %}
-	</a></li>{% endspaceless %}
+	</a></li>
 {% endfor %}
 </ul>
 {% endblock %}

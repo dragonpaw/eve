@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h4>{{ server|e }}</h4>
+<table>
+  <tr>
+    <th>Status</th><td>{{ status|e }}</td>
+  </tr><tr>
+    <th>Players</th><td>{{ players|e }}</td>
+  </tr>
+</table>
+{% endblock %}

@@ -28,7 +28,7 @@ INTERNAL_IPS = ('127.0.0.1', '10.0.2.2')
 
 MANAGERS = ADMINS
 
-TEMPLATE_DEBUG = DEBUG
+TEMPLATE_DEBUG = False
 
 DEFAULT_FROM_EMAIL='ash@dragonpaw.org'
 
@@ -78,10 +78,9 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.middleware.doc.XViewMiddleware',
-    'django.contrib.flatpages.middleware.FlatpageFallbackMiddleware',
-    #'eve.lib.debug_middleware.DebugFooter',
+    'eve.lib.jinja_flatpage.middleware.FlatpageFallbackMiddleware',
     'eve.tracker.middleware.ChangeLogMiddleware',
-    'eve.debug_toolbar.middleware.DebugToolbarMiddleware',
+    #'eve.debug_toolbar.middleware.DebugToolbarMiddleware',
 )
 
 ROOT_URLCONF = 'eve.urls'
@@ -117,6 +116,7 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django_extensions',
     'eve.debug_toolbar',
+    'eve.debug',
     'eve.mining',
     'eve.tracker',
     'eve.ccp',
@@ -124,6 +124,8 @@ INSTALLED_APPS = (
     'eve.emails',
     'eve.trade',
     'eve.pos',
+    'eve.status',
+    'eve.lib',
 )
 
 CACHE_BACKEND = "memcached://127.0.0.1:11211/"
@@ -136,4 +138,4 @@ else:
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/'
-LOGIN_URL = '/login/'
+LOGIN_URL = '/user/login/'

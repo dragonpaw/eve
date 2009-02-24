@@ -131,7 +131,20 @@ h5 {
 }
 
 .right {
-    text-align: right;
+        text-align: right !important;
+}
+
+.center {
+        text-align: center !important;
+        /* border-left: 1px solid red;
+        border-right: 1px solid red;
+        background: pink; */
+}
+
+td.center img,
+td.icon img {
+        margin: 0 0 0 0;
+        float: none;
 }
 
 /* Table Elements *****************************************************************/
@@ -177,6 +190,12 @@ th.number {
 	text-align: right;
 }
 
+td.no_bottom {
+        border-bottom: none !important;
+}
+td.no_top {
+        border-top: none !important;
+}
 /* Form Elements ******************************************************************/
 
 /* iphone.css extends some of these. */
@@ -438,6 +457,7 @@ li.character a {
         text-align: right;
         color: black !important;
 }
+/*
 .npc .em {
         position: absolute;
         right: 55%;
@@ -461,7 +481,7 @@ li.character a {
         right: 40%;
         text-align: right;
 }
-
+*/
 .npc .missile_dps,
 .npc .dps {
         background-color: rgb(225, 225, 225) !important;
@@ -471,6 +491,10 @@ li.character a {
 
 .npc .dps-total {
         border-top: solid 1px black;
+}
+
+table.npc tr.ewar {
+        background-color: rgb(213, 223, 255) !important;
 }
 
 .em {
@@ -541,6 +565,10 @@ li.character a {
 .blueprint .me {
 	color: gray;
 	left: 50px;
+}
+
+.blueprint .me-crap {
+        color: red;
 }
 
 .blueprint .cost {

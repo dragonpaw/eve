@@ -1,41 +1,43 @@
 {% extends "base.html" %}
-{% load trade %}
-{% load markup %}
+{% import 'include_inlinenav.html' as inline %}
 
 {% block content %}
-<h3>{{ item.name }}</h3>
+<h2>{{ item.name }}</h2>
 {% if item.icon64 %}<img src="{{ item.icon64 }}" class="icon">{% endif %}
 
-<h4>Details</h4>
+<h3>Details</h3>
 <table>
-	<tr><th>Region:</th><td><a href="{{ item.region.get_absolute_url }}">{{ item.region }}</a></td></tr>
+	<tr><th>Region:</th><td><a href="{{ item.region.get_absolute_url() }}">{{ item.region }}</a></td></tr>
 	{% if item.faction %}<tr><th>Faction</th><td>{{ item.faction }}</td></tr>
-	{% else %}<tr><th>Soverignity:</th><td>{{ item.alliance|default:"Unclaimed" }}</td></tr>
+	{% else %}<tr><th>Soverignity:</th><td>{{ item.alliance|default("Unclaimed") }}</td></tr>
 	{% endif %}
-    <tr><th>Systems:</th><td>{{ item.solarsystems.count }}</td></tr>
+    <tr><th>Systems:</th><td>{{ item.solarsystems.count() }}</td></tr>
 </table>
 
-<h4>Systems</h4>
+<h3>Systems</h3>
 	<ul class="links" >
-	{% spaceless %}{% for o in item.solarsystems.all %}
+	{% for o in item.solarsystems.all() -%}
     	<li class="constellation">
-        	<a href="{{ o.get_absolute_url }}">
-            {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
-            {% expr o.security < 0.5 as lowsec %}
+        	<a href="{{ o.get_absolute_url() }}">
+                {{ inline.icon32(o) }}
             <span class="name">{{ o.name }}</span>
-            <span class="security security-{% if lowsec %}low{% else %}high{% endif %}">({{ o.security|floatformat:3 }})</span>
+            {% if o.security < 0.5 -%}
+                <span class="security security-low">
+            {%- else -%}
+                <span class="security security-high">
+            {%- endif %} ({{ o.security|floatformat(3) }})</span>
             </span>
-            <br>
-            {% expr o.stations.count() == 1 as singlestation %}
-            {% if singlestation %}<span class="stations">{{ o.stations.all.0.name }}</span>{% else %}
-            {% if o.stations.count %}<span class="stations">Stations: {{ o.stations.count }}</span>{% endif %}
-            {% endif %}
-            <!--  <span class="faction">{{ o.faction }}</span>  -->
-            <span class="belts">B: {{ o.belts.count }}</span>
-            <span class="moons">M: {{ o.moons.count }}</span>
+            <br/>
+            {% if o.stations.count() == 1 -%}
+                <span class="stations">{{ o.stations.all()[0].name }}</span>
+            {%- elif o.stations.count() -%}
+                <span class="stations">Stations: {{ o.stations.count() }}</span>
+            {%- endif %}
+            <span class="belts">B: {{ o.belts().count() }}</span>
+            <span class="moons">M: {{ o.moons().count() }}</span>
         	</a>
     	</li>
-	{% endfor %}{% endspaceless %}
+	{%- endfor %}
 	</ul>
 
     {% include "include_stations.html" %}

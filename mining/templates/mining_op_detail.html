@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+<h3>Operation</h3>
+<table>
+<tr><th>Description:</th><td>{{ op.description|e }}</td></tr>
+<tr><th>When:</th><td>{{ op.datetime|e }}</td></tr>
+</table>
+
+<h3>Total Minerals</h3>
+<ul class="links">
+{% for m in minerals %}
+<li><a href="{{ m.type.get_absolute_url|e }}">
+<img src="{{ m.type.icon32|e }}">
+<span class="name">{{ m.type.name|e }}</span><br>
+<span class="quantity">x{{ m.quantity|comma|e }}</span>
+<span class="right index-sell">{{ m.sell|floatformat(2)|comma|e }} ISK</span>
+</a></li>
+{% endfor %}
+<p>Total operation value: {{ total_value|isk|e }}</p>
+
+<h3>Miners</h3>
+<table>
+<tr><th>Name</th><th class="number">Hours</th><th class="number">%</th><th class="number">Value</th></tr>
+{% for m in miners %}
+	<tr>
+	    <td class="name">{{ m.miner.name|e }}</td>
+	    <td>{{ m.hours|floatformat(1)|e }}</td>
+	    <td>{{ m.percent_display|floatformat(2)|e }} %</td>
+	    <td>{{ m.isk|floatformat(0)|comma|e }}</td>
+	</tr>
+{% endfor %}
+</table>
+
+<h3>Shares</h3>
+{% for x in ore_per_person %}
+	<h4>{{ x.miner.name|e }}</h4>
+	<table>
+	<tr><th>Mineral</th><th class="number">Quantity</th><th class="number">ISK</th></tr>
+	{% for mineral in x.shares %}<tr><td class="name">{{- mineral.type|e -}}</td>
+	      <td>{{- mineral.quantity|comma|e -}}</td>
+	      <td>{{- mineral.sell|floatformat(2)|comma|e -}}</td>
+	</tr>
+	{% endfor %}
+	<tr><th>Total ISK:</th><th class="number" colspan="2">{{ x.sell|floatformat(2)|comma|e }}</th></tr>
+	</table>
+{% endfor %}
+{% endblock %}

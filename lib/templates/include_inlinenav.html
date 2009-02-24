@@ -1,0 +1,63 @@
+{% macro icon32(object) -%}
+{%- if object.icon32 -%}<img src="{{- object.icon32 -}}">
+{%- elif object.icon64 -%}<!-- Characters have an icon64 but no icon32 --><img src="{{- object.icon64 -}}">
+{%- else -%}<img>
+{%- endif %}
+{%- endmacro %}
+
+{% macro icon16(object) -%}
+{% if object.icon16 %}<img src="{{ object.icon16 }}">{% else %}<img>{% endif %}
+{%- endmacro %}
+
+{% macro nav(inline_nav) -%}
+{% if inline_nav %}
+{% if browser == 'eve' %}
+<table>
+{% for n in inline_n %}<tr>
+	<td>{{ icon32(n) }}</td>
+	<td><a href="{{- n.get_absolute_url() -}}">
+	{{- n.name -}}
+	</a></td>
+	<td>{{- n.note -}}</td>
+</tr>{% endfor %}
+</table>
+{% else %}
+<ul class="links" >
+{% for n in inline_nav %}
+    {%- if n.get_absolute_url -%}
+    <li>
+        <a href="{{ n.get_absolute_url() }}">
+    {%- else -%}
+    <li class="no-link">
+        <a>
+    {%- endif -%}
+	    {{ icon32(n) }}
+            <span class="name">{{- n.name -}}</span>
+            {%- if n.note -%}<br><span class="note">{{- n.note -}}</span>{%- endif -%}
+        </a>
+    </li>{%- endfor %}
+</ul>
+{% endif %}
+{% endif %}
+{%- endmacro %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

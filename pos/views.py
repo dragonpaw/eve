@@ -1,4 +1,4 @@
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django import forms
@@ -11,6 +11,7 @@ from eve.ccp.models import Item, Corporation
 from eve.pos.models import PlayerStation
 from eve.user.models import Character
 from eve.lib.formatting import make_nav, NavigationElement
+from eve.lib.jinja import render_to_response
 
 pos_nav = make_nav("Player-Owned Structures", "/pos/", '40_14',
                    note='Fuel status for all of your POSes.')
@@ -41,7 +42,6 @@ def get_poses(profile):
     sorting = ['corporation','owner', 'solarsystem__name', 'moon__celestialindex', 'moon__orbitindex']
 
     poses = PlayerStation.objects.filter(query).order_by(*sorting).select_related()
-
     return poses
 
 def pos_allowed(profile, pos):
@@ -57,124 +57,13 @@ def pos_allowed(profile, pos):
 
 @login_required
 def pos_list(request):
-    d = {}
-    d['nav'] = [pos_nav]
     profile = request.user.get_profile()
 
-
-
-    d['poses'] = get_poses(profile)
-    d['inline_nav'] = [ pos_profit_nav, pos_monkey_nav ]
-
-    return render_to_response('list.html', d, context_instance=RequestContext(request))
-
-#
-#@login_required
-#def fuel_detail(request, station_id, days=DEFAULT_DAYS):
-#    pos = get_object_or_404(PlayerStation, id=station_id)
-#    profile = request.user.get_profile()
-#    pos_allowed(profile, pos)
-#
-#    d = {}
-#    d['nav'] = [pos_nav, pos]
-#    d['pos'] = pos
-#    d['days'] = days
-#    d['id'] = pos.id # Used by the inline nav function.
-#    fuels = []
-#    for f in pos.fuel.all():
-#        fuels.append({'need':f.need(days=days),
-#                      'run_time':f.time_remaining,
-#                      'type':f.type,
-#                      'fuel':f})
-#
-#    fuels.sort(key=lambda x:x['type'].name)
-#    d['fuels'] = fuels
-#
-#
-#    nav = []
-#    # Build of the nav options for the POS.
-#    for x in (REFUEL_NAV, REACTION_NAV, PROFIT_NAV):
-#        x.id = pos.id
-#        nav.append(x)
-#
-#    if pos.owner:
-#        owner = NavigationElement (
-#            'Owner: %s' % pos.owner.name,
-#            '/pos/%d/owner' % pos.id,
-#            pos.owner,
-#            "Set the 'owner' of this POS."
-#        )
-#    else:
-#        owner = NavigationElement (
-#            'Corporation Use',
-#            '/pos/%d/owner' % pos.id,
-#            pos.corporation,
-#            "Set the 'owner' of this POS."
-#        )
-#    nav.append(owner)
-#
-#    d['inline_nav'] = nav
-#
-#    return render_to_response('pos_fuel_detail.html', d,
-#                              context_instance=RequestContext(request))
-
-#@login_required
-#def profit_detail(request, station_id):
-#    profile = request.user.get_profile()
-#    pos = get_object_or_404(PlayerStation, id=station_id)
-#    pos_allowed(profile, pos)
-#
-#    d = {}
-#    d['nav'] = [pos_nav, pos_profit_nav, pos]
-#    d['pos'] = pos
-#    cost = 0
-#    fuels = []
-#    for f in pos.fuel.all():
-#        price = profile.get_buy_price(f.type)
-#
-#        weekly = 0
-#        if f.purpose != 'Reinforce':
-#            weekly = f.consumption * 24 * 7
-#            weekly_cost = price * weekly
-#            cost += weekly_cost
-#
-#        fuels.append({'price':price,
-#                      'weekly':weekly,
-#                      'weekly_cost':weekly_cost,
-#                      'type':f.type,
-#                      'fuel':f})
-#
-#    fuels.sort(key=lambda x:x['type'].name)
-#    d['weekly_cost'] = cost
-#    d['fuels'] = fuels
-#    d['reactions'] = list( pos.reactions.all() )
-#    d['reactions'].sort(key=lambda x:'%d-%s' % (x.is_reaction, x.type.name))
-#
-#    reaction_values = []
-#    weekly_value = 0
-#    for type, quantity in pos.reacted_quantities():
-#        r = {}
-#        r['weekly'] = 24 * 7 * quantity
-#        r['sell'] = profile.get_sell_price(type)
-#        r['weekly_value'] = r['sell'] * r['weekly']
-#        r['type'] = type
-#        reaction_values.append(r)
-#        weekly_value += r['weekly_value']
-#    reaction_values.sort(key=lambda x:x['type'].id)
-#    d['reaction_values'] = reaction_values
-#    d['weekly_value'] = weekly_value
-#    d['weekly_total'] = abs(weekly_value - cost)
-#    d['profitable'] = d['weekly_total'] > 0
-#    nav = []
-#    # Build of the nav options for the POS.
-#    for x in (REACTION_NAV,):
-#        x.id = pos.id
-#        nav.append(x)
-#    d['inline_nav'] = nav
-#
-#    return render_to_response('pos_profit_detail.html', d,
-#                              context_instance=RequestContext(request))
-
+    return render_to_response('pos_list.html', {
+        'poses'      : get_poses(profile),
+        'inline_nav' : ( pos_profit_nav, pos_monkey_nav ),
+        'nav'        : ( pos_nav, ),
+    }, request)
 
 @login_required
 def detail(request, station_id, days=DEFAULT_DAYS):
@@ -248,8 +137,8 @@ def detail(request, station_id, days=DEFAULT_DAYS):
     reaction_values.sort(key=lambda x:x['type'].id)
     weekly_total = weekly_value - cost
 
-    # Shove it all into the stash.
-    d = {
+    return render_to_response('pos_detail.html', {
+        'request'    : request,
         'nav': (pos_nav, pos),
         'pos': pos,
         'days': days,
@@ -262,10 +151,7 @@ def detail(request, station_id, days=DEFAULT_DAYS):
         'weekly_value':  weekly_value,
         'weekly_total': abs(weekly_total),
         'profitable': weekly_total > 0,
-    }
-
-    return render_to_response('detail.html', d,
-                              context_instance=RequestContext(request))
+    }, request)
 
 @login_required
 def profits(request, days=DEFAULT_DAYS):
@@ -375,64 +261,7 @@ def profits(request, days=DEFAULT_DAYS):
     d['poses'] = poses
     d['fuels'] = corps
     d['days'] = days
-    return render_to_response('profits.html', d, context_instance=RequestContext(request))
-
-#@login_required
-#def profit_list(request):
-#    d = {}
-#    d['nav'] = [pos_nav, pos_profit_nav]
-#
-#    profile = request.user.get_profile()
-#
-#    corps = {}
-#    price_cache = {}
-#    poses = get_poses(profile)
-#
-#    for pos_list in poses:
-#        corp_name = pos_list['name']
-#        prices = {}
-#        cost_weekly = 0
-#        income_weekly = 0
-#        m3_weekly = 0
-#        poses = []
-#        for pos in pos_list['pos']:
-#            pos_weekly_cost = 0
-#            pos_weekly_value = 0
-#            m3 = 0
-#            for fuel in pos.fuel.all():
-#                if fuel.purpose == 'Reinforce':
-#                    continue
-#                if not prices.has_key(fuel.type.id):
-#                    prices[fuel.type.id] = profile.get_buy_price(fuel.type)
-#                pos_weekly_cost += fuel.consumption * 24 * 7 * prices[fuel.type.id]
-#
-#            for type, quantity in pos.reacted_quantities():
-#                if not prices.has_key(type.id):
-#                    prices[type.id] = profile.get_sell_price(type)
-#                pos_weekly_value += prices[type.id] * 24 * 7 * quantity
-#                m3 += type.volume * 24 * 7 * quantity
-#            profit = pos_weekly_value - pos_weekly_cost
-#            poses.append({'pos':pos,
-#                          'cost':pos_weekly_cost,
-#                          'value':pos_weekly_value,
-#                          'profit':profit,
-#                          'm3':m3,
-#                          'is_profitable': profit > 0,
-#                          })
-#            cost_weekly += pos_weekly_cost
-#            income_weekly += pos_weekly_value
-#            m3_weekly += m3
-#        corps.append({'name':corp_name,
-#                      'cost_weekly':cost_weekly,
-#                      'income_weekly':income_weekly,
-#                      'profit_weekly': abs(income_weekly - cost_weekly),
-#                      'm3_weekly':m3_weekly,
-#                      'poses':poses,
-#                      'profitable': (income_weekly > cost_weekly),
-#                      })
-#
-#    d['fuels'] = corps
-#    return render_to_response('pos_profits.html', d, context_instance=RequestContext(request))
+    return render_to_response('pos_profits.html', d, request)
 
 class ReactionForm(forms.Form):
     q = Q(group__name__in=['Moon Materials', 'Intermediate Materials',
@@ -458,15 +287,15 @@ def setup_reactions(request, station_id):
     profile = request.user.get_profile()
     pos_allowed(profile, pos)
 
-    d = {}
-    d['pos'] = pos
-    d['nav'] = [pos_nav, pos_profit_nav, pos]
+    d = {
+        'pos': pos,
+        'nav': (pos_nav, pos_profit_nav, pos),
+    }
 
     if request.method == 'POST':
         form = ReactionForm(request.POST)
         if not form.is_valid():
-            render_to_response(template, d,
-                              context_instance=RequestContext(request))
+            return jrespond('pos_edit_reactions.html', d)
         else:
             pos.reactions.all().delete()
             for slug in form.cleaned_data.values():
@@ -484,8 +313,7 @@ def setup_reactions(request, station_id):
             index += 1
 
         d['form'] = ReactionForm(reactions)
-        return render_to_response('edit_reactions.html', d,
-                                  context_instance=RequestContext(request))
+        return render_to_response('pos_edit_reactions.html', d, request)
 
 
 @login_required
@@ -506,62 +334,43 @@ def refuel(request, station_id, days=DEFAULT_DAYS):
         pos.save()
         return HttpResponseRedirect( pos.get_absolute_url() )
     else:
-        d = {}
-        d['nav'] = [pos_nav, pos, {'name':'Manual Refueling'}]
-        d['pos'] = pos
-        d['fuel'] = [x for x in pos.fuel.all()]
-        d['fuel'].sort(key=lambda x:x.type.name)
-        d['days'] = days
-        return render_to_response('refuel.html', d,
-                                  context_instance=RequestContext(request))
+        fuels = [x for x in pos.fuel.all()]
+        fuels.sort(key=lambda x:x.type.name)
+
+        d = {
+            'nav' : (pos_nav, pos, {'name':'Manual Refueling'}),
+            'pos' : pos,
+            'fuel': fuels,
+            'days': days,
+        }
+        return render_to_response('pos_refuel.html', d, request)
 
 @login_required
 def monkey_list(request):
-    d = {}
-    d['nav'] = [pos_nav, pos_monkey_nav]
-
-    corporations = []
-    d['corporations'] = corporations
-
     profile = request.user.get_profile()
+
+    corporations = set()
     for character in profile.characters.all():
         if not (character.is_director or character.is_pos_monkey):
             continue
-        corporations.append(character.corporation)
+        corporations.add(character.corporation)
 
-
-    return render_to_response('roles.html', d,
-                                  context_instance=RequestContext(request))
-
-def is_director_of(me, you):
-    '''Security check to make sure that profile 'me' has a director role that would allow
-    them to alter user 'you'. The 'you' involved may be a character, or a pos. (Or anything
-    with a corporation_id really.)'''
-
-    profile = me.get_profile()
-
-    for c in profile.characters.all():
-        if c.is_director and you.corporation_id == c.corporation_id:
-            return True
-
-    return False
-
-def is_director_of_or_404(me, you):
-    if is_director_of(me, you):
-        return True
-    else:
-        raise Http404
+    d = {
+        'nav': (pos_nav, pos_monkey_nav),
+        'corporations': corporations,
+    }
+    return render_to_response('pos_roles.html', d, request)
 
 @login_required
 def owner_set(request, station_id, character_id):
     pos = get_object_or_404(PlayerStation, id=station_id)
     profile = request.user.get_profile()
     pos_allowed(profile, pos)
+
     if character_id == '0':
         pos.owner = None
     else:
         character = get_object_or_404(Character, id=character_id)
-        #is_director_of_or_404(request.user, character)
         if character.corporation != pos.corporation:
             raise Http404
         pos.owner = character
@@ -574,15 +383,8 @@ def owner(request, station_id):
     profile = request.user.get_profile()
     pos_allowed(profile, pos)
 
-    d = {}
-    d['pos'] = pos
-    #d['characters'] = [{
-    #    'character':c,
-    #    'director':c.is_director,
-    #    'monkey':c.is_pos_monkey
-    #}]
-
-
-    d['nav'] = [pos_nav, pos, {'name':'Owner'}]
-    return render_to_response('owner.html', d,
-                              context_instance=RequestContext(request))
+    d = {
+        'pos': pos,
+        'nav': (pos_nav, pos, {'name':'Owner'}),
+    }
+    return render_to_response('pos_owner.html', d, request)

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if corporations %}
+<p>The following users are able to view POS information via the Widget, based
+off of their in-game roles within the corporation. To grant or revoke global
+access, use the in-game title and role mechanics.</p>
+
+<p>If you want to designate a single person as the owner of a
+personal POS, then do <strong>not</strong> use this page to do that. Go
+to the page for the specific POS, and you will find a delegation and
+ownership tool there.</p>
+
+{% for corp in corporations %}
+<h3>{{ corp.name|e }}</h3>
+
+<ul class="links">
+{% for char in corp.characters.all() %}<li class="pos-access no-link">
+<a>
+<img src="{{- char.icon64 -}}" style="width: 32px; height: 32px">
+{%- if char.is_director -%}
+<span class="director">{{ char.name|e }}</span><br>
+<span class="note">This character is a director. They will always see POS status.</span>
+{%- elif char.is_pos_monkey -%}
+<span class="granted">{{ char.name|e }}</span><br>
+<span class="note">This character has the 'Starbase Caretaker' role granted within EVE. They will see all POS status.</span>
+{% else -%}
+<span class="denied">{{ char.name|e }}</span><br>
+<span class="note">This character has no roles.</span>
+{% endif -%}
+</a></li>
+{% endfor %}</ul>
+{% endfor %}
+{% else %}
+<P>This control is only avilable to the director of a corporation.</P>
+{% endif %}
+{% endblock %}

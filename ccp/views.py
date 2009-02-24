@@ -1,21 +1,45 @@
 # Create your views here.
 #from django.http import HttpResponseRedirect
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.db.models import Q
 from django.views.decorators.cache import cache_page
 
-from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute, Category, Group
+from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute, Category, Group, get_graphic, Graphic
 from eve.trade.models import BlueprintOwned
 from eve.lib.formatting import make_nav
+from eve.pos.models import PlayerStation
+from eve.lib.jinja import render_to_response
 
 from datetime import datetime, timedelta
 from decimal import Decimal
+
+import logging
 
 item_nav = make_nav("Items", "/items/", '24_05', note='All items in the game.')
 region_nav = make_nav("Regions", "/regions/", '17_03', note='The universe, and everything in it.')
 sov_nav = make_nav('Sovereignty Changes', '/sov/changes/', '70_11', note='Who lost and gained systems.')
 npc_nav = make_nav('NPCs', '/npc/', '07_07', note='All the things to blow up, or be blown up by.')
+
+NPC_ICONS = {
+    'shield': get_graphic('02_01'),
+    'armor': get_graphic('01_10'),
+    'dps_em': get_graphic('22_12'),
+    'dps_ex': get_graphic('22_11'),
+    'dps_ki': get_graphic('22_09'),
+    'dps_th': get_graphic('22_10'),
+    'tank_em': get_graphic('22_20'),
+    'tank_ex': get_graphic('22_19'),
+    'tank_ki': get_graphic('22_17'),
+    'tank_th': get_graphic('22_18'),
+    'ewar_scramble': get_graphic('04_09'),
+    'ewar_web': get_graphic('12_06'),
+    'ewar_tracking': get_graphic('05_07'),
+    'ewar_jam': get_graphic('04_12'),
+    'ewar_damp': get_graphic('04_11'),
+    'ewar_neut': get_graphic('01_03'),
+    'ewar_paint': get_graphic('56_01'),
+}
 
 def generate_navigation(object):
     """Build up a heiracy of objects"""
@@ -32,79 +56,57 @@ def generate_navigation(object):
         nav.reverse()
     return nav
 
-@cache_page(60 * 60 * 2)
 def solarsystem(request, name):
     item = get_object_or_404(SolarSystem, name=name)
 
-    d = {}
+    if request.user:
+        log = logging.getLogger('eve.ccp.views.solarsystem')
+        profile = request.user.get_profile()
+        log.debug('Adding POSes for user: %s' % profile)
+        query = profile.characters.filter(corporation__alliance__isnull=False)
+        ids = set([x.corporation.alliance_id for x in query])
+        log.debug('Allowed to see alliances with ID of: %s' % str(ids))
+        poses = PlayerStation.objects.filter(corporation__alliance__in=ids,
+                                             solarsystem=item)
+        poses = dict([(pos.moon, pos) for pos in poses])
+        log.debug('Total number of POS vieable: %d' % len(poses))
+    else:
+        poses = dict()
 
-    d['nav'] = [
-                {'name':"Regions",'get_absolute_url':"/regions/"},
-                item.region,
-                item.constellation,
-                item
-               ]
-    d['title'] = "Solar System: %s" % item.name
-    d['item'] = item
-
-    return render_to_response('solarsystem.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('solarsystem.html', {
+        'poses': poses,
+        'item' : item,
+        'nav'  : (region_nav, item.region, item.constellation, item),
+    }, request)
 
 @cache_page(60 * 60 * 2)
 def constellation(request, name):
     item = get_object_or_404(Constellation, name=name)
-    #item = Constellation.objects.get(name=name)
 
-    d = {}
-
-    d['nav'] = [
-                {'name':"Regions",'get_absolute_url':"/regions/"},
-                item.region,
-                item
-               ]
-    d['title'] = "Constellation: %s" % item.name
-    d['item'] = item
-
-
-    return render_to_response('constellation.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('constellation.html', {
+        'nav': (region_nav, item.region, item),
+        'item': item,
+        'title': 'test',
+    }, request)
 
 @cache_page(60 * 60 * 2)
 def region(request, slug):
     item = get_object_or_404(Region, slug=slug)
-    #item = Constellation.objects.get(name=name)
 
-    d = {}
-
-    d['nav'] = [
-                {'name':"Regions",'get_absolute_url':"/regions/"},
-                item
-               ]
-    d['title'] = "Region: %s" % item.name
-    d['item'] = item
-
-
-    return render_to_response('region.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('region.html', {
+        'item': item,
+        'nav': (region_nav, item),
+    }, request)
 
 @cache_page(60 * 60 * 2)
 def region_list(request):
-    d = {}
-    d['nav'] = [ {'name':"Regions",'get_absolute_url':"/regions/"} ]
-
-    #q1 = Q(faction__isnull=True)
-    #q2 = ~Q(faction__name='Jove Empire')
-
-    #regions = list(Region.objects.filter(q1)) + list(Region.objects.filter(q2))
-    #regions.sort(key=lambda x:x.name)
-
     q = Q(faction__isnull=True) | ~Q(faction__name='Jove Empire')
     regions = Region.objects.filter(q)
 
-    d['inline_nav'] = regions
-
-    return render_to_response('regions.html', d,
-                              context_instance=RequestContext(request))
+    return render_to_response('regions.html', {
+        'nav': ( {'name':"Regions",'get_absolute_url':"/regions/"}, ),
+        'inline_nav': regions,
+    }, request)
 
 @cache_page(60 * 60 * 2)
 def group_index(request):
@@ -115,7 +117,7 @@ def group_index(request):
     d['objects'] = [{'item':x} for x in root_objects]
 
     return render_to_response('item_list.html', d,
-                              context_instance=RequestContext(request))
+                              request)
 
 # Cannot cache as it depends on user prices.
 def group(request, slug):
@@ -137,7 +139,7 @@ def group(request, slug):
 
     d['objects'].sort(key=lambda x:x['item'].name)
     return render_to_response('item_list.html', d,
-                              context_instance=RequestContext(request))
+                              request)
 
 
 def get_index_price(profile, item, type=None):
@@ -356,7 +358,7 @@ def item(request, slug, days=30):
     d['blueprint'] = my_blueprint
 
     return render_to_response('item.html', d,
-                              context_instance=RequestContext(request))
+                              request)
 
 @cache_page(60 * 60 * 4)
 def sov_changes(request, days=14):
@@ -367,30 +369,91 @@ def sov_changes(request, days=14):
     d['nav'] = [ sov_nav ]
 
     return render_to_response('sov_changes.html', d,
-                              context_instance=RequestContext(request))
+                              request)
 
 @cache_page(60 * 60 * 4)
 def npc_groups(request):
     """Show all of the available groups of NPCs out there."""
-    d = {}
-    cat = Category.objects.get(name='Entity')
-    # Template needs the objects as dicts.
-    groups = cat.groups.extra(
+    groups = Category.objects.get(name='Entity').groups.extra(
         select = {'item_count': 'SELECT COUNT(*) item_count from ccp_item where ccp_item.groupID = ccp_group.groupID'},
-        #where = ['item_count > 0'],
     ).select_related()
-    d['objects'] = [{ 'item':x, 'quantity':x.item_count } for x in groups if x.item_count > 0]
-    d['nav'] = [ npc_nav ]
-    return render_to_response('item_list.html', d,
-                              context_instance=RequestContext(request))
+
+    # Template needs the objects as dicts.
+    objects = [{'item': x } for x in groups if x.item_count > 0]
+
+    return render_to_response('item_list.html', {
+        'nav': (npc_nav, ),
+        'objects': objects,
+    }, request)
 
 @cache_page(60 * 60 * 4)
 def npc_group(request, slug):
     """Show all the members of a single group"""
-    d = {}
     group = Group.objects.get(slug=slug)
-    # Template needs the objects as dicts.
-    d['objects'] = group.items.all()
-    d['nav'] = [ npc_nav, group ]
-    return render_to_response('npc_list.html', d,
-                              context_instance=RequestContext(request))
+    objects = list( group.items.all() )
+
+    resist_map = {
+        'armor_resist_em': 'armorEmDamageResonance',
+        'armor_resist_thermal': 'armorThermalDamageResonance',
+        'armor_resist_kinetic': 'armorKineticDamageResonance',
+        'armor_resist_explosive': 'armorExplosiveDamageResonance',
+        'shield_resist_em': 'shieldEmDamageResonance',
+        'shield_resist_thermal': 'shieldThermalDamageResonance',
+        'shield_resist_kinetic': 'shieldKineticDamageResonance',
+        'shield_resist_explosive': 'shieldExplosiveDamageResonance',
+    }
+    # Scramble is missing, as it uses two attributes.
+    ewar_map = {
+        'jam': 'entityTargetJamMaxRange',
+        'web': 'modifyTargetSpeedRange',
+        'damp': 'entitySensorDampenMaxRange',
+        'tracking': 'entityTrackingDisruptMaxRange',
+        'neut': 'entityCapacitorDrainMaxRange',
+        'paint': 'entityTargetPaintMaxRange',
+    }
+
+    # Stick the attributes where the template can find them easily.
+    for o in objects:
+        o.a = o.attributes_by_name()
+        o.dps = o.dps()
+        if 'gfxTurretID' in o.a:
+            o.gun_icon = Graphic.objects.get(id=o.a['gfxTurretID'].value)
+        else:
+            o.gun_icon = None
+        if 'missile_type' in o.dps:
+            o.missile_icon = o.dps['missile_type'].graphic
+        else:
+            o.missile_icon = None
+
+        for key, value in resist_map.items():
+            if value in o.a:
+                o.dps[key] = (1.0 - o.a[value].value) * 100
+            else:
+                o.dps[key] = 0
+
+        o.ewar = dict()
+        # The Insurance Teaching drone has one, but not the other? WTF?
+        if 'warpScrambleStrength' in o.a and 'warpScrambleRange' in o.a:
+            o.ewar['scramble'] = "%s (%s pt)" % (o.a['warpScrambleRange'].value, o.a['warpScrambleStrength'].value)
+        for key, value in ewar_map.items():
+            if value in o.a:
+                o.ewar[key] = "%.0f km" % (int(o.a[value].value)/1000)
+
+        if 'entityKillBounty' in o.a:
+            o.bounty = o.a['entityKillBounty'].value
+
+        if 'shieldCapacity' in o.a:
+            o.shield_hp = o.a['shieldCapacity'].value
+        else:
+            o.shield_hp = 0
+
+        if 'armorHP' in o.a:
+            o.armor_hp = o.a['armorHP'].value
+        else:
+            o.armor_hp = 0
+
+    return render_to_response('npc_group.html', {
+        'nav': (npc_nav, group),
+        'objects': objects,
+        'icon': NPC_ICONS,
+    }, request)

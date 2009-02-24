@@ -9,12 +9,12 @@
     	<th>Salvage</th>
     	<th class="number">Qty</th>
     </tr>
-	{% for item in items %}
-	<tr>{% spaceless %}
-	  <th><a href="{{ item.get_absolute_url }}"> <img src="{{ item.icon16 }}"> {{ item.name }}</a></th>
+	{% for item in items -%}
+	<tr>
+	  <th><a href="{{ item.get_absolute_url() }}"> <img src="{{ item.icon16 }}"> {{ item.name }}</a></th>
 	  <td><input type="text" size="8" value="0" name="{{ item.id }}"></td>
-	</tr>{% endspaceless %}
-	{% endfor %}
+	</tr>
+	{%- endfor %}
 </table>
 <input type="submit" value="What can I build?"/>
 </form>

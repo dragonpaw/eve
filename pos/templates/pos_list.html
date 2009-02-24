@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% import 'include_inlinenav.html' as inline %}
+
+{% block content %}
+{% if poses %}
+{{ inline.nav(inline_nav) }}
+<ul class="links">
+{% for pos in poses %}
+{% if loop.first or pos.corporation != last_corp %}<h2>{{ pos.corporation }}</h2>{% endif %}
+{% if loop.first or pos.owner != last_owner -%}<h3>
+{%- if pos.owner %}{{ pos.owner }}{% else %}Corprate Use{% endif -%}
+</h3>
+{%- endif %}
+    <li class="pos">
+        <a href="{{ pos.get_absolute_url() }}">
+	    <img src="{{ pos.tower.icon32 }}">
+	    <span class="name">{{ pos.moon }}</span>
+    		{%- if pos.is_online -%}
+	        	<span class="state online right">Online</span>
+    		{%- else -%}
+	        	<span class="state offline right">{{ pos.state_name }}</span>
+    		{%- endif -%}
+    		<br>
+    		<span class="note">{{ pos.tower }}</span>
+
+        {%- if tr -%}
+
+    		  <span class="runtime runtime-{{ days }} right">{{ tr|time }}</span>
+        {%- else -%}
+          <span class="runtime runtime-0 right">—</span>
+        {%- endif -%}
+    	</a>
+    </li>
+{% set last_owner = pos.owner %}
+{% set last_corp = pos.corporation %}
+{% endfor %}
+</ul>
+{% else %}
+    <p>You are not director in any corporation owning a station.</p>
+{% endif %}
+{% endblock %}

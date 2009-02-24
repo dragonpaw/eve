@@ -1,26 +1,25 @@
 {% extends "base.html" %}
-{% load trade %}
-{% load markup %}
-
-{% block title %} {{ item.name }}) {% endblock %}
 
 {% block content %}
 <div class="blueprints">
 <ul class="links">
-	<li><a href="{{ item.get_absolute_url }}">
-	<img src="{{ item.icon32 }}">
-	<span class="name">{{ item.name }}</span>
-	</a></li>
+    <li>
+        <a href="{{ item.get_absolute_url }}">
+            <img src="{{ item.icon32 }}">
+            <span class="name">{{ item.name }}</span>
+        </a>
+    </li>
 </ul>
 
 <form method="post">
-<table>
-{{ form }}
-</table>
-<input type="submit" value="Update Collection"/>
+    <table>
+        {{ form }}
+    </table>
+    <input type="submit" value="Update Collection"/>
 </form>
 <form method="post">
-<INPUT type="hidden" name="delete" value="1">
-<INPUT type="submit" value="Delete Blueprint" />
+    <INPUT type="hidden" name="delete" value="1">
+    <INPUT type="submit" value="Delete Blueprint" />
+</form>
 </div>
 {% endblock %}

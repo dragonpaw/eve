@@ -9,8 +9,8 @@ urlpatterns = patterns('eve.trade.views',
     (r'^index/(?P<name>.+)/$', 'market_index_detail'),
 
     (r'^transactions/$', 'transactions'),
-    (r'^transaction/(?P<id>\d+)/$', 'transaction_detail'),
-    (r'^journal/(?P<id>\d+)/$', 'journal_detail'),
+    (r'^(?P<type>transaction|journal)/(?P<id>\d+)/$', 'transaction_detail'),
+    #(r'^journal/(?P<id>\d+)/$', 'journal_detail'),
 
     (r'^salvage/$', 'salvage'),
 )

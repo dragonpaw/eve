@@ -1,27 +1,24 @@
-{% extends "base.html" %}
+# extends "base.html"
 
-{% block content %}
-{% spaceless %}
+# block content
 	<ul class="links">
-	{% for o in objects %}
+	# for o in objects
     	<li class="sov-changes">
         	<a href="{{ o.get_absolute_url }}">
-            {% if o.icon32 %}<img src="{{ o.icon32 }}">{% endif %}
-            <span class="name">
-            {{ o.name }}
-            <!--  <span class="security">({{ o.security|floatformat:3 }})</span> -->
-            </span>
-            <span class="date">{{ o.sov_time|date:"Y-m-d" }}</span>
-            <br><!-- 
-            {% if singlestation %}<span class="stations">{{ o.stations.all.0.name }}</span>{% else %}
-            {% if o.stations.count %}<span class="stations">Stations: {{ o.stations.count }}</span>{% endif %}
-            {% endif %}  -->
-            <!--  <span class="faction">{{ o.faction }}</span>  -->
+                    # if o.alliance_id is none
+                        <img src="{{ o.alliance_old.icon32 }}">
+                    # else
+                        <img src="{{ o.alliance.icon32 }}">
+                    # endif
+                    <span class="name">
+                        {{ o.name }}
+                    </span>
+            <span class="date">{{ o.sov_time.strftime("%Y-%m-%d") }}</span>
+            <br/>
             <span class="new">New: {{ o.alliance }}</span><br>
             <span class="old">Old: {{ o.alliance_old }}</span>
         	</a>
     	</li>
-	{% endfor %}
+	# endfor
 	</ul>
-{% endspaceless %}
-{% endblock %}
+# endblock

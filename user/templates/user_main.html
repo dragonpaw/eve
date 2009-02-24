@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+# import 'include_inlinenav.html' as inline
+
+{% block content %}
+
+{{ inline.nav(inline_nav) }}
+
+<h4>Details</h4>
+<table>
+  <tr><th>User Name</th><td>{{- user.username|e -}}</td></tr>
+  <tr><th>Email</th><td>{{- user.email|e -}}</td></tr>
+</table>
+<h4>Characters</h4>
+{%- if characters.count -%}
+<ul class="links">
+  {%- for c in characters -%}
+    <li class="character"><a href="{{- c.get_absolute_url() -}}">
+    <img class="icon64" src="{{- c.icon64|e -}}">
+    <span class="name">{{- c.name|e -}}</span>
+    <span class="corporation"><br>{{- c.corporation|e -}}<br></span>
+    <span class="isk">{{- c.isk|floatformat(0)|comma|e -}} ISK</span>
+    <span class="right skill-points">{{- c.skill_points|isk|e -}} SP</span>
+    <br>
+    {%- if c.training_skill -%}
+    <span class="skill">{{- c.training_skill|e -}} {{- c.training_level|e -}}</span>
+    <span class="right skill-completion">{{- c.training_remaining|default('Done')|time|e -}}</span>
+    {%- else -%}
+    <span class="skill">No skill in training.</span>
+    {%- endif -%}
+    </a>
+    </li>
+  {%- endfor -%}
+</ul>
+{%- else -%}
+<p>There are no characters on file for your accounts.</p>
+{%- endif -%}
+<h4>Accounts</h4>
+<ul class="links">
+  {%- for a in accounts -%}
+  <li class="account">
+    <a href="{{- a.get_edit_url() -}}">
+    <span class="name">{{- a.id|e -}}</span><br>
+    <span class="api-key">{{- a.api_key_short|e -}}</span>
+  </a>
+  </li>
+  {%- endfor -%}
+</ul>
+{% endblock %}

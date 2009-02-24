@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="changelog">
+{%- for l in logs -%}
+<div class="changelog-entry">
+  <h4>{{- l.date.strftime('%Y-%m-%d') -}}</h4>
+  <p>{{- l.description|markdown -}}</p>
+</div>
+{%- endfor -%}
+</div>
+{% endblock %}

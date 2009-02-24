@@ -14,6 +14,9 @@ urlpatterns = patterns('eve.user.views.',
 
     (r'^create/$', 'user_creation'),
 
+    (r'^login/$', 'login'),
+    (r'^logout/$', 'logout'),
+
     # The built-in one doesn't offer a reset key.
     (r'lost/$', 'account_password_lost'),
     (r'recover/(?P<key>\w+)/$', 'account_password_found'),
