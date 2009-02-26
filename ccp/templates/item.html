@@ -95,7 +95,7 @@
             <span class="quantity">Required level: {{ m[x] }}</span>
             <span class="skill right">Skill</span>
             {% else %}
-            <span class="quantity">x{{ quantity|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
+            <span class="quantity">x{{ m[x]|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
             {% if m.buy_price %}<span class="right index-buy">{{ m.buy_price|floatformat(2)|comma }} ISK</span>{% endif %}
             {% if m.sell_price%}<span class="right index-sell">{{ m.sell_price|floatformat(2)|comma }} ISK</span>{% endif %}
             {% endif %}
@@ -103,7 +103,7 @@
         {% endif %}
         {% endfor %}
         </ul>
-        {% if materials['isk'][x] > 0 %}
+        {% if materials['isk'][x] is defined and materials['isk'][x] > 0 %}
             <p>Total cost (at buy prices): {{ materials['isk'][x]|floatformat(2)|comma }} ISK</p>
         {% endif %}
     {% endfor %}
@@ -137,7 +137,7 @@
     {% for i in indexes %}
         # set link = i.index.items.count() < 200
         # if link
-	    <li class="index"><a href="{{ i.get_absolute_url() }}">
+	    <li class="index"><a href="{{ i.index.get_absolute_url() }}">
         # else
             <li class="index no-link"><a>
         # endif
