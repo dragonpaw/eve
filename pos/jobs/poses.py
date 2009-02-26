@@ -46,9 +46,18 @@ def update_poses(corp=None, force=False):
         director = get_director(c)
         if director is None:
             continue
+        else:
+            try:
+                update_corp_pos(c, director, force)
+            except Exception, e:
+                print "ERROR refreshing corporation '%s': %s" % (corp, e)
+                print '-'*60
+                traceback.print_exc()
+                print '-'*60
 
+def update_corp_pos(corp, director, force=None):
         print  "-" * 77
-        print "Corp: %s" % c
+        print "Corp: %s" % corp
         print " Director: %s" % director
 
         try:
@@ -61,17 +70,19 @@ def update_poses(corp=None, force=False):
                 except PlayerStation.DoesNotExist:
                     station = PlayerStation(id=record.itemID)
 
-                messages = station.refresh(record, api, corp=c, force=force)
+                messages = station.refresh(record, api, corp=corp, force=force)
                 #print "  %s:" % station
                 for m in messages:
                     print "  " + m
 
             # Look for POSes that got taken down.
-            for pos in PlayerStation.objects.filter(corporation=c).exclude(id__in=ids):
+            for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
                 print "  Removed POS: %s will be purged." % pos.moon
                 pos.delete()
-        except Exception, e:
-            print "ERROR refreshing corporation '%s': %s" % (c, e)
-            print '-'*60
-            traceback.print_exc()
-            print '-'*60
+        except eveapi.Error, e:
+            if str(e) == 'Login denied by account status':
+                director.is_director = False
+                director.save()
+                print "  Marked '%s' as no longer a director, as their account is disabled." % director
+            else:
+                raise e
