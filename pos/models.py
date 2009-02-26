@@ -134,7 +134,7 @@ class PlayerStation(models.Model):
         return max(self.cached_until - datetime.utcnow(), timedelta(0))
 
     @property
-    @cachedmethod(60*15, '%(id)d')
+    @cachedmethod(15, '%(id)d')
     def hours_of_fuel(self):
         x = [f.hours_of_fuel for f in self.fuel.exclude(purpose='Reinforce')
                     if f.consumption > 0]
@@ -144,7 +144,7 @@ class PlayerStation(models.Model):
             return min(x)
 
     @property
-    @cachedmethod(60*15, '%(id)d')
+    @cachedmethod(15, '%(id)d')
     def fuel_needed(self):
         hours = self.hours_of_fuel
         fuels = [f.type for f in self.fuel.exclude(purpose='Reinforce')
@@ -154,7 +154,7 @@ class PlayerStation(models.Model):
     def update_fueled_until(self):
         if self.state_time is None:
             self.fueled_until = None
-            return
+            return None
 
         hours = self.hours_of_fuel
         if hours == 0:
@@ -162,9 +162,10 @@ class PlayerStation(models.Model):
         else:
             remaining = timedelta(hours=hours)
             self.fueled_until = self.state_time + remaining
+        return self.fueled_until
 
     @property
-    @cachedmethod(60*15, '%(id)d')
+    @cachedmethod(15, '%(id)d')
     def time_remaining(self):
         if self.state_time is None:
             return None
@@ -268,12 +269,6 @@ class PlayerStation(models.Model):
             log.debug('Time then: %s, Now: %s' % (self.state_time, state_time))
             log.debug("Hours since update: %d." % hours_since_update)
             messages.append('Hours since update: %d.' % hours_since_update)
-        if hours_since_update is 0:
-            messages.append('Bypassing update as 0 hours elapsed, so avoid CCP bug with StationDetaiil API.')
-            return messages
-        elif hours_since_update is None:
-            log.debug('Either the tower is new, or offline or something. Updating.')
-            messages.append('Unable to compute last update. Forcing refresh.')
 
         # Setup the sov level and fuel rate.
         if self.corporation.alliance_id is None:
@@ -312,6 +307,12 @@ class PlayerStation(models.Model):
         self.save()
         self.setup_fuel_supply()
 
+        if hours_since_update is 0 and not force:
+            messages.append('Bypassing update as 0 hours elapsed, so avoid CCP bug with StationDetaiil API.')
+            return messages
+        elif hours_since_update is None:
+            log.debug('Either the tower is new, or offline or something. Updating.')
+            messages.append('Unable to compute last update. Forcing refresh.')
 
         # Now, the fuel.
         for fuel_type in detail.fuel:
@@ -344,13 +345,13 @@ class PlayerStation(models.Model):
                     self.power_utilization = consumed / max
                     messages.append("  Calculated: Power Utilization: %d%%" % self.power_percent)
                     log.info('%s: Power Util: %0.2f' % (self.id, self.power_utilization))
-                self.save()
 
             fuel.quantity=fuel_type.quantity
             fuel.save()
 
         # Once all fuel is loaded, calculate how much runtime that gives us.
-        self.update_fueled_until()
+        until = self.update_fueled_until()
+        messages.append('Fueled until: %s' % until)
         self.save()
 
         return messages
@@ -387,18 +388,18 @@ class FuelSupply(models.Model):
         return u"%s: %s (%d)" % (self.station, self.type, self.quantity)
 
     @property
-    @cachedmethod(60*60, '%(id)d')
+    @cachedmethod(60, '%(id)d')
     def fuel_info(self):
         fuel_info = self.station.tower.fuel.get(type=self.type)
         return fuel_info
 
     #@property
-    #@cachedmethod(60*60, '%(id)d')
+    #@cachedmethod(60, '%(id)d')
     #def _purpose(self):
     #    return self.fuel_info.purpose.name
 
     #@property
-    #@cachedmethod(60*5, '%(id)d')
+    #@cachedmethod(5, '%(id)d')
     #def max_consumption(self):
     #    fuel_info = self.fuel_info
     #    burn_rate = int(fuel_info.quantity)
@@ -408,7 +409,7 @@ class FuelSupply(models.Model):
     #    return int(burn_rate)
 
     @property
-    #@cachedmethod(60*5, '%(id)d')
+    #@cachedmethod(5, '%(id)d')
     def consumption(self):
         purpose = self.purpose
         if purpose == 'Reinforce':
@@ -474,8 +475,9 @@ class Reaction(models.Model):
     This includes moon mining, basic reactions, and advanced reactions.
     '''
 
-    q = Q(group__name__in=['Moon Materials', 'Intermediate Materials',
-                           'Composite'])
+    #q = Q(group__name__in=['Moon Materials', 'Intermediate Materials',
+    #                       'Composite'])
+    q = Q(group__name__in=['Moon Materials','Simple Reaction','Complex Reactions'])
     q = q & Q(published=True)
 
     station = models.ForeignKey(PlayerStation, related_name='reactions')
@@ -515,20 +517,17 @@ class Reaction(models.Model):
 
     @property
     def is_reaction(self):
-        if self.type_id in MOON_MINERALS:
-            return False
-        else:
-            return True
+        return not self.is_mining
 
-    @property
-    @cachedmethod(60*60)
-    def reaction(self):
-        if self.is_mining:
-            return None
-        else:
-            return self.type.reacts.filter(input=False)[0].reaction
+    #@property
+    #@cachedmethod(60)
+    #def reaction(self):
+    #    if self.is_mining:
+    #        return None
+    #    else:
+    #        return self.type.reacts.filter(input=False)[0].reaction
 
-    @cachedmethod(60*60)
+    @cachedmethod(60)
     def inputs(self):
         '''
         Return a tuple of (item_id, quantity) for all items consumed by this
@@ -537,10 +536,10 @@ class Reaction(models.Model):
         if self.is_mining:
             return []
         else:
-            inputs = self.reaction.reactions.filter(input=True)
+            inputs = self.type.reactions.filter(input=True)
             return [ (i.item_id, i.quantity) for i in inputs ]
 
-    @cachedmethod(60*60)
+    @cachedmethod(60)
     def output(self):
         '''
         Return a tuple of (item_id, quantity) for what this reacton outputs.
@@ -549,5 +548,5 @@ class Reaction(models.Model):
         if self.is_mining:
             return [ (self.type.id, 100) ]
         else:
-            outputs = self.reaction.reactions.filter(input=False)
+            outputs = self.type.reactions.filter(input=False)
             return [ (i.item_id, i.quantity) for i in outputs ]

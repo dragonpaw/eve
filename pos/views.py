@@ -8,7 +8,7 @@ from django.db.models import Q
 from datetime import datetime
 
 from eve.ccp.models import Item, Corporation
-from eve.pos.models import PlayerStation
+from eve.pos.models import PlayerStation, Reaction
 from eve.user.models import Character
 from eve.lib.formatting import make_nav, NavigationElement
 from eve.lib.jinja import render_to_response
@@ -264,10 +264,7 @@ def profits(request, days=DEFAULT_DAYS):
     return render_to_response('pos_profits.html', d, request)
 
 class ReactionForm(forms.Form):
-    q = Q(group__name__in=['Moon Materials', 'Intermediate Materials',
-                           'Composite'])
-    q = q & Q(published=True)
-    reactions = [('', 'None')] + [(x.slug, x.name) for x in Item.objects.filter(q)]
+    reactions = [('', 'None')] + [(x.slug, x.name) for x in Item.objects.filter(Reaction.q)]
     reactions.sort(key=lambda x:x[0])
 
     r1 = forms.ChoiceField(label='1', choices=reactions, required=False)
