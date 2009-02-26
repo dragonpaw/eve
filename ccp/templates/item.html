@@ -155,7 +155,7 @@
 
     <div class="item-trade">
     <h3>Trade values (for the last {{ time_span }})</h3>
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated() %}
         {% if not values.items %}
             <p>No recorded transactions for any of your characters.</p>
         {% else %}
