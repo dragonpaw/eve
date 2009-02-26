@@ -89,6 +89,9 @@ class Base(models.Model):
         else:
             raise NotImplementedError('Tried to remove an immutable.')
 
+    def really_delete(self):
+        super(Base, self).delete()
+
     class Meta:
         abstract = True
         ordering = ('name',)
