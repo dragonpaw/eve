@@ -25,8 +25,8 @@
             <img src="{{ o.item.icon32 }}"><span class="name">{{ o.item.name }}</span><br>
             {% if o.quantity %}<span class="quantity">x{{ o.quantity }}</span><br>{% endif %}
             {% if o.item.marketgroup %}
-            {% if o.buy %}<span class="index-buy">{{ o.buy|floatformat(2)|comma }} ISK</span>{% endif %}
-            {% if o.sell %}<span class="index-sell right">{{ o.sell|floatformat(2)|comma }} ISK</span>{% endif %}
+            {% if o.buy %}<span class="index-buy">{{ o.buy|floatformat(2)|isk }} isk</span>{% endif %}
+            {% if o.sell %}<span class="index-sell right">{{ o.sell|floatformat(2)|isk }} isk</span>{% endif %}
             {% else %}
             <span class="note">{{ o.item.description }}</span>
             {% endif %}
