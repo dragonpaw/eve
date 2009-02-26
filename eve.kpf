@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Komodo Project File - DO NOT EDIT -->
 <project id="9cdc9cc5-413b-4417-9108-ddb4940d273e" kpf_version="4" name="eve.kpf">
-<macro async="0" id="3e9c2bb3-fa28-4b9e-86be-028ca824f7dc" idref="9cdc9cc5-413b-4417-9108-ddb4940d273e" keyboard_shortcut="" language="JavaScript" name="oncreate" rank="100" trigger="trigger_postopen" trigger_enabled="0">
-var project = komodo.macro.project;
-var name = /^(.*?)(\.kpf)?$/(project.name)[1];
-var startproject = project.getChildByAttributeValue('name','startproject', 1);
-Run_RunCommand(window, "django-admin.py startproject "+name, "%p", null,
-               false, false, true, "command-output-window");</macro>
 <preference-set idref="9cdc9cc5-413b-4417-9108-ddb4940d273e">
   <string id="import_exclude_matches">*.*~;*.bak;*.tmp;CVS;.#*;*.pyo;*.pyc;.svn;_svn;*%*;tmp*.html;.DS_Store</string>
   <string id="import_include_matches"></string>
