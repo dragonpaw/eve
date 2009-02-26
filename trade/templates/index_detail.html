@@ -1,9 +1,6 @@
 {% extends "base.html" %}
-{% load trade %}
-{% load markup %}
 
 {% block content %}
-{% spaceless %}
 <h4>{{ index.name }}</h4>
 {% if index.url %}
 <p>Taken from: <a href="{{ index.url }}">{{ index.url }}</a></p>
@@ -21,12 +18,11 @@ change the price.</p>
 		<a href="/trade/index/customize/{{ i.item.id }}/">
 		<img src="{{ i.item.icon32 }}">
 		<span class="name">{{ i.item.name }}</span><br>
-		{% if i.buy %}<span class="index-buy">{{ i.buy|floatformat:2|comma }} ISK</span>{% endif %}
+		{% if i.buy %}<span class="index-buy">{{ i.buy|floatformat(2)|comma }} ISK</span>{% endif %}
 		&nbsp;
-		{% if i.sell %}<span class="index-sell right">{{ i.sell|floatformat:2|comma }} ISK</span>{% endif %}
+		{% if i.sell %}<span class="index-sell right">{{ i.sell|floatformat(2)|comma }} ISK</span>{% endif %}
 		</a>
 	</li>
 	{% endfor %}
 </ul>
-{% endspaceless %}
 {% endblock %}
