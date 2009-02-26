@@ -1,19 +1,15 @@
 {% extends "base.html" %}
-{% load trade %}
-{% load markup %}
-
-{% block title %} {{ item.name }}) {% endblock %}
 
 {% block content %}
 <h4>Item</h4>
 <ul class="links">
-<li><a href="{{ item.get_absolute_url }}">
+<li><a href="{{ item.get_absolute_url() }}">
 <img src="{{ item.icon32 }}">
 <span class="name">{{ item.name }}</span>
 <br>
-{% if buy %}<span class="index-buy">{{ buy|floatformat:2|comma }} ISK</span>{% endif %}
+{% if buy %}<span class="index-buy">{{ buy|floatformat(2)|comma }} ISK</span>{% endif %}
 &nbsp;
-{% if sell %}<span class="index-sell right">{{ sell|floatformat:2|comma }} ISK</span>{% endif %}
+{% if sell %}<span class="index-sell right">{{ sell|floatformat(2)|comma }} ISK</span>{% endif %}
 </a></li>
 </ul>
 
