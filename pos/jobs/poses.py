@@ -84,5 +84,9 @@ def update_corp_pos(corp, director, force=None):
                 director.is_director = False
                 director.save()
                 print "  Marked '%s' as no longer a director, as their account is disabled." % director
+            elif str(e) == 'Character must be a Director or CEO':
+                director.is_director = False
+                director.save()
+                print "  Marked '%s' as no longer a director, as the API says so." % director
             else:
                 raise e

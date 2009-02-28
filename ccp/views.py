@@ -59,7 +59,7 @@ def generate_navigation(object):
 def solarsystem(request, name):
     item = get_object_or_404(SolarSystem, name=name)
 
-    if request.user:
+    if request.user.is_authenticated():
         log = logging.getLogger('eve.ccp.views.solarsystem')
         profile = request.user.get_profile()
         log.debug('Adding POSes for user: %s' % profile)

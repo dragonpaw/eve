@@ -144,7 +144,7 @@ class UserProfile(models.Model):
         indexes = indexes.order_by('-trade_marketindex.priority')
         return indexes
 
-    @cachedmethod(60*5)
+    @cachedmethod(15)
     def get_buy_price(self, type):
         indexes = self.get_indexes(type).filter(buy__gt=0)
 
@@ -153,7 +153,7 @@ class UserProfile(models.Model):
         else:
             return None
 
-    @cachedmethod(60*5)
+    @cachedmethod(15)
     def get_sell_price(self, type):
         indexes = self.get_indexes(type).filter(sell__gt=0)
 
@@ -310,7 +310,10 @@ class Account(models.Model):
             return 'Account'
 
     def last_refreshed_delta(self):
-        return datetime.utcnow() - self.last_refreshed
+        if self.last_refreshed:
+          return datetime.utcnow() - self.last_refreshed
+        else:
+          return None
 
     def refresh_messages_list(self):
         if self.refresh_messages:
