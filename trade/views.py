@@ -121,7 +121,7 @@ def blueprint_edit(request, slug):
     d['form'] = form
 
     if form.is_valid() is False:
-        return render_to_response(template, d, request)
+        return render_to_response('blueprint_edit.html', d, request)
     else:
         form.save()
         return HttpResponseRedirect(blueprint_nav.get_absolute_url() )
