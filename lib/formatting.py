@@ -4,7 +4,7 @@ import logging
 class NavigationElement:
     def __init__(self, name, url, icon, note=None, id=None):
         self.log = logging.getLogger('eve.lib.formatting.NavigationElement')
-        self.log.info('Initializing new NavElement: %s' % name)
+        self.log.info('Initializing new NavElement: %s', name)
 
         from eve.ccp.models import get_graphic
         if icon is None:
@@ -48,10 +48,6 @@ class NavigationElement:
     def __getitem__(self, key):
         value = getattr(self, key)()
         return value
-
-
-def make_nav(name, url, icon, note=None):
-    return NavigationElement(name, url, icon, note=note, id=None)
 
 def unique_slug(item,slug_source='name',slug_field='slug'):
     """unique_slug(item,slug_source='name',slug_field='slug')

@@ -1,31 +1,39 @@
-# $Id$
 from django import forms
 from django.contrib import auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect, Http404
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.template import RequestContext
 
+from eve.lib.formatting import NavigationElement
+from eve.lib.jinja import render_to_response
 from eve.user.models import Character, Account, UserProfile
 
-from eve.lib.formatting import make_nav
-from eve.lib.jinja import render_to_response
-
-user_nav = make_nav("Characters", "/user/", '34_12', 'Your characters and accounts.')
-user_create_nav = make_nav("Create Login", "/user/create/", '07_03',
-                           'Register with the widget. Tap here if it is your first time.')
-account_add_nav = make_nav('Add API Key', '/user/add/', '12_02',
-                           'Add a new account/API key. (Yes, you can have ALL of your accounts on a single Widget login.)')
-log_nav = make_nav('Refresh Log', '/user/api-log/', '22_42',
-                   'View API refresh log.')
-lost_password_nav = make_nav('Lost Password', '/user/lost/', '04_16',
-                             'Recover a lost password.')
-login_nav = make_nav('Login', '/user/login/', '09_06',
-                     'Log yourself in for full use.')
-logout_nav = make_nav('Logout', '/user/logout/', '09_13',
-                      note='Log out if you like. (Or if you share your computer.)')
-
+user_nav = NavigationElement(
+    "Characters", "/user/", '34_12', 'Your characters and accounts.'
+)
+user_create_nav = NavigationElement(
+    "Create Login", "/user/create/", '07_03',
+    'Register with the widget. Tap here if it is your first time.'
+)
+account_add_nav = NavigationElement(
+    'Add API Key', '/user/add/', '12_02',
+    'Add a new account/API key. (Yes, you can have ALL of your accounts on a single Widget login.)'
+)
+log_nav = NavigationElement(
+    'Refresh Log', '/user/api-log/', '22_42', 'View API refresh log.'
+)
+lost_password_nav = NavigationElement(
+    'Lost Password', '/user/lost/', '04_16', 'Recover a lost password.'
+)
+login_nav = NavigationElement(
+    'Login', '/user/login/', '09_06', 'Log yourself in for full use.'
+)
+logout_nav = NavigationElement(
+    'Logout', '/user/logout/', '09_13',
+    note='Log out if you like. (Or if you share your computer.)'
+)
 
 @login_required
 def main(request):
@@ -64,7 +72,7 @@ def account_refresh_warning(request, id):
 
     return render_to_response('user_account_refresh_pending.html', {
         'account': account,
-        'nav': ( user_nav, account, { 'name':'Refreshing' }),
+        'nav': ( user_nav, { 'name':'Account Refreshing' }),
     }, request)
 
 @login_required
@@ -73,12 +81,8 @@ def account_refresh(request, id):
     if account.user != request.user.get_profile():
         raise Http404
 
-    return render_to_response('user_account_refreshed.html', {
-        'nav': [user_nav, account, { 'name': 'Refresh Completed'} ],
-        'messages': account.refresh(),
-        'account': account,
-        'inline_nav': [ user_nav ],
-    }, request)
+    account.refresh()
+    redirect(account_log)
 
 #@login_required
 #def account_overview(request, id):
@@ -86,9 +90,9 @@ def account_refresh(request, id):
 #    if account.user != request.user.get_profile():
 #        raise Http404
 #
-#    log_nav = make_nav('Refresh Log', account.get_log_url(), '22_42',
+#    log_nav = NavigationElement('Refresh Log', account.get_log_url(), '22_42',
 #                       'View API refresh log of this account.')
-#    edit_nav = make_nav('Edit', account.get_edit_url(), '09_03',
+#    edit_nav = NavigationElement('Edit', account.get_edit_url(), '09_03',
 #                        'Edit the API key on this account.')
 #
 #    return render_to_response('generic_menu.html', {
@@ -100,7 +104,8 @@ def account_refresh(request, id):
 def account_log(request):
     return render_to_response('user_api_log.html', {
         'profile': request.user.get_profile(),
-        'nav' : [user_nav, log_nav],
+        'nav' : (user_nav, log_nav),
+        'inline_nav': (user_nav,)
     }, request)
 
 @login_required

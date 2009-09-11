@@ -2,37 +2,37 @@
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from eve.mining.models import MiningOp
-from eve.lib.formatting import make_nav
+from lib.formatting import NavigationElement
 from django.contrib.auth.decorators import login_required
 
-mining_op_nav = make_nav("Mining Operations", "/mining/ops/", '40_14')
+mining_op_nav = NavigationElement("Mining Operations", "/mining/ops/", '40_14')
 
 @login_required
 def op_list(request):
     d = {}
     d['nav'] = [mining_op_nav]
-    d['objects'] = MiningOp.objects.all() 
-    
+    d['objects'] = MiningOp.objects.all()
+
     return render_to_response('mining_op_list.html', d, context_instance=RequestContext(request))
 
 
 @login_required
 def op_detail(request, id):
     op = get_object_or_404(MiningOp, id=id)
-    
+
     d = {}
     d['nav'] = [mining_op_nav, op]
     d['op'] = op
-    
+
     profile = request.user.get_profile()
-    
+
     total_value = 0.0
     minerals = {}
     for m in op.minerals.all():
         sell = profile.get_sell_price(m.type)
         minerals[m.type.id] = {'quantity':m.quantity, 'type':m.type, 'sell':sell}
         total_value += sell * m.quantity
-        
+
     miners = {}
     for miner in op.miners.all():
         id = miner.name
@@ -42,8 +42,8 @@ def op_detail(request, id):
         miners[id]['percent'] += miner.percent()
         miners[id]['hours'] += miner.hours()
         miners[id]['isk'] = total_value * miners[id]['percent']
-        miners[id]['percent_display'] = "%0.2f" % (miners[id]['percent'] * 100) 
-    
+        miners[id]['percent_display'] = "%0.2f" % (miners[id]['percent'] * 100)
+
     ore_per_person = []
     for miner in miners.keys():
         temp = []
@@ -57,7 +57,7 @@ def op_detail(request, id):
                          'quantity':quantity })
         temp.sort(key=lambda x:x['type'].name)
         ore_per_person.append({'miner':miners[miner]['miner'],'shares':temp, 'sell':profit})
-    
+
 #    total_value = 0
 #    for miner in ore_per_person.values():
 #        value = 0
@@ -75,5 +75,5 @@ def op_detail(request, id):
     d['ore_per_person'] = ore_per_person
     d['ore_per_person'].sort(key=lambda x:x['miner'].name)
     d['total_value'] = total_value
-    
+
     return render_to_response('mining_op_detail.html', d, context_instance=RequestContext(request))

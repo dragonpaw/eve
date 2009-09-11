@@ -1,25 +1,34 @@
 # Create your views here.
 #from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
-from django.template import RequestContext
-from django.db.models import Q
-from django.views.decorators.cache import cache_page
-
-from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute, Category, Group, get_graphic, Graphic
-from eve.trade.models import BlueprintOwned
-from eve.lib.formatting import make_nav
-from eve.pos.models import PlayerStation
-from eve.lib.jinja import render_to_response
-
 from datetime import datetime, timedelta
 from decimal import Decimal
+from collections import defaultdict
+from django.shortcuts import get_object_or_404
+from django.template import RequestContext
+from django.db.models import Q, Count
+from django.views.decorators.cache import cache_page
 
-import logging
+from eve.ccp.models import SolarSystem, Constellation, Region, MarketGroup, Item, Attribute, Category, Group, get_graphic, Graphic, AttributeCategory, ItemAttribute
+from eve.lib.formatting import NavigationElement
+from eve.lib.jinja import render_to_response
+from eve.pos.models import PlayerStation
+from eve.settings import logging
+from eve.trade.models import BlueprintOwned, get_index_price
 
-item_nav = make_nav("Items", "/items/", '24_05', note='All items in the game.')
-region_nav = make_nav("Regions", "/regions/", '17_03', note='The universe, and everything in it.')
-sov_nav = make_nav('Sovereignty Changes', '/sov/changes/', '70_11', note='Who lost and gained systems.')
-npc_nav = make_nav('NPCs', '/npc/', '07_07', note='All the things to blow up, or be blown up by.')
+item_nav = NavigationElement(
+    "Items", "/items/", '24_05', note='All items in the game.'
+)
+region_nav = NavigationElement(
+    "Regions", "/regions/", '17_03', note='The universe, and everything in it.'
+)
+sov_nav = NavigationElement(
+    'Sovereignty Changes', '/sov/changes/', '70_11',
+    note='Who lost and gained systems.'
+)
+npc_nav = NavigationElement(
+    'NPCs', '/npc/', '07_07',
+    note='All the things to blow up, or be blown up by.'
+)
 
 NPC_ICONS = {
     'shield': get_graphic('02_01'),
@@ -40,6 +49,22 @@ NPC_ICONS = {
     'ewar_neut': get_graphic('01_03'),
     'ewar_paint': get_graphic('56_01'),
 }
+
+VOLUME = Attribute.objects.get(attributename='volume')
+CAPACITY = Attribute.objects.get(attributename='capacity')
+try:
+    PORTIONSIZE = Attribute.objects.get(attributename='portionSize')
+except:
+    PORTIONSIZE = Attribute(
+        id = 5000,
+        description = 'Portion Size (Automatically added by Widget)',
+        attributename = 'portionSize',
+        defaultvalue = 1.0,
+        published = True,
+        category = AttributeCategory.objects.get(name='Structure'),
+        displayname = 'Portion Size',
+        graphic = get_graphic('07_16'),
+    ).save()
 
 def generate_navigation(object):
     """Build up a heiracy of objects"""
@@ -98,10 +123,10 @@ def region(request, slug):
         'nav': (region_nav, item),
     }, request)
 
-@cache_page(60 * 60 * 2)
+#@cache_page(60 * 60 * 2)
 def region_list(request):
     q = Q(faction__isnull=True) | ~Q(faction__name='Jove Empire')
-    regions = Region.objects.filter(q)
+    regions = Region.objects.select_related('constellation').filter(q)
 
     return render_to_response('regions.html', {
         'nav': ( {'name':"Regions",'get_absolute_url':"/regions/"}, ),
@@ -141,35 +166,11 @@ def group(request, slug):
     return render_to_response('item_list.html', d,
                               request)
 
-
-def get_index_price(profile, item, type=None):
-    # I'm lazy in group above, and call this for market groups as well as items.
-    if not isinstance(item, Item):
-        return None
-
-    temp = list( item.index_values.all() )
-    if len(temp) == 0:
-        return None
-    temp.sort(key=lambda x:x.index.priority, reverse=True)
-    for k in temp:
-        if type == 'buy' and k.buy:
-            return k.buy
-        if type == 'sell' and k.sell:
-            return k.sell
-
-    return None
-
 def get_sell_price(profile, item):
-    if profile is not None:
-        return profile.get_sell_price(item)
-
-    return get_index_price(profile, item, type='sell')
+    return get_index_price(item, type='sell', profile=profile)
 
 def get_buy_price(profile, item):
-    if profile is not None:
-        return profile.get_buy_price(item)
-
-    return get_index_price(profile, item, type='buy')
+    return get_index_price(item, type='buy', profile=profile)
 
 # Cannot cache as it depends on user prices.
 def item(request, slug, days=30):
@@ -196,8 +197,8 @@ def item(request, slug, days=30):
     my_blueprint = None
     if profile:
         try:
-            my_blueprint = BlueprintOwned.objects.filter(blueprint=item.blueprint, user=profile)[0]
-        except IndexError:
+            my_blueprint = BlueprintOwned.objects.get(blueprint=item.blueprint, user=profile)
+        except BlueprintOwned.DoesNotExist:
             pass
 
 
@@ -205,6 +206,7 @@ def item(request, slug, days=30):
                  'materials':{},
                  'isk': {} }
 
+    #-------------------------------------------------------------------------
     # Can it be manufactured?
     for mat in item.materials():
         if mat.quantity <= 0:
@@ -223,6 +225,7 @@ def item(request, slug, days=30):
             perfect = materials['materials'][mat.material.id]['Manufacturing']
             materials['materials'][mat.material.id]['Personal'] = my_blueprint.mineral(perfect, max_pe)
 
+    #-------------------------------------------------------------------------
     # If we own this blueprint...
     if my_blueprint:
         # Add in the Blueprint itself.
@@ -235,6 +238,7 @@ def item(request, slug, days=30):
         # We only show our manufacturing if we have the blueprint.
         del materials['titles']['Manufacturing']
 
+    #-------------------------------------------------------------------------
     for key, value in materials['titles'].items():
         cost = Decimal(0)
         for m in materials['materials'].values():
@@ -247,6 +251,7 @@ def item(request, slug, days=30):
         cost = cost / portion
         materials['isk'][key] = cost
 
+    #-------------------------------------------------------------------------
     if (materials['isk'].has_key('Personal') and best_values.has_key('sell')
         and best_values['sell'] and best_values['sell']['sell_price'] > 0
         and materials['isk']['Personal'] > 0):
@@ -255,6 +260,7 @@ def item(request, slug, days=30):
         best_values['manufacturing_profit_pct'] = (best_values['manufacturing_profit_isk']
                                                     / materials['isk']['Personal']) * 100
 
+    #-------------------------------------------------------------------------
     # We don't want isk prices on where things refine -from-
     if item.group.name in ('Mineral','Ice Product'):
         materials['titles']['Refined From'] = "Refined From"
@@ -265,6 +271,7 @@ def item(request, slug, days=30):
                                                    'buy_price'    : price,
                                                    'Refined From' : value}
 
+    #-------------------------------------------------------------------------
     # This triggers on materials that CAN react.
     if item.reacts.count():
         for mat in item.reacts.all():
@@ -287,10 +294,11 @@ def item(request, slug, days=30):
                                                          'Reaction-out': r.quantity
                                                          }
 
+    #-------------------------------------------------------------------------
     # This triggers on reaction blueprints
     if item.reactions.count():
         materials['titles']['Reaction'] = 'POS Reaction'
-        for mat in item.reactions.all():
+        for mat in item.reactions.select_related('item__group__category'):
             buy_price = sell_price = 0
             if mat.input == True:
                 input = "Input"
@@ -303,6 +311,8 @@ def item(request, slug, days=30):
                                                    'input': input,
                                                    'sell_price': sell_price,
                                                    'Reaction' : mat.quantity}
+
+    #-------------------------------------------------------------------------
     # Display order, and filter out actions we cannot perform.
     materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
     materials['materials'].sort(key=lambda x:"%s-%s" % (x['material'].is_blueprint, x['material'].name))
@@ -313,6 +323,7 @@ def item(request, slug, days=30):
 
     d['materials'] = materials
 
+    #-------------------------------------------------------------------------
     # Un-seeded items have no group.
     if item.marketgroup and item.marketgroup.name != 'Minerals':
         filter = ~Q(activity__name__contains='Not in game')
@@ -323,36 +334,28 @@ def item(request, slug, days=30):
         d['makes'].sort(key=lambda x:x.item.name)
         # FIXME: Make this return an order_by instead.
 
-    attributes = list(item.attributes())
-    if item.volume:
-        volume = Attribute.objects.get(attributename='volume')
-        volume.valuefloat = item.volume
-        attributes.append(volume)
-    if item.portionsize > 1:
-        portion = Attribute.objects.get(attributename='portionsize')
-        portion.valueint = item.portionsize
-        attributes.append(portion)
-        # FIXME: Make this return an order_by instead.
-
+    #-------------------------------------------------------------------------
     # Setup the attributes of an item.
+    d['VOLUME'] = VOLUME # Fake attribute
+    d['PORTIONSIZE'] = PORTIONSIZE # Fake attribute
+    d['CAPACITY'] = CAPACITY
     d['attributes'] = []
-    temp = {}
-    attributes.sort(key=lambda x: x.id)
-    for a in attributes:
-        if a.value == 0 or a.value == 0.0 or a.category is None:
+    temp = defaultdict(list)
+    for a in item.attributes.select_related('attribute__category', 'attribute__unit', 'attribute__graphic'):
+        if a.value == 0 or a.value == 0.0 or a.attribute.category is None:
             continue
-        if not a.published:
+        if not a.attribute.published:
             continue
-        if not temp.has_key(a.category):
-            temp[a.category] = []
-        temp[a.category].append(a)
+        temp[a.attribute.category].append(a)
     for c in temp.keys():
+        temp[c].sort(key=lambda x:x.attribute.id)
         d['attributes'].append([c, temp[c]])
     d['attributes'].sort(key=lambda x:x[0].id)
 
+    #-------------------------------------------------------------------------
     # Setup the price indexes of an item.
     q = Q(index__user__isnull=True) | Q(index__user=profile)
-    d['indexes'] = list(item.index_values.filter(q))
+    d['indexes'] = list(item.indexes.filter(q))
     d['indexes'].sort(key=lambda x:x.index.priority, reverse=True)
 
     d['blueprint'] = my_blueprint
@@ -374,12 +377,13 @@ def sov_changes(request, days=14):
 @cache_page(60 * 60 * 4)
 def npc_groups(request):
     """Show all of the available groups of NPCs out there."""
-    groups = Category.objects.get(name='Entity').groups.extra(
-        select = {'item_count': 'SELECT COUNT(*) item_count from ccp_item where ccp_item.groupID = ccp_group.groupID'},
-    ).select_related()
+    #groups = Category.objects.get(name='Entity').groups.extra(
+    #    select = {'item_count': 'SELECT COUNT(*) item_count from ccp_item where ccp_item.groupID = ccp_group.groupID'},
+    #).select_related()
 
+    groups = Category.objects.get(name='Entity').groups.annotate(Count('items')).select_related()
     # Template needs the objects as dicts.
-    objects = [{'item': x } for x in groups if x.item_count > 0]
+    objects = [{'item': x } for x in groups if x.items__count > 0]
 
     return render_to_response('item_list.html', {
         'nav': (npc_nav, ),

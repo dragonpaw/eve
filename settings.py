@@ -13,9 +13,9 @@ except ImportError:
 
 from lib.log import logging, setup_log
 
-LOGDIR = os.path.abspath(os.path.dirname(__file__))
+ROOTDIR = os.path.abspath(os.path.dirname(__file__))
 LOGFILE = "django.log"
-setup_log(os.path.join(LOGDIR, 'log', user+"-"+LOGFILE))
+setup_log(os.path.join(ROOTDIR, 'log', user+"-"+LOGFILE))
 
 os.environ['TZ'] = 'UTC'
 
@@ -72,7 +72,7 @@ TEMPLATE_LOADERS = (
 #     'django.template.loaders.eggs.load_template_source',
 )
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     #'django.middleware.cache.CacheMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -80,8 +80,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.doc.XViewMiddleware',
     'eve.lib.jinja_flatpage.middleware.FlatpageFallbackMiddleware',
     'eve.tracker.middleware.ChangeLogMiddleware',
-    #'eve.debug_toolbar.middleware.DebugToolbarMiddleware',
-)
+]
+#if DEBUG:
+#    MIDDLEWARE_CLASSES.append('debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'eve.urls'
 
@@ -115,7 +116,7 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.markup',
     'django_extensions',
-    'eve.debug_toolbar',
+    'debug_toolbar',
     'eve.debug',
     'eve.mining',
     'eve.tracker',
@@ -131,10 +132,7 @@ INSTALLED_APPS = (
 CACHE_BACKEND = "memcached://127.0.0.1:11211/"
 CACHE_MIDDLEWARE_KEY_PREFIX = 'eve_widget'
 
-if sys.platform == 'win32':
-    STATIC_DIR = 'C:/django-sites/eve/_static/'
-else:
-    STATIC_DIR = '/home/ash/django-sites/eve/_static'
+STATIC_DIR = os.path.join(ROOTDIR, '_static')
 
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/'

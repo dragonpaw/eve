@@ -12,7 +12,6 @@ from django.db.models.signals import post_save
 
 from eve.lib import eveapi
 from eve.lib.jfilters import filter_comma as comma
-
 from eve.trade.models import Transaction, JournalEntry, MarketIndexValue, MarketIndex
 from eve.pos.models import PlayerStation
 from eve.lib.decorators import cachedmethod

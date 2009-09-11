@@ -1,14 +1,13 @@
-from django.db import models
-from django.db.models import Q
-
 from datetime import datetime, timedelta
 from decimal import Decimal
+from django.db import models
+from django.db.models import Q
 import math
 import time
-from eve.settings import logging
-from eve.lib.decorators import cachedmethod
 
-from eve.ccp.models import MapDenormalize, SolarSystem, Item
+from ccp.models import MapDenormalize, SolarSystem, Item
+from settings import logging
+from lib.decorators import cachedmethod
 
 MOON_MINERALS = [x.id for x in Item.objects.filter(group__name = 'Moon Materials')]
 STRONT = Item.objects.get(name='Strontium Clathrates')
@@ -134,7 +133,7 @@ class PlayerStation(models.Model):
         return max(self.cached_until - datetime.utcnow(), timedelta(0))
 
     @property
-    @cachedmethod(15, '%(id)d')
+    @cachedmethod(15)
     def hours_of_fuel(self):
         x = [f.hours_of_fuel for f in self.fuel.exclude(purpose='Reinforce')
                     if f.consumption > 0]
@@ -144,7 +143,7 @@ class PlayerStation(models.Model):
             return min(x)
 
     @property
-    @cachedmethod(15, '%(id)d')
+    @cachedmethod(15)
     def fuel_needed(self):
         hours = self.hours_of_fuel
         fuels = [f.type for f in self.fuel.exclude(purpose='Reinforce')
@@ -165,7 +164,7 @@ class PlayerStation(models.Model):
         return self.fueled_until
 
     @property
-    @cachedmethod(15, '%(id)d')
+    @cachedmethod(15)
     def time_remaining(self):
         if self.state_time is None:
             return None
@@ -388,18 +387,18 @@ class FuelSupply(models.Model):
         return u"%s: %s (%d)" % (self.station, self.type, self.quantity)
 
     @property
-    @cachedmethod(60, '%(id)d')
+    @cachedmethod(60)
     def fuel_info(self):
         fuel_info = self.station.tower.fuel.get(type=self.type)
         return fuel_info
 
     #@property
-    #@cachedmethod(60, '%(id)d')
+    #@cachedmethod(60)
     #def _purpose(self):
     #    return self.fuel_info.purpose.name
 
     #@property
-    #@cachedmethod(5, '%(id)d')
+    #@cachedmethod(5)
     #def max_consumption(self):
     #    fuel_info = self.fuel_info
     #    burn_rate = int(fuel_info.quantity)
@@ -409,7 +408,7 @@ class FuelSupply(models.Model):
     #    return int(burn_rate)
 
     @property
-    #@cachedmethod(5, '%(id)d')
+    @cachedmethod(5)
     def consumption(self):
         purpose = self.purpose
         if purpose == 'Reinforce':

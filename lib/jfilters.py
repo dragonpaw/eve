@@ -58,6 +58,12 @@ def filter_comma(num, separator=','):
     for every power of 1000.   Separator defaults to a comma.
     E.g., commify(1234567) -> '1,234,567'
     """
+    try:
+        # Attempt to convert 26.0 to 26, if we're passed a float like that.
+        if num == int(num):
+            num = int(num)
+    except:
+        pass
     num = str(num)  # just in case we were passed a numeric value
     more_to_do = 1
     while more_to_do:
