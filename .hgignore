@@ -1,0 +1,4 @@
+syntax: glob
+*.pyc
+database_settings.py
+log/*
