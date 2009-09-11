@@ -1,44 +1,21 @@
 '''
-# Copy all data from production DB.
->>> from django.db import connection
->>> cursor = connection.cursor()
->>> _ = cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
->>> _ = cursor.execute("INSERT ccp_race SELECT * FROM eve.ccp_race")
->>> _ = cursor.execute("INSERT ccp_graphic SELECT * FROM eve.ccp_graphic")
->>> _ = cursor.execute("INSERT ccp_category SELECT * FROM eve.ccp_category")
->>> _ = cursor.execute("INSERT ccp_group SELECT * FROM eve.ccp_group")
->>> _ = cursor.execute("INSERT ccp_marketgroup SELECT * FROM eve.ccp_marketgroup")
->>> _ = cursor.execute("INSERT ccp_item SELECT * FROM eve.ccp_item")
->>> _ = cursor.execute("INSERT ccp_attribute SELECT * FROM eve.ccp_attribute")
->>> _ = cursor.execute("INSERT ccp_material SELECT * FROM eve.ccp_material")
->>> _ = cursor.execute("INSERT ccp_blueprintdetail SELECT * FROM eve.ccp_blueprintdetail")
->>> _ = cursor.execute("INSERT ccp_station SELECT * FROM eve.ccp_station")
->>> _ = cursor.execute("INSERT ccp_region SELECT * FROM eve.ccp_region")
->>> _ = cursor.execute("INSERT ccp_solarsystem SELECT * FROM eve.ccp_solarsystem")
->>> _ = cursor.execute("INSERT ccp_constellation SELECT * FROM eve.ccp_constellation")
->>> _ = cursor.execute("INSERT ccp_faction SELECT * FROM eve.ccp_faction")
->>> _ = cursor.execute("CREATE TABLE ccp_typeattribute SELECT * FROM eve.ccp_typeattribute")
->>> _ = cursor.execute("INSERT trade_journalentrytype SELECT * FROM eve.trade_journalentrytype")
-
->>> _ = cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
->>> _ = cursor.execute("COMMIT")
+All of the CCP-provided objects, plus a few minor addons like the Alliance
+object and extensions to the Corporation
 '''
-
 from decimal import Decimal
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, signals
 from django.template.defaultfilters import slugify
-from eve.settings import DEBUG, logging
-from eve.lib import eveapi, evelogo
-from eve.lib.alliance_graphics import alliance_graphics
-from eve.lib.jfilters import filter_comma as comma, filter_time as time
-from eve.lib.formatting import unique_slug
-from eve.lib.cachehandler import MyCacheHandler
-from eve import settings
-from eve.lib.decorators import cachedmethod
-
 import os
+
+from eve.lib import eveapi, evelogo, null_fields
+from eve.lib.alliance_graphics import alliance_graphics
+from eve.lib.cachehandler import MyCacheHandler
+from eve.lib.decorators import cachedmethod
+from eve.lib.formatting import unique_slug
+from eve.lib.jfilters import filter_comma as comma, filter_time as time
+from eve import settings
 
 evelogo.resourcePath = os.path.join(settings.STATIC_DIR, 'ccp-icons', 'corplogos')
 
@@ -48,13 +25,19 @@ TRUE_FALSE = (
 )
 API = eveapi.get_api()
 
+NULL_GRAPHIC = '/static/1px.gif'
+
 class PublishedManager(models.Manager):
     def get_query_set(self):
         return super(PublishedManager, self).get_query_set().filter(published=True)
 
-
 class Base(models.Model):
-    deleteable = False
+    '''Default Base model for all Widget models.
+
+    Use EveBase for non-deleteable objects.
+    '''
+    # This appeases the code intellegence functions of Komodo.
+    objects = models.Manager()
 
     def get_icon(self, size):
         return None
@@ -83,62 +66,71 @@ class Base(models.Model):
         else:
             return u'Undefined __unicode__'
 
-    def delete(self):
-        if self.deleteable:
-            super(Base, self).delete()
-        else:
-            raise NotImplementedError('Tried to remove an immutable.')
-
-    def really_delete(self):
-        super(Base, self).delete()
-
     class Meta:
         abstract = True
         ordering = ('name',)
 
-class CachedGet(object):
-    """A mixin to cause the entire table to be loaded into memory the first time
-    that the class is accessed. A restart of the web server will be necessary
-    to reload any changed data within the table."""
-    def get(self, *args, **kwargs):
-        log = logging.getLogger('CachedGet')
-        log.info('Caching entire table in memory: %s' % self.__class__.__name__)
-        pk_name = self.model._meta.pk.name
-        if not hasattr(self, '_cache'):
-            self._cache = dict((obj._get_pk_val(), obj) for obj in self.all())
-        value = len(kwargs) == 1 and kwargs.keys()[0] in ('pk', pk_name, '%s__exact' % pk_name) and self._cache.get(kwargs.values()[0], False)
-        if value:
-            return value
-        else:
-            super(CachedGet, self).get(*args, **kwargs)
+class EveBase(Base):
+    '''Base class for objects that must not be deleted or created.'''
 
-class Agent(Base):
-    id = models.IntegerField(primary_key=True, db_column='agentid')
-    division = models.ForeignKey('CorporationDivision', null=True, blank=True, db_column='divisionid')
-    corporation = models.ForeignKey('Corporation', null=True, blank=True, db_column='corporationid')
-    station = models.ForeignKey('Station', null=True, blank=True, db_column='stationid')
-    level = models.IntegerField(null=True, blank=True)
-    quality = models.IntegerField(null=True, blank=True)
-    agenttype = models.ForeignKey('AgentType', db_column='agenttypeid')
+    def delete(self):
+        raise NotImplementedError('Tried to remove an immutable.')
 
-    _name = None
+    def really_delete(self):
+        super(Base, self).delete()
 
-    class Meta:
+    class Meta(Base.Meta):
+        abstract = True
+        managed = False
+
+#class CachedGet(object):
+#    """A mixin to cause the entire table to be loaded into memory the first time
+#    that the class is accessed. A restart of the web server will be necessary
+#    to reload any changed data within the table.
+#
+#    Unfortunately, seems to only work when called with Class.objects.get
+#    """
+#    def get(self, *args, **kwargs):
+#        log = settings.logging.getLogger('CachedGet')
+#        log.debug('Called!')
+#        pk_name = self.model._meta.pk.name
+#        if not hasattr(self, '_cache'):
+#            log.info('Caching entire table in memory: %s' % self.__class__.__name__)
+#            self._cache = dict((obj._get_pk_val(), obj) for obj in self.all())
+#        value = len(kwargs) == 1 and kwargs.keys()[0] in ('pk', pk_name, '%s__exact' % pk_name) and self._cache.get(kwargs.values()[0], False)
+#        if value:
+#            log.debug('Returning cached value: %s', value)
+#            return value
+#        else:
+#            log.debug('Failed to get value, falling back to super().')
+#            super(CachedGet, self).get(*args, **kwargs)
+
+class Agent(EveBase):
+    id = null_fields.Int(primary_key=True, db_column='agentID')
+    division = null_fields.Key('CorporationDivision', db_column='divisionID')
+    corporation = null_fields.Key('Corporation', db_column='corporationID')
+    station = null_fields.Key('Station', db_column='stationID')
+    level = null_fields.Small()
+    quality = null_fields.Small()
+    agenttype = null_fields.Key('AgentType', db_column='agentTypeID')
+
+    class Meta(EveBase.Meta):
         ordering = ('id',)
+        db_table = 'agtAgents'
 
     @property
+    @cachedmethod(60*4)
     def name(self):
-        if not self._name:
-            self._name = Name.objects.get(pk=self.id).name
-        return self._name
+        return Name.objects.get(pk=self.id).name
 
 
-class AgentType(Base):
-    id = models.IntegerField(primary_key=True, db_column='agenttypeid')
-    agenttype = models.CharField(max_length=150)
+class AgentType(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='agentTypeID')
+    agenttype = null_fields.Char(max_length=50, db_column='agentType')
 
-    class Meta:
+    class Meta(EveBase.Meta):
         ordering = ('id',)
+        db_table = 'agtAgentTypes'
 
     def __unicode__(self):
         return self.agenttype
@@ -146,13 +138,10 @@ class AgentType(Base):
 
 class Alliance(Base):
     name = models.CharField(max_length=100)
-    executor = models.ForeignKey('Corporation', blank=True, null=True, related_name='executors')
+    executor = models.ForeignKey('Corporation', related_name='executors')
     ticker = models.CharField(max_length=10)
-    member_count = models.IntegerField()
+    member_count = models.IntegerField(default=0)
     slug = models.SlugField(max_length=100)
-    objects = models.Manager()
-
-    deleteable = True
 
     def get_icon(self, size):
         if alliance_graphics.has_key(self.id):
@@ -168,30 +157,17 @@ class Alliance(Base):
         # Break the links to the alliance, so they are clean, and don't
         # get cascade deleted.
         print "Braking all links for alliance '%s'." % self.name
-        print "Unlinking executor corp."
         self.executor = None
         self.save()
-        for c in self.corporations.all():
-            print "Breaking link to corp '%s'" % c.name
-            c.alliance = None
-            c.save()
-        for s in self.solarsystems_lost.all():
-            print "Removing alliance from old sov in: %s" % s
-            s.alliance_old = None
-            s.save()
-        for s in self.solarsystems.all():
-            print "Removing alliance from new sov in: %s" % s
-            s.alliance = None
-            s.save()
-        for c in self.constellations.all():
-            print "Removing alliance from sov in constellation: %s" % c
-            c.alliance = None
-            c.save()
+        self.corporations.clear()
+        self.solarsystems_lost.clear()
+        self.solarsystems.clear()
+        self.constellations.clear()
         super(Alliance, self).delete()
 
 
 
-class Attribute(CachedGet, Base):
+class Attribute(EveBase):
     """This table seems to contain the various attributes of an Item that can
     have numeric values associated with them.
 
@@ -218,82 +194,37 @@ class Attribute(CachedGet, Base):
     Attribute: 244: trackingSpeedMultiplier
     Attribute: 120: weaponRangeMultiplier
     """
-    id = models.IntegerField(primary_key=True, db_column='attributeid')
-    description = models.TextField()
-    attributename = models.CharField(max_length=100)
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    defaultvalue = models.FloatField()
-    published = models.BooleanField()
-    displayname = models.CharField(max_length=100, blank=True)
-    unit = models.ForeignKey('Unit', null=True, blank=True, db_column='unitid')
-    stackable = models.BooleanField()
-    highisgood = models.BooleanField()
-    category = models.ForeignKey('AttributeCategory', db_column='categoryID')
+    id = null_fields.Small(primary_key=True, db_column='attributeID')
+    attributename = null_fields.Char('Attribute Name', max_length=100, db_column='attributeName')
+    description = null_fields.Char(max_length=1000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    defaultvalue = null_fields.Float('Default Value', db_column='defaultValue')
+    published = models.NullBooleanField('Published?')
+    displayname = null_fields.Char('Display Name', max_length=100, db_column='displayName')
+    unit = null_fields.Key('Unit', db_column='unitID')
+    stackable = models.NullBooleanField('Stackable?')
+    highisgood = models.NullBooleanField('High is Good?', db_column='highIsGood')
+    category = null_fields.Key('AttributeCategory', db_column='categoryID')
 
-    class Meta:
-        ordering = ['category', 'displayname' ]
+    class Meta(EveBase.Meta):
+        ordering = ('attributename', )
+        db_table = 'dgmAttributeTypes'
 
     def __unicode__(self):
-        if self.valueint is not None:
-            return "%d: %s (I:%d)" % (self.id, self.name, self.valueint)
-        elif self.valuefloat is not None:
-            return "%d: %s (F:%f)" % (self.id, self.name, self.valuefloat)
-        else:
-            return "%d: %s (?)" % (self.id, self.name)
+        return "%d: %s" % (self.id, self.name)
 
+    def get_icon(self, size):
+        return self.graphic.get_icon(size)
 
     # Used when joining with Item.
-    valueint = None
-    valuefloat = None
-    def get_value(self):
-        if self.valueint is not None:
-            return self.valueint
-        else:
-            return self.valuefloat
-    value = property(get_value, None, None, None)
-
-    @property
-    def display_value(self):
-        value = self.get_value()
-        if self.unit is None:
-            return value
-
-        # Big lookup....
-        name = self.unit.name
-        if name == 'Modifier Percent':
-            value = "%.0f %%" % ((value - 1.0) * 100)
-        elif name == 'Sizeclass':
-            if value == 1:
-                value = 'Small'
-            elif value == 2:
-                value = 'Medium'
-            elif value == 3:
-                value = 'Large'
-            elif value == 4:
-                value = 'X-Large'
-        elif self.attributename.startswith('requiredSkill'):
-            value = "%s %s" % (Item.objects.get(pk=self.valueint).name, self.valuefloat)
-        elif name == 'groupID':
-            value = Group.objects.get(pk=value)
-        elif name == 'Milliseconds' and value > 1000:
-            value = time(value/1000)
-        elif name == 'typeID':
-            value = Item.objects.get(pk=value)
-        elif name == 'attributeID':
-            # What the hell happened to this attribute?! It's now 165-168,
-            # and not off by 164 either. (Int = 166 instead of 4)
-            # Intelligence(1): 165
-            # Charisma(2): 164
-            # Perception(3): 167
-            # Memory(4): 166
-            # Willpower(5): 168
-            value = CharacterAttribute.objects.get(pk=value)
-        elif name == 'Inverse Absolute Percent':
-            value = "%d %%" % int((1 - value) * 100)
-        else:
-            value = str(comma(value)) + " " + self.unit.displayname
-        return value
-
+    #valueint = None
+    #valuefloat = None
+    #def get_value(self):
+    #    if self.valueint is not None:
+    #        return self.valueint
+    #    else:
+    #        return self.valuefloat
+    #value = property(get_value, None, None, None)
 
     # There are two name fields, but they are not always filled in.
     @property
@@ -303,35 +234,22 @@ class Attribute(CachedGet, Base):
         else:
             return self.attributename
 
-    @cachedmethod(60*4)
-    def get_icon(self, size):
-        if self.displayname == 'Used with (chargegroup)':
-            return Group.objects.get(pk=self.get_value()).get_icon(size)
-        elif self.graphic:
-            return self.graphic.get_icon(size)
-        else:
-            return Graphic.objects.get(icon='07_15').get_icon(size)
+class AttributeCategory(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='categoryID',)
+    name = null_fields.Char(max_length=50, db_column='categoryName')
+    description = null_fields.Char(max_length=200, db_column='categoryDescription')
 
-
-class AttributeCategory(Base):
-    id = models.IntegerField(primary_key=True, db_column='categoryID')
-    name = models.CharField(max_length=50, db_column='categoryName')
-    description = models.CharField(max_length=200, db_column='categoryDescription')
-
-    class Meta(Base.Meta):
+    class Meta(EveBase.Meta):
         verbose_name_plural = "Attribute catagories"
-
+        db_table = 'dgmAttributeCategories'
 
 
 class BlueprintDetail(Base):
     # Using the proper foreign key relationship here causes a fatal django error.
     # (Only using the admin interface.)
-    id = models.ForeignKey('Item', primary_key=True,
-                           db_column='blueprinttypeid',
-                           related_name='blueprint_details_qs',
-                           limit_choices_to = {'group__category__name__exact': 'Blueprint'})
-    parent = models.IntegerField(db_column='parentBlueprintTypeID', null=True)
-    makes = models.ForeignKey('Item', db_column='producttypeid',
+    id = null_fields.Small(primary_key=True, db_column='blueprintTypeID')
+    parent = null_fields.Key('BlueprintDetail', db_column='parentBlueprintTypeID', related_name='child_blueprints')
+    makes = null_fields.Key('Item', db_column='productTypeID',
                               related_name='blueprint_madeby_qs',
                               limit_choices_to = {
                                   'group__category__name__in': [
@@ -347,158 +265,141 @@ class BlueprintDetail(Base):
                                       'Deployable',
                                   ]
                               })
-    productiontime = models.IntegerField()
-    techlevel = models.IntegerField()
-    researchproductivitytime = models.IntegerField()
-    researchmaterialtime = models.IntegerField()
-    researchcopytime = models.IntegerField()
-    researchtechtime = models.IntegerField()
-    productivitymodifier = models.IntegerField()
-    materialmodifier = models.IntegerField()
-    wastefactor = models.IntegerField()
-    chanceofreverseengineering = models.FloatField()
-    maxproductionlimit = models.IntegerField()
+    productiontime = null_fields.Int(db_column='productionTime')
+    techlevel = null_fields.Small(db_column='techLevel')
+    researchproductivitytime = null_fields.Int(db_column='researchProductivityTime')
+    researchmaterialtime = null_fields.Int(db_column='researchMaterialTime')
+    researchcopytime = null_fields.Int(db_column='researchCopyTime')
+    researchtechtime = null_fields.Int(db_column='researchTechTime')
+    productivitymodifier = null_fields.Int(db_column='productivityModifier')
+    materialmodifier = null_fields.Small(db_column='materialModifier')
+    wastefactor = null_fields.Small(db_column='wasteFactor')
+    maxproductionlimit = null_fields.Int(db_column='maxProductionLimit')
 
-    class Meta:
+    def item(self):
+        return Item.objects.get(pk=self.id)
+
+    class Meta(Base.Meta):
         ordering = ('id',)
+        db_table = 'invBlueprintTypes'
 
-class Category(Base):
+class Category(EveBase):
     """This table contains the most basic groupings in game:
 
     Sample:
         Asteroid
         Charge
         Ship"""
-    id = models.IntegerField(primary_key=True, db_column='categoryid')
-    name = models.CharField(max_length=100, db_column='categoryName')
-    description = models.TextField(null=True, blank=True)
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    published = models.BooleanField(null=True, blank=True, default=False)
+    id = null_fields.Small(primary_key=True, db_column='categoryID')
+    name = null_fields.Char(max_length=100, db_column='categoryName')
+    description = null_fields.Char(max_length=3000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    published = models.NullBooleanField()
 
-    class Meta(Base.Meta):
+    class Meta(EveBase.Meta):
         verbose_name_plural = "Categories"
+        db_table = 'invCategories'
 
 
-class CharacterAncestry(Base):
-    id = models.IntegerField(primary_key=True, db_column='ancestryid')
-    name = models.CharField(max_length=100, db_column='ancestryname')
-    bloodline = models.ForeignKey('CharacterBloodline', db_column='bloodlineid')
-    description = models.TextField()
-    perception = models.IntegerField()
-    willpower = models.IntegerField()
-    charisma = models.IntegerField()
-    memory = models.IntegerField()
-    intelligence = models.IntegerField()
-    skill_1 = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='ca_s1',
-                               db_column='skilltypeid1')
-    skill_2 = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='ca_s2',
-                               db_column='skilltypeid2')
-    item_1 = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='ca_i1',
-                               db_column='typeid')
-    item_2 = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='ca_i2',
-                               db_column='typeid2')
-    item_quantity_1 = models.IntegerField(null=True, blank=True, db_column='typequantity')
-    item_quantity_2 = models.IntegerField(null=True, blank=True, db_column='typequantity2')
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid',)
-    shortdescription = models.TextField()
+class CharacterAncestry(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='ancestryID')
+    name = null_fields.Char(max_length=100, db_column='ancestryName')
+    bloodline = null_fields.Key('ccp.CharacterBloodline', db_column='bloodlineID')
+    description = null_fields.Char(max_length=1000)
+    perception = null_fields.Small()
+    willpower = null_fields.Small()
+    charisma = null_fields.Small()
+    memory = null_fields.Small()
+    intelligence = null_fields.Small()
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    shortdescription = null_fields.Char(max_length=500, db_column='shortDescription')
 
-    class Meta(Base.Meta):
+    class Meta(EveBase.Meta):
         verbose_name_plural = "Character ancestries"
-
-class CharacterAttribute(Base):
-    id = models.IntegerField(primary_key=True, db_column='attributeid')
-    name = models.CharField(max_length=100, db_column='attributename')
-    description = models.TextField()
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    shortdescription = models.TextField()
-    notes = models.TextField()
+        db_table = 'chrAncestries'
 
 
-class CharacterBloodline(Base):
-    id = models.IntegerField(primary_key=True, db_column='bloodlineid')
-    name = models.CharField(max_length=100, db_column='bloodlinename')
-    race = models.ForeignKey('Race', db_column='raceid')
-    description = models.TextField()
-    maledescription = models.TextField()
-    femaledescription = models.TextField()
-    ship = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='bloodline_ship',
-                               db_column='shiptypeid')
-    corporation = models.ForeignKey('Corporation', db_column='corporationid')
-    perception = models.IntegerField()
-    willpower = models.IntegerField()
-    charisma = models.IntegerField()
-    memory = models.IntegerField()
-    intelligence = models.IntegerField()
-    bonus = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='bloodline_bonus',
-                               db_column='bonustypeid')
-    skill_1 = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='bloodline_skill1',
-                               db_column='skilltypeid1')
-    skill_2 = models.ForeignKey('Item', null=True, blank=True,
-                               related_name='bloodline_skill2',
-                               db_column='skilltypeid2')
-    graphic = models.ForeignKey('Graphic', null=True, blank=True,
-                                  db_column='graphicid')
-    shortdescription = models.TextField()
-    shortmaledescription = models.TextField()
-    shortfemaledescription = models.TextField()
+class CharacterAttribute(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='attributeID')
+    name = null_fields.Char(max_length=100, db_column='attributeName')
+    description = null_fields.Char(max_length=1000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    shortdescription = null_fields.Char(max_length=500, db_column='shortDescription')
+    notes = null_fields.Char(max_length=500)
+
+    class Meta(EveBase.Meta):
+        db_table = 'chrAttributes'
+
+class CharacterBloodline(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='bloodlineID')
+    name = null_fields.Char(max_length=100, db_column='bloodlineName')
+    race = null_fields.Key('Race', db_column='raceID')
+    description = null_fields.Char(max_length=1000)
+    maledescription = null_fields.Char(max_length=1000, db_column='maleDescription')
+    femaledescription = null_fields.Char(max_length=1000, db_column='femaleDescription')
+    ship = null_fields.Key('Item', related_name='bloodline_ship', db_column='shipTypeID')
+    corporation = null_fields.Key('Corporation', db_column='corporationID')
+    perception = null_fields.Small()
+    willpower = null_fields.Small()
+    charisma = null_fields.Small()
+    memory = null_fields.Small()
+    intelligence = null_fields.Small()
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    shortdescription = null_fields.Char(max_length=500, db_column='shortDescription')
+    shortmaledescription = null_fields.Char(max_length=500, db_column='shortMaleDescription')
+    shortfemaledescription = null_fields.Char(max_length=500, db_column='shortFemaleDescription')
+
+    class Meta(EveBase.Meta):
+        db_table = 'chrBloodlines'
 
 
-class CharacterCareer(Base):
-    id = models.IntegerField(primary_key=True, db_column='careerid')
-    race = models.ForeignKey('Race', db_column='raceid')
-    name = models.CharField(max_length=100, db_column='careername')
-    description = models.TextField()
-    shortdescription = models.TextField()
-    graphic = models.ForeignKey('Graphic', null=True, blank=True,
-                                  db_column='graphicid',)
-    school = models.ForeignKey('School', null=True, blank=True, related_name='careers',
-                               db_column='schoolid')
+class CharacterCareer(EveBase):
+    race = null_fields.Key('Race', db_column='raceID')
+    id = null_fields.Small(primary_key=True, db_column='careerID')
+    name = null_fields.Char(max_length=100, db_column='careerName')
+    description = null_fields.Char(max_length=2000)
+    shortdescription = null_fields.Char(max_length=500, db_column='shortDescription')
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    school = null_fields.Key('School', related_name='careers', db_column='schoolID')
+
+    class Meta(EveBase.Meta):
+        db_table = 'chrCareers'
 
 
+class CharacterCareerSpeciality(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='specialityID')
+    career = null_fields.Key('CharacterCareer', db_column='careerID')
+    name = null_fields.Char(max_length=100, db_column='specialityName')
+    description = null_fields.Char(max_length=2000)
+    shortdescription = null_fields.Char(max_length=500, db_column='shortDescription')
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
 
-class CharacterCareerSpeciality(Base):
-    id = models.IntegerField(primary_key=True, db_column='specialityid')
-    career = models.ForeignKey('CharacterCareer', db_column='careerid')
-    name = models.CharField(max_length=100, db_column='specialityname')
-    description = models.TextField()
-    shortdescription = models.TextField()
-    graphic = models.ForeignKey('Graphic', null=True, blank=True,
-                                  db_column='graphicid' )
-    departmentid = models.IntegerField(null=True, blank=True)
-
-    class Meta(Base.Meta):
+    class Meta(EveBase.Meta):
         verbose_name_plural = "Character career specialities"
+        db_table = 'chrCareerSpecialities'
 
 
-class Constellation(Base):
-    region = models.ForeignKey('Region', db_column='regionid',
-                               related_name='constellations')
-    id = models.IntegerField(primary_key=True, db_column='constellationid')
-    name = models.CharField(max_length=100, db_column='constellationname')
-    x = models.FloatField(null=True)
-    y = models.FloatField(null=True)
-    z = models.FloatField(null=True)
-    xmin = models.FloatField(null=True)
-    xmax = models.FloatField(null=True)
-    ymin = models.FloatField(null=True)
-    ymax = models.FloatField(null=True)
-    zmin = models.FloatField(null=True)
-    zmax = models.FloatField(null=True)
-    faction = models.ForeignKey('Faction', null=True, blank=True,
-                                db_column='factionid')
-    radius = models.FloatField(null=True)
-    sov_time = models.DateTimeField(null=True, blank=True,
-                                    db_column='sovereigntyDateTime')
-    alliance = models.ForeignKey('Alliance', null=True, blank=True,
-                                 related_name='constellations')
-    grace_date_time = models.DateTimeField(null=True, db_column='graceDateTime')
+class Constellation(EveBase):
+    region = null_fields.Key('Region', db_column='regionID', related_name='constellations')
+    id = models.IntegerField(primary_key=True, db_column='constellationID', )
+    name = null_fields.Char(max_length=100, db_column='constellationName')
+    x = null_fields.Float()
+    y = null_fields.Float()
+    z = null_fields.Float()
+    xmin = null_fields.Float(db_column='xMin')
+    xmax = null_fields.Float(db_column='xMax')
+    ymin = null_fields.Float(db_column='yMin')
+    ymax = null_fields.Float(db_column='yMax')
+    zmin = null_fields.Float(db_column='zMin')
+    zmax = null_fields.Float(db_column='zMax')
+    faction = null_fields.Key('Faction', db_column='factionID')
+    radius = null_fields.Float()
+    sov_time = models.DateTimeField(db_column='sovereigntyDateTime', null=True)
+    grace_date_time = models.DateTimeField(db_column='graceDateTime', null=True)
+    alliance = null_fields.Key('Alliance', related_name='constellations')
+
+    class Meta(EveBase.Meta):
+        db_table = 'mapConstellations'
 
     def get_absolute_url(self):
         return "/constellation/%s/" % self.name
@@ -530,72 +431,67 @@ class Constellation(Base):
             else:
                 return None
 
+#
+#class ContrabandType(EveBase):
+#    factionid = models.IntegerField()
+#    id = models.IntegerField(primary_key=True, db_column='typeID')
+#    standingloss = models.FloatField()
+#    confiscateminsec = models.FloatField()
+#    finebyvalue = models.FloatField()
+#    attackminsec = models.FloatField()
+#
+#    class Meta(EveBase.Meta):
+#        ordering = ('id',)
+#        db_table = 'invContrabandTypes'
 
-class ContrabandType(Base):
-    factionid = models.IntegerField()
-    id = models.IntegerField(primary_key=True, db_column='typeid')
-    standingloss = models.FloatField()
-    confiscateminsec = models.FloatField()
-    finebyvalue = models.FloatField()
-    attackminsec = models.FloatField()
 
-    class Meta:
-        ordering = ('id',)
-
-
-class Corporation(Base):
-    id = models.IntegerField(primary_key=True, db_column='corporationid')
-    #mainactivity = models.ForeignKey('CorporationActivity',
-    #                                 db_column='mainactivityid',
+class Corporation(EveBase):
+    id = models.IntegerField(primary_key=True, db_column='corporationID')
+    #mainactivity = null_fields.Key('CorporationActivity',
+    #                                 db_column='mainactivityID',
     #                                 related_name='corp_activity_1')
-    #secondaryactivity = models.ForeignKey('CorporationActivity',
-    #                                      db_column='secondaryactivityid',
+    #secondaryactivity = null_fields.Key('CorporationActivity',
+    #                                      db_column='secondaryactivityID',
     #                                      related_name='corp_activity_2',
     #                                      null=True, blank=True)
-    #size = models.CharField(max_length=3)
-    #extent = models.CharField(max_length=3)
-    #solarsystem = models.ForeignKey('SolarSystem', null=True, blank=True,
-    #                                db_column='solarsystemid', )
-#    investorid1 = models.IntegerField(null=True, blank=True)
-#    investorshares1 = models.IntegerField()
-#    investorid2 = models.IntegerField(null=True, blank=True)
-#    investorshares2 = models.IntegerField()
-#    investorid3 = models.IntegerField(null=True, blank=True)
-#    investorshares3 = models.IntegerField()
-#    investorid4 = models.IntegerField(null=True, blank=True)
-#    investorshares4 = models.IntegerField()
-#    friend = models.ForeignKey('Name', null=True, blank=True,
-#                               db_column='friendid', related_name='friends')
-#    enemy = models.ForeignKey('Name', null=True, blank=True,
-#                              db_column='enemyid', related_name='enemies')
-    publicshares = models.IntegerField(default=0)
-    #initialprice = models.IntegerField()
-    #minsecurity = models.FloatField()
-    #scattered = models.CharField(max_length=15)
-    #fringe = models.IntegerField()
-    #corridor = models.IntegerField()
-    #hub = models.IntegerField()
-    #border = models.IntegerField()
-    faction = models.ForeignKey('Faction', db_column='factionid',
-                                related_name='corporations', null=True)
-    #sizefactor = models.FloatField()
-    #stationcount = models.IntegerField()
-    #stationsystemcount = models.IntegerField()
-    alliance = models.ForeignKey('Alliance', null=True, related_name='corporations')
-    last_updated = models.DateTimeField(blank=True, null=True)
-    cached_until = models.DateTimeField(blank=True, null=True)
+    size = null_fields.Char(max_length=1)
+    extent = null_fields.Char(max_length=1)
+    solarsystem = null_fields.Key('SolarSystem', db_column='solarSystemID')
+    investorid1 = null_fields.Int(db_column='investorID1')
+    investorshares1 = null_fields.Small(db_column='investorShares1')
+    investorid2 = null_fields.Int(db_column='investorID2')
+    investorshares2 = null_fields.Small(db_column='investorShares2')
+    investorid3 = null_fields.Int(db_column='investorID3')
+    investorshares3 = null_fields.Small(db_column='investorShares3')
+    investorid4 = null_fields.Int(db_column='investorID4')
+    investorshares4 = null_fields.Small(db_column='investorShares4')
+    friend = null_fields.Key('Name', db_column='friendID', related_name='friends')
+    enemy = null_fields.Key('Name', db_column='enemyID', related_name='enemies')
+    publicshares = null_fields.Int(db_column='publicShares')
+    initialprice = null_fields.Int(db_column='initialPrice')
+    minsecurity = null_fields.Float(db_column='minSecurity')
+    scattered = models.NullBooleanField()
+    fringe = null_fields.Small()
+    corridor = null_fields.Small()
+    hub = null_fields.Small()
+    border = null_fields.Small()
+    faction = null_fields.Key('Faction', db_column='factionID', related_name='corporations')
+    sizefactor = null_fields.Float(db_column='sizeFactor')
+    stationcount = null_fields.Small(db_column='stationCount')
+    stationsystemcount = null_fields.Small(db_column='stationSystemCount')
+    description = null_fields.Char(max_length=4000)
+    alliance = null_fields.Key('Alliance', related_name='corporations')
+    last_updated = models.DateTimeField(null=True)
+    cached_until = models.DateTimeField(null=True)
 
-    _name = None
-    deleteable = True
-
-    class Meta:
+    class Meta(EveBase.Meta):
         ordering = ('id',)
+        db_table = 'crpNPCCorporations'
 
     @property
+    @cachedmethod(60)
     def name(self):
-        if not self._name:
-            self._name = Name.objects.get(pk=self.id).name
-        return self._name
+        return Name.objects.get(pk=self.id).name
 
     def get_icon(self, size):
         if self.is_player_corp:
@@ -676,73 +572,79 @@ class Corporation(Base):
         self.updatelogo()
 
         return messages
+#
+#
+#class CorporationActivity(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='activityID')
+#    name = null_fields.Char(max_length=100, db_column='activityname')
+#    description = models.TextField()
+#
+#    class Meta(EveBase.Meta):
+#        verbose_name_plural = "Corporation activities"
+#        db_table = 'crpActivities'
+#
 
+class CorporationDivision(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='divisionID')
+    name = null_fields.Char(max_length=100, db_column='divisionName')
+    description = null_fields.Char(max_length=1000)
+    leadertype = null_fields.Char(max_length=100, db_column='leaderType')
 
-class CorporationActivity(Base):
-    id = models.IntegerField(primary_key=True, db_column='activityid')
-    name = models.CharField(max_length=100, db_column='activityname')
-    description = models.TextField()
+    class Meta(EveBase.Meta):
+        db_table = 'crpNPCDivisions'
 
-    class Meta(Base.Meta):
-        verbose_name_plural = "Corporation activities"
+class Effect(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='effectID')
+    name = null_fields.Char(max_length=400, db_column='effectName')
+    effectcategory = null_fields.Small(db_column='effectCategory')
+    preexpression = null_fields.Int(db_column='preExpression')
+    postexpression = null_fields.Int(db_column='postExpression')
+    description = null_fields.Char(max_length=1000)
+    guid = null_fields.Char(max_length=60)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    isoffensive = models.NullBooleanField(db_column='isOffensive')
+    isassistance = models.NullBooleanField(db_column='isAssistance')
+    durationattributeid = null_fields.Small(db_column='durationAttributeID')
+    trackingspeedattributeid = null_fields.Small(db_column='trackingSpeedAttributeID')
+    dischargeattributeid = null_fields.Small(db_column='dischargeAttributeID')
+    rangeattributeid = null_fields.Small(db_column='rangeAttributeID')
+    falloffattributeid = null_fields.Small(db_column='falloffAttributeID')
+    disallowautorepeat = models.NullBooleanField(db_column='disallowAutoRepeat')
+    published = models.NullBooleanField()
+    displayname = null_fields.Char(max_length=100, db_column='displayName')
+    iswarpsafe = models.NullBooleanField(db_column='isWarpSafe')
+    rangechance = models.NullBooleanField(db_column='rangeChance')
+    electronicchance = models.NullBooleanField(db_column='electronicChance')
+    propulsionchance = models.NullBooleanField(db_column='propulsionChance')
+    distribution = null_fields.Small()
+    sfxname = null_fields.Char(max_length=20, db_column='sfxName')
+    npcusagechanceattributeid = null_fields.Small(db_column='npcUsageChanceAttributeID')
+    npcactivationchanceattributeid = null_fields.Small(db_column='npcActivationChanceAttributeID')
+    fittingusagechanceattributeid = null_fields.Small(db_column='fittingUsageChanceAttributeID')
 
+    class Meta(EveBase.Meta):
+        db_table = 'dgmEffects'
 
-class CorporationDivision(Base):
-    id = models.IntegerField(primary_key=True, db_column='divisionid')
-    name = models.CharField(max_length=100, db_column='divisionname')
-    description = models.TextField()
-    leadertype = models.CharField(max_length=100)
-
-
-class Effect(Base):
-    id = models.IntegerField(primary_key=True, db_column='effectid')
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    name = models.TextField(db_column='effectname')
-    displayname = models.CharField(max_length=100)
-    effectcategory = models.IntegerField(null=True, blank=True)
-    preexpression = models.IntegerField(null=True, blank=True)
-    postexpression = models.IntegerField(null=True, blank=True)
-    description = models.TextField(null=True, blank=True)
-    guid = models.CharField(null=True, blank=True, max_length=60)
-    isoffensive = models.IntegerField(null=True, blank=True)
-    isassistance = models.IntegerField(null=True, blank=True)
-    durationattributeid = models.IntegerField(null=True, blank=True)
-    trackingspeedattributeid = models.IntegerField(null=True, blank=True)
-    dischargeattributeid = models.IntegerField(null=True, blank=True)
-    rangeattributeid = models.IntegerField(null=True, blank=True)
-    falloffattributeid = models.IntegerField(null=True, blank=True)
-    disallowautorepeat = models.IntegerField(null=True, blank=True)
-    published = models.BooleanField(null=True, blank=True)
-    iswarpsafe = models.IntegerField(null=True, blank=True)
-    rangechance = models.IntegerField(null=True, blank=True)
-    electronicchance = models.IntegerField(null=True, blank=True)
-    propulsionchance = models.IntegerField(null=True, blank=True)
-    distribution = models.IntegerField(null=True, blank=True)
-    sfxname = models.CharField(blank=True, max_length=20)
-    npcusagechanceattributeid = models.IntegerField(null=True, blank=True)
-    npcactivationchanceattributeid = models.IntegerField(null=True, blank=True)
-    fittingusagechanceattributeid = models.IntegerField(null=True, blank=True)
-
-
-
-class Faction(CachedGet, Base):
+class Faction(EveBase):
     """Table describes the major factions in game:
 
     Amaar Empire
     CONCORD Assembly
     ...
     Thukker Tribe"""
-    id = models.IntegerField(primary_key=True, db_column='factionid')
-    name = models.CharField(max_length=100, db_column='factionname')
-    description = models.TextField(null=True)
-    raceids = models.IntegerField(null=True, blank=True)
-    solarsystem = models.ForeignKey('SolarSystem', null=True, blank=True,
-                                    db_column='solarsystemid', related_name='home_system')
-    corporation = models.ForeignKey('Corporation', null=True, blank=True,
-                                    db_column='corporationid', related_name='corporations')
-    sizefactor = models.FloatField(null=True, blank=True)
-    stationcount = models.IntegerField(null=True, blank=True)
-    stationsystemcount = models.IntegerField(null=True, blank=True)
+    id = null_fields.Int(primary_key=True, db_column='factionID')
+    name = null_fields.Char(max_length=100, db_column='factionName')
+    description = null_fields.Char(max_length=1000)
+    raceids = null_fields.Int(db_column='raceIDs')
+    solarsystem = null_fields.Key('SolarSystem', db_column='solarSystemID', related_name='home_system')
+    corporation = null_fields.Key('Corporation', db_column='corporationID', related_name='base_coporation')
+    sizefactor = null_fields.Float(db_column='sizeFactor')
+    stationcount = null_fields.Small(db_column='stationCount')
+    stationsystemcount = null_fields.Small(db_column='stationSystemCount')
+    militia_corporation = null_fields.Key('Corporation', db_column='militiaCorporationID', related_name='faction2')
+
+    class Meta(EveBase.Meta):
+        db_table = 'chrFactions'
 
     def iconid(self):
         ids = {
@@ -781,25 +683,27 @@ class Faction(CachedGet, Base):
             return "/static/ccp-icons/corporation/%s-%s.jpg" % (id, size)
 
 
-
-class Group(Base):
+class Group(EveBase):
     """This table describes goups like: Ammo and Advanced Torpedo.
 
     It also contains non-item groups like 'Alliance' and
     'Asteroid Angel Cartel Officer'."""
-    id = models.IntegerField(primary_key=True, db_column='groupid')
-    category = models.ForeignKey('Category', db_column='categoryid', related_name='groups')
-    name = models.CharField(max_length=100, db_column='groupname')
-    description = models.TextField(null=True, blank=True)
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    usebaseprice = models.IntegerField(max_length=15, choices=TRUE_FALSE)
-    allowmanufacture = models.BooleanField("Manafacturable?", choices=TRUE_FALSE)
-    allowrecycler = models.BooleanField(null=True, blank=True)
-    anchored = models.BooleanField(null=True, blank=True)
-    anchorable = models.BooleanField(null=True, blank=True)
-    fittablenonsingleton = models.BooleanField(null=True, blank=True)
-    published = models.BooleanField(default=True, null=True)
-    slug = models.SlugField()
+    id = null_fields.Small(primary_key=True, db_column='groupID')
+    category = null_fields.Key('Category', db_column='categoryID', related_name='groups')
+    name = null_fields.Char(max_length=100, db_column='groupName')
+    description = null_fields.Char(max_length=3000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    usebaseprice = models.NullBooleanField(db_column='useBasePrice')
+    allowmanufacture = models.NullBooleanField("Manafacturable?", db_column='allowManufacture')
+    allowrecycler = models.NullBooleanField(db_column='allowRecycler')
+    anchored = models.NullBooleanField()
+    anchorable = models.NullBooleanField()
+    fittablenonsingleton = models.NullBooleanField(db_column='fittableNonSingleton')
+    published = models.NullBooleanField()
+    slug = models.SlugField(max_length=100)
+
+    class Meta(EveBase.Meta):
+        db_table = 'invGroups'
 
     @cachedmethod(60*24)
     def get_icon(self, size):
@@ -807,7 +711,7 @@ class Group(Base):
             try:
                 x = self.items.all()[0]
             except IndexError:
-                return None
+                return get_graphic(None)
             return x.get_icon(size)
         else:
             return self.graphic.get_icon(size)
@@ -822,22 +726,23 @@ class Group(Base):
         return self.category.name == 'Entity'
 
 
-class Graphic(CachedGet, Base):
-    id = models.IntegerField(primary_key=True, db_column='graphicid')
-    url3d = models.CharField(max_length=100, null=True, blank=True)
-    urlweb = models.CharField(max_length=100, null=True, blank=True)
-    description = models.TextField(null=True, blank=True, default='Automatically added by Django')
-    published = models.BooleanField(default=False, null=True)
-    obsolete = models.BooleanField(default=False, null=True)
-    icon = models.CharField(max_length=100)
-    urlsound = models.CharField(max_length=100, null=True, blank=True)
-    explosionid = models.IntegerField(null=True, blank=True)
+class Graphic(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='graphicID')
+    url3d = null_fields.Char(max_length=100, db_column='url3D')
+    urlweb = null_fields.Char(max_length=100, db_column='urlWeb')
+    description = null_fields.Char(max_length=1000)
+    published = models.NullBooleanField()
+    obsolete = models.NullBooleanField()
+    icon = null_fields.Char(max_length=100)
+    urlsound = null_fields.Char(max_length=100, db_column='urlSound')
+    explosionid = null_fields.Small(db_column='explosionID')
 
     color = 'white'
     dir = '/static/ccp-icons'
 
-    class Meta:
+    class Meta(EveBase.Meta):
         ordering = ('id',)
+        db_table = 'eveGraphics'
 
     def __unicode__(self):
         return "%s: %s (%s)" % (self.id, self.urlweb, self.icon)
@@ -855,36 +760,35 @@ class Graphic(CachedGet, Base):
         icon = "%(dir)s/icons/%(size)d_%(size)d/icon%(icon)s.png" % d
         return icon
 
-    @property
-    def icon16(self):
-        return self.get_icon(16)
-
-    @property
-    def icon32(self):
-        return self.get_icon(32)
-
-    @property
-    def icon64(self):
-        return self.get_icon(64)
-
-    @property
-    def icon128(self):
-        return self.get_icon(128)
-
     def save(self, *args, **kwargs):
         """Custom save handler to set a good and safe id on new objects."""
         if self.id is None:
-            min_id = 10000 # We enter new id's on demand, but not below this value.
+            if not self.description:
+                self.description = 'Automatically added by Django'
+            min_id = 10000 # We enter new ID's on demand, but not below this value.
             max_id = Graphic.objects.all().order_by('-id')[0].id
             max_id = max(max_id, min_id)
             self.id=max_id+1
 
         super(Graphic, self).save(*args, **kwargs)
 
+class NullGraphic(object):
+    """
+    Fake Graphic object that will appease the needed parts of the Widget,
+    but only gives out a static 1px transparent image.
+    """
+    def get_icon(self, size):
+        return NULL_GRAPHIC
+
+
 def get_graphic(icon):
-    """Helper utility that will find one icon or make it for you. Used in make_nav and elsewhere.
+    """Helper utility that will find one icon or make it for you.
+    Used in NavigationElement and elsewhere.
     Useful because icons are often non-unique, but I don't care in my app."""
-    if isinstance(icon, type('')):
+    # Special key for the blank icon.
+    if icon is None:
+        return NullGraphic()
+    elif isinstance(icon, type('')):
         g = Graphic.objects.filter(icon=icon)
         if g.count() == 0:
             graphic = Graphic.objects.create(icon=icon)
@@ -895,25 +799,40 @@ def get_graphic(icon):
         return icon
 
 
-class InventoryMetaGroup(Base):
-    id = models.IntegerField(primary_key=True, db_column='metagroupid')
-    name = models.CharField(blank=True, max_length=100, db_column='metagroupname')
-    description = models.TextField(blank=True, null=True)
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
+class InventoryMetaGroup(EveBase):
+    """
+    The categories of items:
+      Tech I
+      Tech II
+      Storyline
+      Faction
+      Officer
+      ...
 
+    """
+    id = null_fields.Small(primary_key=True, db_column='metaGroupID')
+    name = null_fields.Char(max_length=100, db_column='metaGroupName')
+    description = null_fields.Char(max_length=1000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
 
-class InventoryMetaType(Base):
-    item = models.ForeignKey('Item', null=True, blank=True,
-                           db_column='typeid',
-                           related_name='metatype')
-    parent = models.ForeignKey('Item', null=True, blank=True,
-                               db_column='parenttypeid',
-                               related_name='metatype_children')
-    metagroup = models.ForeignKey('InventoryMetaGroup', null=True, blank=True,
-                                    db_column='metagroupid')
+    class Meta(EveBase.Meta):
+        db_table = 'invMetaGroups'
 
-    class Meta:
+class InventoryMetaType(EveBase):
+    """
+    Gives all of the items that are the same base item.
+
+    e.g. item.meta.parent.meta_children.all() is all items of the same type.
+    Group by metagroup for the category (T1, T2, Faction, etc...)
+
+    """
+    item = null_fields.Key('Item', db_column='typeID', related_name='meta', primary_key=True)
+    parent = null_fields.Key('Item', db_column='parentTypeID', related_name='meta_children')
+    metagroup = null_fields.Key('InventoryMetaGroup', db_column='metaGroupID')
+
+    class Meta(EveBase.Meta):
         ordering = ('item',)
+        db_table = 'invMetaTypes'
 
 
 class ItemSkillManager(models.Manager):
@@ -923,7 +842,7 @@ class ItemSkillManager(models.Manager):
             published = True,
         )
 
-class Item(Base):
+class Item(EveBase):
     """This table contains information about each item that you can aquire in
     EVE. Weapons, Ammo, etc...
 
@@ -941,42 +860,38 @@ class Item(Base):
     """
 
     # DON'T REORDER!!! (Breaks the test copy above.)
-    id = models.IntegerField(primary_key=True, db_column='typeid')
-    group = models.ForeignKey('Group', db_column='groupid', related_name='items')
-    name = models.CharField(max_length=100)
-    real_description = models.TextField(db_column='description')
-    graphic = models.ForeignKey('Graphic', null=True, blank=True,
-                                db_column='graphicid')
-    radius = models.FloatField()
-    mass = models.FloatField()
-    volume = models.FloatField()
-    capacity = models.FloatField()
-    portionsize = models.IntegerField()
-    race = models.ForeignKey('Race', null=True, blank=True, db_column='raceid')
-    baseprice = models.FloatField()
-    published = models.BooleanField()
-    marketgroup = models.ForeignKey('MarketGroup', null=True, blank=True,
-                                    db_column='marketgroupid')
-    chanceofduplicating = models.FloatField()
+    id = null_fields.Small(primary_key=True, db_column='typeID')
+    group = null_fields.Key('Group', db_column='groupID', related_name='items')
+    name = null_fields.Char(max_length=100, db_column='typeName')
+    real_description = null_fields.Char(max_length=3000, db_column='description')
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    radius = null_fields.Float()
+    mass = null_fields.Float()
+    volume = null_fields.Float()
+    capacity = null_fields.Float()
+    portionsize = null_fields.Int(db_column='portionSize')
+    race = null_fields.Key('Race', db_column='raceID')
+    baseprice = null_fields.Float(db_column='basePrice')
+    published = models.NullBooleanField()
+    marketgroup = null_fields.Key('MarketGroup', db_column='marketGroupID')
+    chanceofduplicating = null_fields.Float(db_column='chanceOfDuplicating')
     slug = models.SlugField(max_length=100)
+
+    # If I don't have both managers, it gets weird.
     objects = models.Manager()
+    # Allows for a search for just skills.
+    skill_objects = ItemSkillManager()
 
-    object_cache = {}
-
-    #def __init__(self, *args, **kwargs):
-    #    super(Item, self).__init__(*args, **kwargs)
-    #    self.icon_cache = {}
-
-    #class Meta:
-        #pass
+    class Meta(EveBase.Meta):
         # If I use 'name' instead of 'typename', then the BlueprintDetails model dies
         # in the admin list view. Like this, the list works, but not the detail.
-        #ordering = ['name', ]
+        #ordering = ('name', )
+        db_table = 'invTypes'
 
     @property
-    @cachedmethod(60*6, '%(id)d')
+    @cachedmethod(60*6)
     def category(self):
-        return self.group.category.name
+        return self.group.category
 
     def get_absolute_url(self):
         return "/item/%s/" % self.slug
@@ -994,17 +909,8 @@ class Item(Base):
 
     # All things iconic.
 
-    #@cachedmethod(60*6)
+    @cachedmethod(60*6)
     def get_icon(self, size):
-        from django.core.cache import cache
-        key = 'eve.ccp.models.Item.get_icon(%d,%d)' % (self.id, size)
-        value = cache.get(key)
-        if value:
-            return value
-
-        #if size in self.icon_cache:
-        #    return self.icon_cache[size]
-
         '''
         Get icons for all of the items.
         # Find some objects.
@@ -1021,7 +927,7 @@ class Item(Base):
             'Blueprint', 'Drone', 'Ship', 'Station',
             'Structure', 'Deployable', 'Entity'
         )
-        cat = self.category
+        cat = self.category.name
         if cat in cats:
             d = {
                 'cat':     cat.lower(),
@@ -1040,70 +946,16 @@ class Item(Base):
         cache.set(key, icon, 60*60*6)
         return icon
 
-
-    # Fancy way to get the attributes and their values.
-    @cachedmethod(60, '%(id)d')
-    def attributes(self):
-        set = Attribute.objects.extra(
-            select={
-                'valueint':'ccp_typeattribute.valueint',
-                'valuefloat':'ccp_typeattribute.valuefloat',
-            },
-            tables=['ccp_typeattribute'],
-            where=[
-                'ccp_typeattribute.attributeid = ccp_attribute.attributeid',
-                'ccp_typeattribute.typeid = %s',
-            ],
-            params=[self.id]
-        ).select_related()
-        for s in set:
-            try:
-                if s.attributename == 'requiredSkill1':
-                    s.graphic = get_graphic('50_13')
-                    s.valuefloat = set.filter(attributename='requiredSkill1Level')[0].valueint
-                if s.attributename == 'requiredSkill2':
-                    s.graphic = get_graphic('50_11')
-                    s.valuefloat = set.filter(attributename='requiredSkill2Level')[0].valueint
-                if s.attributename == 'requiredSkill3':
-                    s.graphic = get_graphic('50_14')
-                    s.valuefloat = set.filter(attributename='requiredSkill3Level')[0].valueint
-            except IndexError:
-                s.valuefloat = 1
-
-        # Limit to the published attributes.
-        # (If done in Attribute, then we don't get the skill levels above.)
-        #set = [x for x in set if x.published]
-        return set
-
-    @cachedmethod(60, '%(id)d')
+    @cachedmethod(60)
     def attributes_by_name(self):
-        return dict([(a.attributename, a) for a in self.attributes()])
+        return dict([(a.attribute.attributename, a)
+            for a in self.attributes.select_related('attributes').all()])
 
+    @cachedmethod(60)
     def attribute_by_name(self, name):
-        d = self.attributes_by_name()
-        if name in d:
-            return d[name]
-        else:
-            return None
-        #set = Attribute.objects.extra(
-        #    select={
-        #        'valueint':'ccp_typeattribute.valueint',
-        #        'valuefloat':'ccp_typeattribute.valuefloat',
-        #    },
-        #    tables=['ccp_typeattribute'],
-        #    where=[
-        #        'ccp_typeattribute.attributeid = ccp_attribute.attributeid',
-        #        'ccp_typeattribute.typeid = %s',
-        #        'ccp_attribute.attributeName = %s',
-        #    ],
-        #    params=[self.id, name]
-        #)
-        #if set.count() > 0:
-        #    return set[0]
-        #else:
-        #    return None
+        return self.attributes.get(attribute__attributename=name)
 
-    @cachedmethod(60, '%(id)d')
+    @cachedmethod(60)
     def dps(self):
         d = self.attributes_by_name()
         if 'speed' not in d:
@@ -1164,12 +1016,12 @@ class Item(Base):
 
         return dps
 
-    @cachedmethod(60, '%(id)d')
+    @cachedmethod(60)
     def effects(self):
         set = Effect.objects.extra(
             tables=['dgmtypeeffects'],
             where=[
-                'dgmtypeeffects.effectid = dgmeffects.effectid',
+                'dgmtypeeffects.effectid = dgmeffects.effectID',
                 'dgmtypeeffects.typeid = %s'
             ],
             params=[self.id]
@@ -1210,13 +1062,10 @@ class Item(Base):
             rank = self.attribute_by_name('skillTimeConstant')
             return int(rank.value)
 
-    # Allows for a search for just skills.
-    skill_objects = ItemSkillManager()
-
     # Construction-orientated methods
     @property
     def is_blueprint(self):
-        if self.category == 'Blueprint':
+        if self.category.name == 'Blueprint':
             return True
         else:
             return False
@@ -1231,10 +1080,10 @@ class Item(Base):
         1L
         '''
         item = self
-        if self.is_blueprint is False:
-            item = self.blueprint
-        #assert(item.blueprint_details_qs.count() == 1)
-        return item.blueprint_details_qs.all()[0]
+        if self.is_blueprint:
+            return BlueprintDetail.objects.get(pk=self.pk)
+        else:
+            return BlueprintDetail.objects.get(pk=self.blueprint.pk)
 
     @property
     def blueprint(self):
@@ -1258,7 +1107,7 @@ class Item(Base):
             blueprint = self
         elif self.blueprint_madeby_qs.count() > 0:
             #assert(self.blueprint_madeby_qs.count() == 1)
-            blueprint = self.blueprint_madeby_qs.all()[0].id
+            blueprint = self.blueprint_madeby_qs.all()[0].item()
             if not blueprint.published:
                 blueprint = None
         else:
@@ -1275,7 +1124,7 @@ class Item(Base):
 
     def materials(self, activity=None):
         """
-        >>> myrm = Item.objects.get(name='Myrmidon')
+        >>> myrm = Item.objects.get(name='Myrmidon Blueprint')
         >>> for m in myrm.materials():
         ...     print "%s: %s" % (m.material, m.quantity)
         Tritanium: 2885176
@@ -1291,85 +1140,150 @@ class Item(Base):
         if activity:
             filter = filter & Q(activity__name=activity)
 
-        if self.blueprint:
-            # filter = filter & (Q(item=self) | Q(item=self.blueprint))
-            filter = filter & (Q(item=self.blueprint))
-        else:
-            filter = filter & Q(item=self)
+        # We no longer show materials for the blueprint automatically.
+        filter = filter & Q(item=self)
 
-        return Material.objects.filter(filter)
+        return Material.objects.filter(filter).select_related('material__group__category', 'material__graphic', 'activity')
 
     def refines(self):
         return self.materials(activity='Refining')
 
 
-class MapDenormalize(Base):
-    id = models.IntegerField(primary_key=True, db_column='itemid')
-    type = models.ForeignKey('Item', db_column='typeid')
-    group = models.ForeignKey('Group', db_column='groupid')
-    solarsystem = models.ForeignKey('SolarSystem', db_column='solarsystemid', null=True, blank=True,
-                                    related_name='map')
-    constellation = models.ForeignKey('Constellation', db_column='constellationid', null=True, blank=True,
-                                      related_name='map')
-    region = models.ForeignKey('Region', db_column='regionid', null=True, blank=True,
-                               related_name='map')
-    orbits = models.ForeignKey('MapDenormalize', db_column='orbitid', null=True, blank=True)
-    x = models.FloatField(null=True, blank=True)
-    y = models.FloatField(null=True, blank=True)
-    z = models.FloatField(null=True, blank=True)
-    radius = models.FloatField(null=True, blank=True)
-    name = models.CharField(blank=True, max_length=100, db_column='itemname')
-    security = models.FloatField(null=True, blank=True)
-    celestialindex = models.IntegerField(null=True, blank=True)
-    orbitindex = models.IntegerField(null=True, blank=True)
+class ItemAttribute(EveBase):
+    item = null_fields.Key('Item', db_column='typeID', related_name='attributes')
+    attribute = null_fields.Key('Attribute', db_column='attributeID', related_name='items')
+    valueint = null_fields.Int(db_column='valueInt')
+    valuefloat = null_fields.Float(db_column='valueFloat')
 
+    class Meta(EveBase.Meta):
+        db_table = u'dgmTypeAttributes'
+        ordering = ('item',)
 
-class MapLandmark(Base):
-    id = models.IntegerField(primary_key=True, db_column='landmarkid')
-    name = models.TextField(null=True, blank=True, db_column='landmarkname')
-    description = models.TextField()
-    locationid = models.IntegerField(null=True, blank=True)
-    x = models.FloatField()
-    y = models.FloatField()
-    z = models.FloatField()
-    radius = models.FloatField()
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    importance = models.IntegerField()
-    url2d = models.TextField()
+    def __unicode__(self):
+        return '%s = %s' % (str(self.attribute), self.value)
 
-    class Meta(Base.Meta):
-        db_table = u'ccp_maplandmarks'
+    @property
+    def name(self):
+        return self.attribute.name
 
+    @cachedmethod(60*4)
+    def get_icon(self, size):
+        g = None
+        name = self.attribute.attributename
 
-class MapUniverse(Base):
-    id = models.IntegerField(primary_key=True, db_column='universeid')
-    name = models.CharField(max_length=100, db_column='universename')
-    x = models.FloatField()
-    y = models.FloatField()
-    z = models.FloatField()
-    xmin = models.FloatField()
-    xmax = models.FloatField()
-    ymin = models.FloatField()
-    ymax = models.FloatField()
-    zmin = models.FloatField()
-    zmax = models.FloatField()
-    radius = models.FloatField()
+        if name.startswith('chargeGroup') or name == 'launcherGroup':
+            g = Group.objects.get(pk=self.valueint)
+        # There are no default icons on required skills. :(
+        elif name == 'requiredSkill1':
+            g = get_graphic('50_13')
+        elif name == 'requiredSkill2':
+            g = get_graphic('50_11')
+        elif name == 'requiredSkill3':
+            g = get_graphic('50_14')
+        elif name in ('primaryAttribute','secondaryAttribute'):
+            g = Attribute.objects.get(pk=self.valueint).graphic
+        elif self.attribute.graphic:
+            g = self.attribute.graphic
+        else:
+            g = Graphic.objects.get(icon='07_15')
+        return g.get_icon(size)
 
+    @property
+    def value(self):
+        if self.valuefloat is not None:
+            return self.valuefloat
+        else:
+            return self.valueint
 
-class MarketGroup(Base):
+    @property
+    def display_value(self):
+        if self.attribute.unit is None:
+            return self.value
+
+        # Big lookup....
+        unit = self.attribute.unit.name
+        if unit == 'Modifier Percent':
+            value = "%.0f %%" % ((self.value - 1.0) * 100)
+        elif unit == 'Sizeclass':
+            value = {
+                1: 'Small',
+                2: 'Medium',
+                3: 'Large',
+                4: 'X-Large'
+            }[int(self.value)] # Sometimes it's a float. Don't ask me why.
+        elif self.attribute.attributename.startswith('requiredSkill'):
+            value = "%s %s" % (
+                Item.objects.get(pk=self.valueint),
+                self.item.attribute_by_name('%sLevel' % self.attribute.attributename).valueint
+            )
+        elif unit == 'groupID':
+            value = Group.objects.get(pk=self.valueint)
+        elif unit == 'Milliseconds' and self.value > 1000:
+            value = time(self.value/1000.0)
+        elif unit == 'typeID':
+            value = Item.objects.get(pk=self.valueint).name
+        elif unit == 'attributeID':
+            value = Attribute.objects.get(pk=self.valueint).name
+        elif unit == 'Inverse Absolute Percent':
+            value = "%d %%" % int((1 - self.value) * 100)
+        else:
+            value = str(comma(self.value)) + " " + self.attribute.unit.displayname
+        return value
+
+class MapDenormalize(EveBase):
+    id = models.IntegerField(primary_key=True, db_column='itemID')
+    type = null_fields.Key('Item', db_column='typeID')
+    group = null_fields.Key('Group', db_column='groupID')
+    solarsystem = null_fields.Key('SolarSystem', db_column='solarSystemID', related_name='map')
+    constellation = null_fields.Key('Constellation', db_column='constellationID', related_name='map')
+    region = null_fields.Key('Region', db_column='regionID', related_name='map')
+    orbits = null_fields.Key('MapDenormalize', db_column='orbitID')
+    x = null_fields.Float()
+    y = null_fields.Float()
+    z = null_fields.Float()
+    radius = null_fields.Float()
+    name = null_fields.Char(max_length=100, db_column='itemName')
+    security = null_fields.Float()
+    celestialindex = null_fields.Small(db_column='celestialIndex')
+    orbitindex = null_fields.Small(db_column='orbitIndex')
+
+    class Meta(EveBase.Meta):
+        db_table = 'mapDenormalize'
+
+#class MapLandmark(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='landmarkID')
+#    name = models.TextField(db_column='landmarkname')
+#    description = models.TextField()
+#    locationid = null_fields.Int()
+#    x = models.FloatField()
+#    y = models.FloatField()
+#    z = models.FloatField()
+#    radius = models.FloatField()
+#    graphic = null_fields.Key('Graphic', db_column='graphicID')
+#    importance = models.IntegerField()
+#    url2d = models.TextField()
+#
+#    class Meta(EveBase.Meta):
+#        db_table = 'mapLandmarks'
+
+class MarketGroup(EveBase):
     '''This is the list of the groups as seen in the market type browser.
     (Which is more detailed than the normal group table.)
 
     Items here have a self-referential parent, which is used to create heirarchy
     within this table.'''
 
-    id = models.IntegerField(primary_key=True, db_column='marketgroupid')
-    parent = models.ForeignKey('MarketGroup', null=True, blank=True, db_column='parentgroupid')
-    name = models.CharField(max_length=100, db_column='marketgroupname')
-    description = models.TextField(null=True, blank=True)
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    hastypes = models.BooleanField(null=True, blank=True)
+    id = null_fields.Small(primary_key=True, db_column='marketGroupID')
+    parent = null_fields.Key('MarketGroup', db_column='parentGroupID')
+    name = null_fields.Char(max_length=100, db_column='marketGroupName')
+    description = null_fields.Char(max_length=3000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    hastypes = models.NullBooleanField(db_column='hasTypes')
     slug = models.SlugField(max_length=100)
+
+    class Meta(EveBase.Meta):
+        db_table = 'invMarketGroups'
+
 
     def get_absolute_url(self):
         return "/items/%s/" % self.slug
@@ -1391,22 +1305,22 @@ class MaterialPublishedManager(models.Manager):
         return super(MaterialPublishedManager, self).get_query_set().select_related().filter(item__published=True,
                                                                                              activity__published=True)
 
-class Material(Base):
+class Material(EveBase):
     """
     All the 'stuff' to make other 'stuff'.
     """
-    item = models.ForeignKey('Item', db_column='typeid')
-    activity = models.ForeignKey('RamActivity', db_column='activityID')
-    material = models.ForeignKey('Item',
-                                 db_column='requiredtypeid',
-                                 related_name='helps_make' )
-    quantity = models.IntegerField()
-    damageperjob = models.FloatField(default=1)
-    id = models.IntegerField(primary_key=True)
+    item = null_fields.Key('Item', db_column='typeID')
+    activity = null_fields.Key('RamActivity', db_column='activityID')
+    material = null_fields.Key('Item', db_column='requiredTypeID', related_name='helps_make')
+    quantity = null_fields.Int()
+    damageperjob = null_fields.Float(db_column='damagePerJob')
+    recycle = models.NullBooleanField()
     objects = MaterialPublishedManager()
 
-    class Meta:
+    class Meta(EveBase.Meta):
         ordering = ('id',)
+        db_table = 'typeActivityMaterials'
+
 
     def __unicode__(self):
         return "%s: %d" % (self.name, self.quantity)
@@ -1430,36 +1344,39 @@ class Material(Base):
             return None
 
 
-class Name(Base):
+class Name(EveBase):
     """This table contains the names of planets, stars, systems and corporations."""
-    id = models.IntegerField(primary_key=True, db_column='itemid')
-    name = models.CharField(max_length=100, db_column='itemname')
-    category = models.ForeignKey('Category', db_column='categoryid', related_name='names')
-    group = models.ForeignKey('Group', db_column='groupid', related_name='names')
-    type = models.ForeignKey('Item', db_column='typeid', related_name='names',)
+    id = models.IntegerField(primary_key=True, db_column='itemID')
+    name = null_fields.Char(max_length=100, db_column='itemName')
+    category = null_fields.Key('Category', db_column='categoryID', related_name='names')
+    group = null_fields.Key('Group', db_column='groupID', related_name='names')
+    type = null_fields.Key('Item', db_column='typeID', related_name='names')
+
+    class Meta(EveBase.Meta):
+        db_table = 'eveNames'
 
 
-class Race(Base):
+class Race(EveBase):
     """Table contains the basic races in the game:
 
     Amaar
     Gallente
     Jove"""
-    id = models.IntegerField(primary_key=True, db_column='raceid')
-    name = models.CharField(max_length=100, db_column='racename')
-    description = models.TextField()
-    skilltypeid1 = models.IntegerField(null=True, blank=True)
-    typeid = models.IntegerField(null=True, blank=True)
-    typequantity = models.IntegerField(null=True, blank=True)
-    graphic = models.ForeignKey('Graphic', null=True, blank=True, db_column='graphicid')
-    shortdescription = models.TextField()
+    id = null_fields.Small(primary_key=True, db_column='raceID')
+    name = null_fields.Char(max_length=100, db_column='raceName')
+    description = null_fields.Char(max_length=1000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    shortdescription = null_fields.Char(max_length=500, db_column='shortDescription')
+
+    class Meta(EveBase.Meta):
+        db_table = 'chrRaces'
 
 
-class Reaction(Base):
-    reaction = models.ForeignKey('Item', db_column='reactiontypeid', related_name='reactions')
-    input = models.BooleanField()
-    item = models.ForeignKey('Item', db_column='typeid', related_name='reacts')
-    quantity = models.IntegerField()
+class Reaction(EveBase):
+    reaction = null_fields.Key('Item', db_column='reactionTypeID', related_name='reactions')
+    input = models.NullBooleanField()
+    item = null_fields.Key('Item', db_column='typeID', related_name='reacts')
+    quantity = null_fields.Small()
 
     def __unicode__(self):
         arrow = '=>'
@@ -1467,12 +1384,12 @@ class Reaction(Base):
             arrow = '<-'
         return "%s %s %s[%d]" % (self.reaction, arrow, self.item, self.quantity)
 
-    class Meta:
+    class Meta(EveBase.Meta):
+        db_table = 'invTypeReactions'
         ordering = ('reaction',)
 
 
-
-class RamActivity(Base):
+class RamActivity(EveBase):
     """
     mysql> desc ccp_ramactivity;
     +--------------+----------+------+-----+---------+-------+
@@ -1486,28 +1403,34 @@ class RamActivity(Base):
     +--------------+----------+------+-----+---------+-------+
     5 rows in set (0.00 sec)
     """
-    id = models.IntegerField(primary_key=True, db_column='activityid')
-    name = models.CharField(max_length=100, db_column='activityname')
-    description = models.TextField(default="")
-    iconNo = models.CharField(max_length=5, blank=True, null=True, default="")
-    published = models.BooleanField(default=False)
+    id = null_fields.Small(primary_key=True, db_column='activityID')
+    name = null_fields.Char(max_length=100, db_column='activityName')
+    iconNo = null_fields.Char(max_length=5)
+    description = null_fields.Char(max_length=1000)
+    published = models.NullBooleanField()
+
+    class Meta(EveBase.Meta):
+        db_table = 'ramActivities'
 
 
-class Region(Base):
-    id = models.IntegerField(primary_key=True, db_column='regionid')
-    name = models.CharField(max_length=100, db_column='regionname')
-    x = models.FloatField(null=True)
-    y = models.FloatField(null=True)
-    z = models.FloatField(null=True)
-    xmin = models.FloatField(null=True)
-    xmax = models.FloatField(null=True)
-    ymin = models.FloatField(null=True)
-    ymax = models.FloatField(null=True)
-    zmin = models.FloatField(null=True)
-    zmax = models.FloatField(null=True)
-    faction = models.ForeignKey('Faction', null=True, blank=True, db_column='factionid')
-    radius = models.FloatField(null=True)
-    slug = models.SlugField(max_length=50)
+class Region(EveBase):
+    id = null_fields.Int(primary_key=True, db_column='regionID')
+    name = null_fields.Char(max_length=100, db_column='regionName')
+    x = null_fields.Float()
+    y = null_fields.Float()
+    z = null_fields.Float()
+    xmin = null_fields.Float(db_column='xMin')
+    xmax = null_fields.Float(db_column='xMax')
+    ymin = null_fields.Float(db_column='yMin')
+    ymax = null_fields.Float(db_column='yMax')
+    zmin = null_fields.Float(db_column='zMin')
+    zmax = null_fields.Float(db_column='zMax')
+    faction = null_fields.Key('Faction', db_column='factionID')
+    radius = null_fields.Float()
+    slug = models.SlugField()
+
+    class Meta(EveBase.Meta):
+        db_table = 'mapRegions'
 
     def get_absolute_url(self):
         return "/region/%s/" % self.slug
@@ -1527,77 +1450,73 @@ class Region(Base):
         return self.owner()
 
     def alliance(self):
-        alliances= {}
-        for x in self.constellations.all():
-            if x.alliance:
-                alliances[x.alliance_id] = x.alliance
-        if len(alliances) == 1:
-            return alliances.values()[0]
-        else:
-            return None
+        qs = self.constellations.select_related('alliance').filter(alliance__isnull=False)
+        alliance = None
+        for i in qs:
+            if alliance is None:
+                alliance = i.alliance
+            if alliance != i.alliance:
+                return None
+        return alliance
 
+    @cachedmethod(60*6)
     def get_icon(self, size):
         owner = self.owner()
 
         if owner is None:
-            return None
+            return NULL_GRAPHIC
         else:
             return owner.get_icon(size)
 
 
-class School(Base):
-    id = models.IntegerField(primary_key=True, db_column='schoolid')
-    race = models.ForeignKey('Race', null=True, blank=True, db_column='raceid')
-    name = models.CharField(max_length=100, db_column='schoolname')
-    description = models.TextField()
-    graphic = models.ForeignKey('Graphic', null=True, blank=True,
-                                db_column='graphicid',)
-    corporation = models.ForeignKey('Corporation', null=True, blank=True,
-                                    db_column='corporationid',)
-    agent = models.ForeignKey('Agent', null=True, blank=True,
-                              db_column='agentid',)
-    newagent = models.ForeignKey('Agent', null=True, blank=True,
-                                 db_column='newagentid',
-                                 related_name='charactershool_new_set', )
-    career = models.ForeignKey('CharacterCareer', null=True, blank=True, related_name='schools',
-                                db_column='careerid')
+class School(EveBase):
+    race = null_fields.Key('Race', db_column='raceID')
+    id = null_fields.Small(primary_key=True, db_column='schoolID')
+    name = null_fields.Char(max_length=100, db_column='schoolName')
+    description = null_fields.Char(max_length=1000)
+    graphic = null_fields.Key('Graphic', db_column='graphicID')
+    corporation = null_fields.Key('Corporation', db_column='corporationID')
+    agent = null_fields.Key('Agent', db_column='newAgentID')
+    career = null_fields.Key('CharacterCareer', related_name='schools', db_column='careerID')
+
+    class Meta(EveBase.Meta):
+        db_table = 'chrSchools'
 
 
-class SolarSystem(Base):
-    region = models.ForeignKey('Region', db_column='regionid', related_name='solarsystems')
-    constellation = models.ForeignKey('Constellation', db_column='constellationid',
-                                      related_name='solarsystems')
-    id = models.IntegerField(primary_key=True, db_column='solarsystemid')
-    name = models.CharField(max_length=100, db_column='solarsystemname')
-    x = models.FloatField(null=True)
-    y = models.FloatField(null=True)
-    z = models.FloatField(null=True)
-    xmin = models.FloatField(null=True)
-    xmax = models.FloatField(null=True)
-    ymin = models.FloatField(null=True)
-    ymax = models.FloatField(null=True)
-    zmin = models.FloatField(null=True)
-    zmax = models.FloatField(null=True)
-    luminosity = models.FloatField(null=True)
-    border = models.IntegerField(null=True)
-    fringe = models.IntegerField(null=True)
-    corridor = models.IntegerField(null=True)
-    hub = models.IntegerField(null=True)
-    international = models.IntegerField(null=True)
-    regional = models.IntegerField(null=True)
-    constellation2 = models.IntegerField(null=True, db_column='constellation')
-    security = models.FloatField(null=True)
-    faction = models.ForeignKey('Faction', null=True, blank=True,
-                                db_column='factionid',
-                                related_name='solarsystems')
-    radius = models.FloatField(default=0.0)
-    suntypeid = models.IntegerField(null=True, blank=True)
-    securityclass = models.CharField(blank=True, max_length=2, null=True)
-    alliance = models.ForeignKey('Alliance', null=True, blank=True, related_name='solarsystems')
-    sov = models.IntegerField(null=True, blank=True, db_column='sovereigntyLevel')
-    sov_time = models.DateTimeField(null=True, blank=True, db_column='sovereigntyDate')
-    alliance_old = models.ForeignKey('Alliance', null=True, blank=True, related_name='solarsystems_lost')
+class SolarSystem(EveBase):
+    region = null_fields.Key('Region', db_column='regionID', related_name='solarsystems')
+    constellation = null_fields.Key('Constellation', db_column='constellationID', related_name='solarsystems')
+    id = null_fields.Int(primary_key=True, db_column='solarSystemID')
+    name = null_fields.Char(max_length=100, db_column='solarSystemName')
+    x = null_fields.Float()
+    y = null_fields.Float()
+    z = null_fields.Float()
+    xmin = null_fields.Float(db_column='xMin')
+    xmax = null_fields.Float(db_column='xMax')
+    ymin = null_fields.Float(db_column='yMin')
+    ymax = null_fields.Float(db_column='yMax')
+    zmin = null_fields.Float(db_column='zMin')
+    zmax = null_fields.Float(db_column='zMax')
+    luminosity = null_fields.Float()
+    border = models.NullBooleanField()
+    fringe = models.NullBooleanField()
+    corridor = models.NullBooleanField()
+    hub = models.NullBooleanField()
+    international = models.NullBooleanField()
+    regional = models.NullBooleanField()
+    constellation2 = models.NullBooleanField(db_column='constellation')
+    security = null_fields.Float()
+    faction = null_fields.Key('Faction', db_column='factionID', related_name='solarsystems')
+    radius = null_fields.Float()
+    suntypeid = null_fields.Small(db_column='sunTypeID')
+    securityclass = null_fields.Char(max_length=2, db_column='securityClass')
+    alliance = null_fields.Key('Alliance', related_name='solarsystems')
+    sov = null_fields.Int(db_column='sovereigntyLevel')
+    sov_time = models.DateTimeField(db_column='sovereigntyDate', null=True)
+    alliance_old = null_fields.Key('Alliance', related_name='solarsystems_lost')
 
+    class Meta(EveBase.Meta):
+        db_table = 'mapSolarSystems'
 
     def moons(self):
         return self.map.filter(type__name='Moon')
@@ -1626,76 +1545,92 @@ class SolarSystem(Base):
                 return None
 
 
-class Station(Base):
-    id = models.IntegerField(primary_key=True, db_column='stationid')
-    security = models.IntegerField(null=True)
-    dockingcostpervolume = models.FloatField('Docking', default=0)
-    maxshipvolumedockable = models.FloatField('Max Dockable', default=0)
-    officerentalcost = models.IntegerField('Office Rental', default=0)
-    operationid = models.IntegerField(null=True, default=0)
-    type = models.ForeignKey('Item', null=True, blank=True,
-                             db_column='stationtypeid', related_name='staitons')
-    corporation = models.ForeignKey('Corporation', null=True, blank=True, db_column='corporationid')
-    solarsystem = models.ForeignKey('SolarSystem', null=True, blank=True, db_column='solarsystemid',
-                                    related_name='stations')
-    constellation = models.ForeignKey('Constellation', null=True, blank=True, db_column='constellationid',
-                                       related_name='stations')
-    region = models.ForeignKey('Region', null=True, blank=True, db_column='regionid', related_name='stations')
-    name = models.CharField(max_length=100, db_column='stationname')
-    x = models.FloatField(default=0)
-    y = models.FloatField(default=0)
-    z = models.FloatField(default=0)
-    reprocessingefficiency = models.FloatField('%', default=0)
-    reprocessingstationstake = models.FloatField('Take', default=0)
-    reprocessinghangarflag = models.IntegerField('Hangar?', default=0)
-    capital_station = models.DateTimeField('Made Capital', null=True,
-                                           db_column='capitalStation')
-    ownership_date = models.DateTimeField('Ownership Date', null=True,
-                                           db_column='ownershipDateTime')
-    upgrade_level = models.IntegerField(null=True, db_column='upgradeLevel')
-    custom_service_mask = models.IntegerField('Service Mask', null=True,
-                                               db_column='customServiceMask')
+class Station(EveBase):
+    id = models.IntegerField(primary_key=True, db_column='stationID')
+    security = null_fields.Small()
+    dockingcostpervolume = null_fields.Float('Docking', db_column='dockingCostPerVolume')
+    maxshipvolumedockable = null_fields.Float('Max Dockable', db_column='maxShipVolumeDockable')
+    officerentalcost = null_fields.Int('Office Rental', db_column='officeRentalCost')
+    operationid = null_fields.Small(db_column='operationID')
+    type = null_fields.Key('Item', db_column='stationTypeID', related_name='staitons')
+    corporation = null_fields.Key('Corporation', db_column='corporationID')
+    solarsystem = null_fields.Key('SolarSystem', db_column='solarSystemID',related_name='stations')
+    constellation = null_fields.Key('Constellation', db_column='constellationID',related_name='stations')
+    region = null_fields.Key('Region', db_column='regionID', related_name='stations')
+    name = null_fields.Char(max_length=100, db_column='stationName')
+    x = null_fields.Float()
+    y = null_fields.Float()
+    z = null_fields.Float()
+    reprocessingefficiency = null_fields.Float('%', default=0, db_column='reprocessingEfficiency')
+    reprocessingstationstake = null_fields.Float('Take', default=0, db_column='reprocessingStationsTake')
+    reprocessinghangarflag = null_fields.Small('Hangar?', db_column='reprocessingHangarFlag')
+    capital_station = null_fields.Int('Made Capital', db_column='capitalStation')
+    ownership_date = models.DateTimeField('Ownership Date', db_column='ownershipDateTime', null=True)
+    upgrade_level = null_fields.Int(db_column='upgradeLevel')
+    custom_service_mask = null_fields.Int('Service Mask', db_column='customServiceMask')
+
+    class Meta(EveBase.Meta):
+        db_table = 'staStations'
 
     def get_icon(self, size):
         return self.corporation.get_icon(size)
-        #icon = self.corporation.get_icon(size)
-        #if icon:
-        #    return icon
-        #else:
-        #    return self.type.get_icon(size)
 
-
-
-class StationResource(Base):
+class PosFuel(EveBase):
     q = Q(group__name='Control Tower') & Q(published=True)
 
-    tower = models.ForeignKey('Item', limit_choices_to = q, db_column = 'controlTowerTypeID', related_name='fuel')
-    type = models.ForeignKey('Item', db_column='resourcetypeid', related_name='fuel_for')
-    purpose = models.ForeignKey('StationResourcePurpose', db_column='purpose')
-    quantity = models.IntegerField()
-    minsecuritylevel = models.FloatField(null=True, blank=True)
-    faction = models.ForeignKey('Faction', null=True, blank=True, db_column='factionID')
+    tower = null_fields.Key('Item', limit_choices_to = q, db_column = 'controlTowerTypeID', related_name='fuel')
+    type = null_fields.Key('Item', db_column='resourceTypeID', related_name='fuel_for')
+    purpose = null_fields.Key('PosFuelPurpose', db_column='purpose')
+    quantity = null_fields.Int()
+    minsecuritylevel = null_fields.Float(db_column='minSecurityLevel')
+    faction = null_fields.Key('Faction', db_column='factionID')
 
     def __unicode__(self):
         return "%s (%d)" % (self.type, self.quantity)
 
-    class Meta:
+    class Meta(EveBase.Meta):
         ordering = ('tower', 'purpose', 'type')
+        db_table = 'invControlTowerResources'
 
-class StationResourcePurpose(Base):
-    id = models.IntegerField(primary_key=True, db_column='purpose')
-    name = models.CharField(max_length=100, db_column='purposetext')
+class PosFuelPurpose(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='purpose')
+    name = null_fields.Char(max_length=100, db_column='purposeText')
 
-class Unit(CachedGet, Base):
-    id = models.IntegerField(primary_key=True, db_column='unitid')
-    name = models.CharField(null=True, blank=True, max_length=100, db_column='unitname')
-    displayname = models.CharField(null=True, blank=True, max_length=20)
-    description = models.TextField(null=True, blank=True)
+    class Meta(EveBase.Meta):
+        db_table = 'invControlTowerResourcePurposes'
 
-#class MapcClestialStatistics(Base):
-#    id = models.IntegerField(primary_key=True, db_column='celestialid')
+
+class Unit(EveBase):
+    id = null_fields.Small(primary_key=True, db_column='unitID')
+    name = null_fields.Char(max_length=100, db_column='unitName')
+    displayname = null_fields.Char(max_length=20, db_column='displayName')
+    description = null_fields.Char(max_length=1000)
+
+    class Meta(EveBase.Meta):
+        db_table = 'eveUnits'
+
+
+class Universe(EveBase):
+    id = models.IntegerField(primary_key=True, db_column='universeID')
+    name = null_fields.Char(max_length=100, db_column='universeName')
+    x = null_fields.Float()
+    y = null_fields.Float()
+    z = null_fields.Float()
+    xmin = null_fields.Float(db_column='xMin')
+    xmax = null_fields.Float(db_column='xMax')
+    ymin = null_fields.Float(db_column='yMin')
+    ymax = null_fields.Float(db_column='yMax')
+    zmin = null_fields.Float(db_column='zMin')
+    zmax = null_fields.Float(db_column='zMax')
+    radius = null_fields.Float()
+
+    class Meta(EveBase.Meta):
+        db_table = 'mapUniverse'
+
+#class MapClestialStatistics(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='celestialID')
 #    temperature = models.FloatField()
-#    spectralclass = models.CharField(max_length=30)
+#    spectralclass = null_fields.Char(max_length=30)
 #    luminosity = models.FloatField()
 #    age = models.FloatField()
 #    life = models.FloatField()
@@ -1703,27 +1638,27 @@ class Unit(CachedGet, Base):
 #    eccentricity = models.FloatField()
 #    massdust = models.FloatField()
 #    massgas = models.FloatField()
-#    fragmented = models.CharField(max_length=15)
+#    fragmented = null_fields.Char(max_length=15)
 #    density = models.FloatField()
 #    surfacegravity = models.FloatField()
 #    escapevelocity = models.FloatField()
 #    orbitperiod = models.FloatField()
 #    rotationrate = models.FloatField()
-#    locked = models.CharField(max_length=15)
+#    locked = null_fields.Char(max_length=15)
 #    pressure = models.FloatField()
 #    radius = models.FloatField()
 #    mass = models.FloatField()
 
 
-# class Agent_config(Base):
-#     id = models.IntegerField(primary_key=True, db_column='agentid')
-#     k = models.CharField(max_length=150)
+# class Agent_config(EveBase):
+#     id = models.IntegerField(primary_key=True, db_column='agentID')
+#     k = null_fields.Char(max_length=150)
 #     v = models.TextField()
 #     class Meta:
 #         db_table = u'agtconfig'
 
 
-# class Character_careerskills(Base):
+# class Character_careerskills(EveBase):
 #     careerid = models.IntegerField()
 #     skilltypeid = models.IntegerField()
 #     levels = models.IntegerField()
@@ -1731,7 +1666,7 @@ class Unit(CachedGet, Base):
 #         db_table = u'chrcareerskills'
 
 
-# class Character_careerspecialityskills(Base):
+# class Character_careerspecialityskills(EveBase):
 #     specialityid = models.IntegerField()
 #     skilltypeid = models.IntegerField()
 #     levels = models.IntegerField()
@@ -1739,71 +1674,59 @@ class Unit(CachedGet, Base):
 #         db_table = u'chrcareerspecialityskills'
 
 
-# class Character_raceskills(Base):
-#     race = models.ForeignKey('Race', null=True, blank=True, db_column='raceid')
+# class Character_raceskills(EveBase):
+#     race = null_fields.Key('Race', db_column='raceID')
 #     skilltypeid = models.IntegerField()
 #     levels = models.IntegerField()
 #     class Meta:
 #         db_table = u'chrraceskills'
 
 
-# class Character_schoolagents(Base):
-#     schoolid = models.IntegerField(null=True, blank=True)
-#     agentindex = models.IntegerField(null=True, blank=True)
-#     agentid = models.IntegerField(null=True, blank=True)
+# class Character_schoolagents(EveBase):
+#     schoolid = null_fields.Int()
+#     agentindex = null_fields.Int()
+#     agentid = null_fields.Int()
 #     class Meta:
 #         db_table = u'chrschoolagents'
 
 
-# class Crpnpccorporationdivisions(Base):
+# class Crpnpccorporationdivisions(EveBase):
 #     corporationid = models.IntegerField()
 #     divisionid = models.IntegerField()
 #     divisionnumber = models.IntegerField()
-#     size = models.IntegerField(null=True, blank=True)
-#     leaderid = models.IntegerField(null=True, blank=True)
+#     size = null_fields.Int()
+#     leaderid = null_fields.Int()
 #     class Meta:
 #         db_table = u'crpnpccorporationdivisions'
 
 
-# class Crpnpccorporationresearchfields(Base):
+# class Crpnpccorporationresearchfields(EveBase):
 #     skillid = models.IntegerField()
 #     corporationid = models.IntegerField()
 #     suppliertype = models.IntegerField()
 #     class Meta:
 #         db_table = u'crpnpccorporationresearchfields'
 
-
-# This table cannot be used within Django, as it's a multi-multi table with id's
+# This table cannot be used within Django, as it's a multi-multi table with ID's
 # That Django doesn't like. I've emulated it in class Item below.
-# class Dgmtypeattributes(Base):
-#     typeid = models.IntegerField()
-#     attributeid = models.IntegerField()
-#     valueint = models.IntegerField(null=True, blank=True)
-#     valuefloat = models.FloatField(null=True, blank=True)
-#     class Meta:
-#         db_table = u'dgmtypeattributes'
-
-
-# This table cannot be used within Django, as it's a multi-multi table with id's
-# That Django doesn't like. I've emulated it in class Item below.
-# class Dgmtypeeffects(Base):
+# class Dgmtypeeffects(EveBase):
 #     typeid = models.IntegerField()
 #     effectid = models.IntegerField()
-#     isdefault = models.CharField(max_length=15)
+#     isdefault = null_fields.Char(max_length=15)
 #     class Meta:
 #         db_table = u'dgmtypeeffects'
 
-# class InventoryFlags(Base):
-#     id = models.IntegerField(primary_key=True, db_column='flagid')
-#     flagname = models.CharField(blank=True, max_length=300)
-#     flagtext = models.TextField(blank=True)
-#     flagtype = models.TextField(blank=True)
-#     orderid = models.IntegerField(null=True, blank=True)
+# class InventoryFlags(EveBase):
+#     id = models.IntegerField(primary_key=True, db_column='flagID')
+#     flagname = null_fields.Char(max_length=300)
+#     flagtext = models.TextField()
+#     flagtype = models.TextField()
+#     orderid = null_fields.Int()
 #     class Meta:
 #         db_table = u'invflags'
 
 
-# class Mapconstellationjumps(Base):
+# class Mapconstellationjumps(EveBase):
 #     fromregionid = models.IntegerField()
 #     fromconstellationid = models.IntegerField()
 #     toconstellationid = models.IntegerField()
@@ -1812,14 +1735,14 @@ class Unit(CachedGet, Base):
 #         db_table = u'mapconstellationjumps'
 
 
-# class Mapjumps(Base):
+# class Mapjumps(EveBase):
 #     stargateid = models.IntegerField()
 #     celestialid = models.IntegerField()
 #     class Meta:
 #         db_table = u'mapjumps'
 
 
-# class Mapregionjumps(Base):
+# class Mapregionjumps(EveBase):
 #     fromregionid = models.IntegerField()
 #     toregionid = models.IntegerField()
 #     class Meta:
@@ -1827,7 +1750,7 @@ class Unit(CachedGet, Base):
 
 
 # Empty table in dump
-# class Mapsecurityratings(Base):
+# class Mapsecurityratings(EveBase):
 #     fromsolarsystemid = models.IntegerField()
 #     fromvalue = models.FloatField()
 #     tosolarsystemid = models.IntegerField()
@@ -1836,7 +1759,7 @@ class Unit(CachedGet, Base):
 #         db_table = u'mapsecurityratings'
 
 
-# class Mapsolarsystemjumps(Base):
+# class Mapsolarsystemjumps(EveBase):
 #     fromregionid = models.IntegerField()
 #     fromconstellationid = models.IntegerField()
 #     fromsolarsystemid = models.IntegerField()
@@ -1847,11 +1770,11 @@ class Unit(CachedGet, Base):
 #         db_table = u'mapsolarsystemjumps'
 
 
-#class RamAssemblyLines(Base):
-#    id = models.IntegerField(primary_key=True, db_column='assemblylineid')
+#class RamAssemblyLines(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='assemblylineID')
 #    assemblylinetypeid = models.IntegerField()
-#    containerid = models.IntegerField(null=True, blank=True)
-#    nextfreetime = models.CharField(blank=True, max_length=60)
+#    containerid = null_fields.Int()
+#    nextfreetime = null_fields.Char(max_length=60)
 #    uigroupingid = models.IntegerField()
 #    costinstall = models.FloatField()
 #    costperhour = models.FloatField()
@@ -1863,21 +1786,21 @@ class Unit(CachedGet, Base):
 #    minimumcorpsecurity = models.FloatField()
 #    maximumcharsecurity = models.FloatField()
 #    maximumcorpsecurity = models.FloatField()
-#    ownerid = models.IntegerField(null=True, blank=True)
-#    oldcontainerid = models.IntegerField(null=True, blank=True)
-#    oldownerid = models.IntegerField(null=True, blank=True)
-#    activityid = models.IntegerField(null=True, blank=True)
+#    ownerid = null_fields.Int()
+#    oldcontainerid = null_fields.Int()
+#    oldownerid = null_fields.Int()
+#    activityid = null_fields.Int()
 
 
-#class RamAssemblyLineStationCostLogs(Base):
+#class RamAssemblyLineStationCostLogs(EveBase):
 #    stationid = models.IntegerField()
-#    id = models.IntegerField(primary_key=True, db_column='assemblylinetypeid')
-#    logdatetime = models.CharField(max_length=60)
+#    id = models.IntegerField(primary_key=True, db_column='assemblylinetypeID')
+#    logdatetime = null_fields.Char(max_length=60)
 #    _usage = models.FloatField()
 #    costperhour = models.FloatField()
 
 
-# class Ramassemblylinestations(Base):
+# class Ramassemblylinestations(EveBase):
 #     stationid = models.IntegerField()
 #     assemblylinetypeid = models.IntegerField()
 #     quantity = models.IntegerField()
@@ -1889,7 +1812,7 @@ class Unit(CachedGet, Base):
 #         db_table = u'ramassemblylinestations'
 
 
-# class Ramassemblylinetypedetailpercategory(Base):
+# class Ramassemblylinetypedetailpercategory(EveBase):
 #     assemblylinetypeid = models.IntegerField()
 #     categoryid = models.IntegerField()
 #     timemultiplier = models.FloatField()
@@ -1898,7 +1821,7 @@ class Unit(CachedGet, Base):
 #         db_table = u'ramassemblylinetypedetailpercategory'
 
 
-# class Ramassemblylinetypedetailpergroup(Base):
+# class Ramassemblylinetypedetailpergroup(EveBase):
 #     assemblylinetypeid = models.IntegerField()
 #     groupid = models.IntegerField()
 #     timemultiplier = models.FloatField()
@@ -1907,25 +1830,25 @@ class Unit(CachedGet, Base):
 #         db_table = u'ramassemblylinetypedetailpergroup'
 
 
-#class RamAssemblylineTypes(Base):
-#    id = models.IntegerField(primary_key=True, db_column='assemblylinetypeid')
-#    assemblylinetypename = models.CharField(max_length=300)
+#class RamAssemblylineTypes(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='assemblylinetypeID')
+#    assemblylinetypename = null_fields.Char(max_length=300)
 #    description = models.TextField()
 #    basetimemultiplier = models.FloatField()
 #    basematerialmultiplier = models.FloatField()
 #    volume = models.FloatField()
 #    activityid = models.IntegerField()
-#    mincostperhour = models.FloatField(null=True, blank=True)
+#    mincostperhour = null_fields.Float()
 
 
-#class RamCompletedStatuses(Base):
+#class RamCompletedStatuses(EveBase):
 #    completedstatus = models.IntegerField(primary_key=True)
-#    completedstatustext = models.CharField(max_length=300)
+#    completedstatustext = null_fields.Char(max_length=300)
 #    description = models.TextField()
 
 
-#class RamInstallationTypeDefaultContents(Base):
-#    id = models.IntegerField(primary_key=True, db_column='installationtypeid')
+#class RamInstallationTypeDefaultContents(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='installationtypeID')
 #    assemblylinetypeid = models.IntegerField()
 #    uigroupingid = models.IntegerField()
 #    quantity = models.IntegerField()
@@ -1941,48 +1864,48 @@ class Unit(CachedGet, Base):
 #    maximumcorpsecurity = models.FloatField()
 
 
-#class StationOperation(Base):
+#class StationOperation(EveBase):
 #    activityid = models.IntegerField()
-#    id = models.IntegerField(primary_key=True, db_column='operationid')
-#    operationname = models.CharField(max_length=300)
+#    id = models.IntegerField(primary_key=True, db_column='operationID')
+#    operationname = null_fields.Char(max_length=300)
 #    description = models.TextField()
 #    fringe = models.IntegerField()
 #    corridor = models.IntegerField()
 #    hub = models.IntegerField()
 #    border = models.IntegerField()
 #    ratio = models.IntegerField()
-#    caldaristationtypeid = models.IntegerField(null=True, blank=True)
-#    minmatarstationtypeid = models.IntegerField(null=True, blank=True)
-#    amarrstationtypeid = models.IntegerField(null=True, blank=True)
-#    gallentestationtypeid = models.IntegerField(null=True, blank=True)
-#    jovestationtypeid = models.IntegerField(null=True, blank=True)
+#    caldaristationtypeid = null_fields.Int()
+#    minmatarstationtypeid = null_fields.Int()
+#    amarrstationtypeid = null_fields.Int()
+#    gallentestationtypeid = null_fields.Int()
+#    jovestationtypeid = null_fields.Int()
 
 
-# class Staoperationservices(Base):
+# class Staoperationservices(EveBase):
 #     operationid = models.IntegerField()
 #     serviceid = models.IntegerField()
 #     class Meta:
 #         db_table = u'staoperationservices'
 
 
-#class StationService(Base):
-#    id = models.IntegerField(primary_key=True, db_column='serviceid')
-#    servicename = models.CharField(max_length=300)
+#class StationService(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='serviceID')
+#    servicename = null_fields.Char(max_length=300)
 #    description = models.TextField()
 
 
-#class StationType(Base):
-#    id = models.IntegerField(primary_key=True, db_column='stationtypeid')
-#    dockingbaygraphicid = models.IntegerField(null=True, blank=True)
-#    hangargraphicid = models.IntegerField(null=True, blank=True)
+#class StationType(EveBase):
+#    id = models.IntegerField(primary_key=True, db_column='stationtypeID')
+#    dockingbaygraphicid = null_fields.Int()
+#    hangargraphicid = null_fields.Int()
 #    dockentryx = models.FloatField()
 #    dockentryy = models.FloatField()
 #    dockentryz = models.FloatField()
 #    dockorientationx = models.FloatField()
 #    dockorientationy = models.FloatField()
 #    dockorientationz = models.FloatField()
-#    operationid = models.IntegerField(null=True, blank=True)
-#    officeslots = models.IntegerField(null=True, blank=True)
-#    reprocessingefficiency = models.FloatField(null=True, blank=True)
-#    conquerable = models.CharField(max_length=15)
+#    operationid = null_fields.Int()
+#    officeslots = null_fields.Int()
+#    reprocessingefficiency = null_fields.Float()
+#    conquerable = null_fields.Char(max_length=15)
 #    class Meta:

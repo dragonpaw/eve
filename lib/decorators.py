@@ -1,10 +1,9 @@
-#from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from eve.settings import logging
 from django.core.cache import cache
 
 from eve.lib.context_processors import what_browser
+from eve.settings import logging
 
 def require_igb (function):
     def wrapper (request):
@@ -89,7 +88,8 @@ def render_to(template_name):
 #    return paramed_decorator
 
 import cPickle as pickle
-import md5
+import hashlib
+
 
 def cachedmethod(length=5, cache_key=None):
     """
@@ -111,19 +111,26 @@ def cachedmethod(length=5, cache_key=None):
     wait until the function finishes. If this is not desired behavior, you can
     remove the first two lines after the ``else``.
     """
+    log = logging.getLogger('eve.lib.decorators.cachedmethod')
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             from django.core.cache import cache
-            key = "%s.%s.%s:" % (func.__module__, self.__class__.__name__, func.__name__)
 
+            key = "%s.%s(pk=%d).%s:" % (func.__module__,
+                                        self.__class__.__name__,
+                                        self.pk,
+                                        func.__name__)
             if cache_key:
                 key += cache_key % self.__dict__
             else:
-                raw = [self, args, kwargs]
+                raw = [args, kwargs]
                 pickled = pickle.dumps(raw, protocol=pickle.HIGHEST_PROTOCOL)
-                key += md5.new(pickled).hexdigest()
+                key += hashlib.md5(pickled).hexdigest()
+            log.debug('Key: %s', key)
             value = cache.get(key)
             if value:
+                log.debug('Returning cached value: %s', value)
+                #value = pickle.loads(value)
                 return value
             else:
                 # This will set a temporary value while ``func`` is being
@@ -136,8 +143,9 @@ def cachedmethod(length=5, cache_key=None):
                 # value will be replaced when it finishes.' % (func.__name__)
                 #), length)
                 result = func(self, *args, **kwargs)
-                pickled = pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
+                #pickled = pickle.dumps(result, protocol=pickle.HIGHEST_PROTOCOL)
                 cache.set(key, result, length*60)
+                log.debug('Added to cache: %s', result)
                 return result
         wrapper.__module__ = func.__module__
         wrapper.__name__ = func.__name__

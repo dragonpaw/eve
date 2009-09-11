@@ -1,45 +1,67 @@
-﻿
-ALTER TABLE `eve`.`ccp_item` DROP COLUMN `slug`;
-ALTER TABLE `eve`.`ccp_marketgroup` DROP COLUMN `slug`;
-ALTER TABLE `eve`.`ccp_region` DROP COLUMN `slug`;
+﻿-- Copyright (c) 2009 www.cryer.co.uk
+-- Script is free to use provided this copyright header is included.
+drop procedure if exists AddColumnUnlessExists;
+delimiter '//'
 
-ALTER TABLE `eve`.`ccp_item` ADD COLUMN `slug` VARCHAR(100) NOT NULL;
-ALTER TABLE `eve`.`ccp_marketgroup` ADD COLUMN `slug` VARCHAR(100) NOT NULL;
-ALTER TABLE `eve`.`ccp_region` ADD COLUMN `slug` VARCHAR(50) NOT NULL;
+create procedure AddColumnUnlessExists(
+	IN dbName tinytext,
+	IN tableName tinytext,
+	IN fieldName tinytext,
+	IN fieldDef text)
+begin
+	IF NOT EXISTS (
+		SELECT * FROM information_schema.COLUMNS
+		WHERE column_name=fieldName
+		and table_name=tableName
+		and table_schema=dbName
+		)
+	THEN
+		set @ddl=CONCAT('ALTER TABLE ',dbName,'.',tableName,
+			' ADD COLUMN ',fieldName,' ',fieldDef);
+		prepare stmt from @ddl;
+		execute stmt;
+	END IF;
+end;
+//
 
-ALTER TABLE `eve`.`ccp_item` ADD UNIQUE INDEX `slug`(`slug`);
-ALTER TABLE `eve`.`ccp_marketgroup` ADD UNIQUE INDEX `slug`(`slug`);
-ALTER TABLE `eve`.`ccp_region` ADD UNIQUE INDEX `slug`(`slug`);
+delimiter ';'
 
-ALTER TABLE `ccp_corporation`
-    ADD COLUMN `alliance_id` `alliance_id` INT(11) NULL DEFAULT NULL,
-    ADD COLUMN `last_updated` `last_updated` DATETIME NULL DEFAULT NULL,
-    ADD COLUMN `cached_until` `cached_until` DATETIME NULL DEFAULT NULL;
+-- call AddColumnUnlessExists('GIS', 'boundaries', 'fillColour', 'int unsigned not null default 1');
 
-ALTER TABLE `eve`.`ccp_solarsystem`
-    ADD COLUMN `alliance_id` INTEGER,
-    ADD COLUMN `alliance_old_id` INTEGER,
-    ADD COLUMN `sovereigntyLevel` INTEGER,
-    ADD COLUMN `sovereigntyDate` DATE;
+call AddColumnUnlessExists('eve', 'invTypes', 'slug', 'VARCHAR(50) NOT NULL');
+call AddColumnUnlessExists('eve', 'invMarketGroups', 'slug', 'VARCHAR(50) NOT NULL');
+call AddColumnUnlessExists('eve', 'invGroups', 'slug', 'VARCHAR(50) NOT NULL');
+call AddColumnUnlessExists('eve', 'mapRegions', 'slug', 'VARCHAR(50) NOT NULL');
 
-ALTER TABLE `eve`.`ccp_constellation`
-    ADD COLUMN `sovereigntyDateTime` DATETIME,
-    ADD COLUMN `graceDateTime` DATETIME,
-    ADD COLUMN `alliance_id` INTEGER;
+-- Only call these AFTER you slugify the objects.
+-- ALTER TABLE `eve`.`invTypes` ADD UNIQUE INDEX `slug`(`slug`);
+-- ALTER TABLE `eve`.`invMarketGroups` ADD UNIQUE INDEX `slug`(`slug`);
+-- ALTER TABLE `eve`.`mapRegions` ADD UNIQUE INDEX `slug`(`slug`);
 
-ALTER TABLE `eve`.`ccp_station`
-    ADD COLUMN `capitalStation`,
-    ADD COLUMN `ownershipDateTime` DATETIME,
-    ADD COLUMN `upgradeLevel` INTEGER,
-    ADD COLUMN `customServiceMask` INTEGER;
+call AddColumnUnlessExists('eve', 'crpNPCCorporations', 'alliance_id', 'INT(11) NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'crpNPCCorporations', 'last_updated', 'DATETIME NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'crpNPCCorporations', 'cached_until', 'DATETIME NULL DEFAULT NULL');
 
-ALTER TABLE `eve`.`ccp_material` ADD COLUMN `id` INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT,
- ADD UNIQUE INDEX (`id`);;
+call AddColumnUnlessExists('eve', 'mapSolarSystems', 'alliance_id', 'INTEGER NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'mapSolarSystems', 'alliance_old_id', 'INTEGER NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'mapSolarSystems', 'sovereigntyLevel', 'INTEGER NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'mapSolarSystems', 'sovereigntyDate', 'DATETIME NULL DEFAULT NULL');
 
-ALTER TABLE `eve`.`ccp_reaction` ADD COLUMN `id` INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT,
- ADD UNIQUE INDEX (`id`);
+call AddColumnUnlessExists('eve', 'mapConstellations', 'sovereigntyDateTime', 'DATETIME NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'mapConstellations', 'graceDateTime', 'DATETIME NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'mapConstellations', 'alliance_id', 'INTEGER NULL DEFAULT NULL');
 
-ALTER TABLE `eve`.`ccp_stationresource` ADD COLUMN `id` INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT,
- ADD UNIQUE INDEX (`id`);
+call AddColumnUnlessExists('eve', 'staStations', 'capitalStation', 'INTEGER NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'staStations', 'ownershipDateTime', 'DATETIME NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'staStations', 'upgradeLevel', 'INTEGER NULL DEFAULT NULL');
+call AddColumnUnlessExists('eve', 'staStations', 'customServiceMask', 'INTEGER NULL DEFAULT NULL');
 
-ALTER TABLE `eve`.`ccp_item` CHANGE COLUMN `typeName` `name`;
+call AddColumnUnlessExists('eve', 'typeActivityMaterials', 'id', 'INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT UNIQUE');
+
+call AddColumnUnlessExists('eve', 'invTypeReactions', 'id', 'INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT UNIQUE');
+
+call AddColumnUnlessExists('eve', 'invControlTowerResources', 'id', 'INTEGER UNSIGNED NOT NULL DEFAULT NULL AUTO_INCREMENT UNIQUE');
+
+ALTER TABLE `eve`.`dgmTypeAttributes` ADD COLUMN `id` int  NOT NULL AUTO_INCREMENT AFTER `valueFloat`,
+ DROP PRIMARY KEY,
+ ADD PRIMARY KEY (`id`);

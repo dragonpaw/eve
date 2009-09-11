@@ -7,24 +7,34 @@ from django.db.models import Q
 
 from datetime import datetime
 
-from eve.ccp.models import Item, Corporation
-from eve.pos.models import PlayerStation, Reaction
-from eve.user.models import Character
-from eve.lib.formatting import make_nav, NavigationElement
-from eve.lib.jinja import render_to_response
+from lib.formatting import NavigationElement
+from lib.jinja import render_to_response
+from ccp.models import Item, Corporation
+from pos.models import PlayerStation, Reaction
+from user.models import Character
 
-pos_nav = make_nav("Player-Owned Structures", "/pos/", '40_14',
-                   note='Fuel status for all of your POSes.')
-pos_profit_nav = make_nav('Profits', '/pos/profit/', '06_03',
-                          'Profits and consumption for all of your POSes')
-pos_monkey_nav = make_nav('POS Helpers', '/pos/helpers/','02_16',
-                          'Check who is able to see POS status.')
-REFUEL_NAV = make_nav('Update Fuel Quantities', '/pos/%d/refuel/', '10_07',
-                      'The EVE Widget automatically refreshes all POS data every 6 hours. '
-                      + 'Click here to update quantities if you have just refueled the tower and do not wish '
-                      + 'to wait.')
-REACTION_NAV = make_nav('Configure Reactions', '/pos/%d/reactions/', '50_04',
-                        'Update what mining/reactions this POS is running.')
+pos_nav = NavigationElement(
+    "Player-Owned Structures", "/pos/", '40_14',
+    'Fuel status for all of your POSes.'
+)
+pos_profit_nav = NavigationElement(
+    'Profits', '/pos/profit/', '06_03',
+    'Profits and consumption for all of your POSes'
+)
+pos_monkey_nav = NavigationElement(
+    'POS Helpers', '/pos/helpers/','02_16',
+    'Check who is able to see POS status.'
+)
+REFUEL_NAV = NavigationElement(
+    'Update Fuel Quantities', '/pos/%d/refuel/', '10_07',
+    'The EVE Widget automatically refreshes all POS data every 6 hours. '
+    + 'Click here to update quantities if you have just refueled the tower and do not wish '
+    + 'to wait.'
+)
+REACTION_NAV = NavigationElement(
+    'Configure Reactions', '/pos/%d/reactions/', '50_04',
+    'Update what mining/reactions this POS is running.'
+)
 
 DEFAULT_DAYS = 30
 

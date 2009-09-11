@@ -1,8 +1,7 @@
-{% extends "base.html" %}
+# extends "base.html"
+# import 'include_inlinenav.html' as inline
 
-{% block title %} Item: {{ item.name }} {% endblock %}
-
-{% block content %}
+# block content
 <div class="item">
     <div class="description">
         <h2>{{ item.name }}</h2>
@@ -11,11 +10,11 @@
     </div>
 
     <h3>Details</h3>
-    {% if not item.published %}
+    # if not item.published
     <p>This item is marked as an unpublished item and will not actually be available in-game.
      Have fun looking at it anyways.</p>
-    {% endif %}
-    {% if item.is_blueprint %}
+    # endif
+    # if item.is_blueprint
     <table class="item-details">
         <tr><th>Batch Size:</th><td>{{ item.blueprint_makes.portionsize }}</td></tr>
         <tr><th>Tech Level:</th><td>{{ item.blueprint_details.techlevel }}</td></tr>
@@ -25,91 +24,104 @@
         <tr><th>Research, copy:</th><td>{{ item.blueprint_details.researchcopytime|time }}</td></tr>
         <tr><th>Base Waste Factor:</th><td>{{ item.blueprint_details.wastefactor }} %</td></tr>
     </table>
-    {% else %}
-        {% for c, v in attributes %}
+    # else
+        # for c, v in attributes
 	<h4>{{ c.name }}<!-- {{ c.id }} --></h4>
 	<table class="item-details">
-	{% for a in v %}
+        # if c.name == 'Structure'
+            <tr><td class="icon"><img src="{{ VOLUME.icon16 }}"></td>
+            <th>{{ VOLUME.name }}<!-- Fake attribute --></th>
+            <td>{{ item.volume|comma }}</td></tr>
+            # if item.portionsize > 1
+                <tr><td class="icon"><img src="{{ PORTIONSIZE.icon16 }}"></td>
+                <th>{{ PORTIONSIZE.name }}<!-- Fake attribute --></th>
+                <td>{{ item.portionsize|comma }}</td></tr>
+            # endif
+            # if item.capacity
+                <tr><td class="icon"><img src="{{ CAPACITY.icon16 }}"></td>
+                <th>{{ CAPACITY.name }}<!-- Fake attribute --></th>
+                <td>{{ item.capacity|comma }}</td></tr>
+            # endif
+        # endif
+	# for a in v
             <tr><td class="icon"><img src="{{ a.icon16 }}"></td>
             <th>{{ a.name }}<!-- {{ a.id }} --></th>
             <td>{{ a.display_value }}</td></tr>
-        {% endfor %}
+        # endfor
 	</table>
-	{% endfor %}
-    {% endif %}
+	# endfor
+    # endif
 
-{% if item.fuel.count() > 0 %}
+# if item.fuel.count() > 0
     <h3>Fuel Consumption (Hourly)</h3>
     <p>Charters only apply if in low-sec for that faction.</p>
     <table>
-    {% for fuel in item.fuel.all() %}
+    # for fuel in item.fuel.all()
         <tr>
             <td class="icon"><img src="{{ fuel.type.icon16 }}"></td>
             <th>{{ fuel.type }}</th>
             <td>{{ fuel.quantity }}</td>
         </tr>
-    {% endfor %}
+    # endfor
     </table>
-{% endif %}
+# endif
 
 
-{% if item.blueprint %}
+# if item.blueprint
     <div class="blueprint">
     <h3>Blueprint</h3>
+    # if item.is_blueprint
+        {{ inline.nav([item.blueprint_makes]) }}
+    # else
+        {{ inline.nav([item.blueprint]) }}
+    # endif
+
     <ul class="links">
-    {% if not item.is_blueprint %}
-    <li><a href="{{ item.blueprint.get_absolute_url() }}">
-    <img src="{{ item.blueprint.icon32 }}">
-    <span class="name">{{ item.blueprint.name }}</span>
-    </a></li>
-    {% else %}
-    <li>
-    <a href="{{ item.blueprint_makes.get_absolute_url() }}">
-    <img src="{{ item.blueprint_makes.icon32 }}">
-    <span class="name">{{ item.blueprint_makes.name }}</span></a>
-    </li>
-    {% endif %}
-    {% if blueprint %}
-    {% set blueprints = [blueprint] %}
-    {% include "include_bpo.html" %}
-    {% else %}
+    # if blueprint
+    # set blueprints = [blueprint]
+    # include "include_bpo.html"
+    # else
     <li><a href="/trade/blueprint/{{ item.blueprint.slug }}/">
     <span class="name">You do not own this blueprint.</span><br>
-    <span class="link">Actually, I do. (Add to collection)</span></a></li>
-    {% endif %}
+    <span class="note">Actually, I do. (Add to collection)</span></a></li>
+    # endif
     </ul>
-{% endif %}
+# endif
 
-{% if materials %}
-    {% for x in materials.order %}
+# if materials
+    # for x in materials.order
         <h3>{{ materials['titles'][x] }}</h3>
         <p>Red value is buy price, green value is sell price.</p>
         <ul class="links materials">
-        {% for m in materials.materials %}
-        {% if m.has_key(x) and m[x] %}
+        # for m in materials.materials
+        # if m.has_key(x) and m[x]
             <li><a href="{{ m.material.get_absolute_url() }}">
             <img src="{{ m.material.icon32 }}">
             <span class="name">{{ m.material.name }}</span>
             <br>
-            {% if m.material.is_skill %}
-            <span class="quantity">Required level: {{ m[x] }}</span>
-            <span class="skill right">Skill</span>
-            {% else %}
-            <span class="quantity">x{{ m[x]|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
-            {% if m.buy_price %}<span class="right index-buy">{{ m.buy_price|floatformat(2)|comma }} ISK</span>{% endif %}
-            {% if m.sell_price%}<span class="right index-sell">{{ m.sell_price|floatformat(2)|comma }} ISK</span>{% endif %}
-            {% endif %}
+            # if m.material.is_skill
+                <span class="quantity">Required level: {{ m[x] }}</span>
+                <span class="skill right">Skill</span>
+            # else
+                <span class="quantity">x{{ m[x]|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
+                # if m.buy_price
+                    <span class="right index-buy">{{ m.buy_price|floatformat(2)|comma }} ISK</span>
+                # endif
+                # if m.sell_price
+                    <span class="right index-sell">{{ m.sell_price|floatformat(2)|comma }} ISK</span>
+                # endif
+            # endif
             </a></li>
-        {% endif %}
-        {% endfor %}
+        # endif
+        # endfor
         </ul>
-        {% if materials['isk'][x] is defined and materials['isk'][x] > 0 %}
+        # if materials['isk'][x] is defined and materials['isk'][x] > 0
             <p>Total cost (at buy prices): {{ materials['isk'][x]|floatformat(2)|comma }} ISK</p>
-        {% endif %}
-    {% endfor %}
-{% endif %}
+        # endif
+    # endfor
+# endif
 
-{% if makes %}
+# if makes
     <h3>Used in</h3>
     <ul class="links materials">
     {% for m in makes -%}
@@ -124,17 +136,17 @@
             </a></li>
     {%- endfor %}
     </ul>
-{% endif %}
+# endif
 
-{% if item.marketgroup %}
+# if item.marketgroup
     <h3>Market Indexes</h3>
-    {% if indexes %}
+    # if indexes
         <p>Red value is highest buy offer price, green value is lowest sell offer price.</p>
-    {% else %}
+    # else
         <p>This item is not listed on any known indexes.</p>
-    {% endif %}
+    # endif
     <ul class="links">
-    {% for i in indexes %}
+    # for i in indexes
         # set link = i.index.items.count() < 200
         # if link
 	    <li class="index"><a href="{{ i.index.get_absolute_url() }}">
@@ -143,8 +155,12 @@
         # endif
         <span class="name">{{ i.index.name }}</span>
         <br>
-        {% if i.buy %}<span class="index-buy">{{ i.buy|floatformat(2)|comma }} ISK</span>{% endif %}
-	{% if i.sell %}<span class="right index-sell">{{ i.sell|floatformat(2)|comma }} ISK</span>{% endif %}
+        # if i.buy
+            <span class="index-buy">{{ i.buy|floatformat(2)|comma }} ISK</span>
+        # endif
+	# if i.sell
+            <span class="right index-sell">{{ i.sell|floatformat(2)|comma }} ISK</span>
+        # endif
         </a></li>
     {%- endfor %}
     <li><a href="/trade/index/customize/{{ item.id }}/">
@@ -155,61 +171,61 @@
 
     <div class="item-trade">
     <h3>Trade values (for the last {{ time_span }})</h3>
-    {% if user.is_authenticated() %}
-        {% if not values.items %}
+    # if user.is_authenticated()
+        # if not values.items
             <p>No recorded transactions for any of your characters.</p>
-        {% else %}
-            {% for key, value in values.items() %}
+        # else
+            # for key, value in values.items()
                 <h5><a href="{{ value.region.get_absolute_url() }}">{{ key }}</a></h5>
                 <em>{{ value.gross|isk }}</em>
-                {% if value.sell_volume %}
+                # if value.sell_volume
                     <p>{{ value.sell_volume|comma }} units sold at average of
                     {{ value.sell_price|isk }} ISK.</p>
-                {% else %}
+                # else
                     <p>0 units sold.</p>
-                {% endif %}
-                {% if value.buy_volume %}
+                # endif
+                # if value.buy_volume
                     <p>{{ value.buy_volume|comma }} units bought at
                     average of {{ value.buy_price|isk }} ISK.</p>
-                {% else %}
+                # else
                     <p>0 units bought.</p>
-                {% endif %}
-                {% if value.profit_isk %}
+                # endif
+                # if value.profit_isk
                     <p>This works out to a per-unit resale profit of
                     {{ value.profit_isk|isk }} ISK
                     ({{ value.profit_pct|floatformat(2) }}%)</p>
-                {% endif %}
-            {% endfor %}
+                # endif
+            # endfor
         {% endif %}<!-- if not values.items : else -->
-        {% if best_values.sale or best_values.buy %}
+        # if best_values.sale or best_values.buy
             <h5>Best Trades</h5>
             <em>{{ best_values.gross|isk }}</em>
-        {% endif %}
-        {% if best_values.sell.sell_price %}
+        # endif
+        # if best_values.sell.sell_price
             <p>Your best sale price was {{ best_values.sell.sell_price|isk }} ISK in
             {{ best_values.sell.region }}.</p>
-        {% endif %}
-        {% if best_values.buy.buy_price %}
+        # endif
+        # if best_values.buy.buy_price
             <p>Your best buy price was {{ best_values.buy.buy_price|isk }} ISK in
             {{ best_values.buy.region }}.</p>
-        {% endif %}
-        {% if best_values.profit_isk %}
+        # endif
+        # if best_values.profit_isk
             <p>This works out to a maximum possible per-unit profit of {{ best_values.profit_isk|isk }} ISK
             ({{ best_values.profit_pct|floatformat(2) }}%)</p>
-        {% endif %}
-        {% if best_values.manufacturing_profit_isk %}
+        # endif
+        # if best_values.manufacturing_profit_isk
             <p>If you are to manufacture the item instead, your best per-unit
             profit is {{ best_values.manufacturing_profit_isk|isk }} ISK
             ({{ best_values.manufacturing_profit_pct|floatformat(2) }}%)</p>
-        {% elif item.blueprint %}
+        # elif item.blueprint
             <p>The widget is capable of calculating manufacturing profit for you
             on this item, but you need to log in, add the blueprint to your
             collection, and sell some of the item.</p>
-        {% endif %}
+        # endif
     {% else %}<!-- if user.is_authenticated -->
         <p>You have to log in if you want to see your transaction data.</p>
-    {% endif %}
+    # endif
     </div>
-{% endif %}
+# endif
 </div>
-{% endblock %}
+# endblock

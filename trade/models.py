@@ -1,11 +1,12 @@
 #from django.contrib.auth.models import User
 from django.db import models
-from eve.lib.jfilters import filter_comma as comma
 from datetime import date
 from decimal import Decimal
+from django.db.models import Q
 from eve.ccp.models import get_graphic
-
-#from eve.ccp.models import Item
+from eve.ccp.models import Item
+from eve.lib.decorators import cachedmethod
+from eve.lib.jfilters import filter_comma as comma
 
 class JournalEntryType(models.Model):
     id = models.IntegerField('ID', primary_key=True)
@@ -19,16 +20,20 @@ class JournalEntryType(models.Model):
         return self.name
 
 JOURNAL_DEFAULT_ICON = get_graphic('06_03')
-JOURNAL_TYPE_ICONS = {
-    JournalEntryType.objects.get(name='Bounty Prizes'): get_graphic('07_10'),
-    JournalEntryType.objects.get(name='Player Trading'): get_graphic('17_02'),
-    JournalEntryType.objects.get(name='Player Donation'): get_graphic('17_02'),
-    JournalEntryType.objects.get(name='Clone Activation'): get_graphic('18_03'),
-    JournalEntryType.objects.get(name='Clone Transfer'): get_graphic('18_03'),
-    JournalEntryType.objects.get(name='Insurance'): get_graphic('33_04'),
-    JournalEntryType.objects.get(name='Manufacturing'): get_graphic('57_09'),
-    JournalEntryType.objects.get(name='War Fee'): get_graphic('07_05'),
-}
+# Need a try block to avoid problems when we haven't yet loaded this part of the DB.
+try:
+    JOURNAL_TYPE_ICONS = {
+        JournalEntryType.objects.get(name='Bounty Prizes'): get_graphic('07_10'),
+        JournalEntryType.objects.get(name='Player Trading'): get_graphic('17_02'),
+        JournalEntryType.objects.get(name='Player Donation'): get_graphic('17_02'),
+        JournalEntryType.objects.get(name='Clone Activation'): get_graphic('18_03'),
+        JournalEntryType.objects.get(name='Clone Transfer'): get_graphic('18_03'),
+        JournalEntryType.objects.get(name='Insurance'): get_graphic('33_04'),
+        JournalEntryType.objects.get(name='Manufacturing'): get_graphic('57_09'),
+        JournalEntryType.objects.get(name='War Fee'): get_graphic('07_05'),
+    }
+except:
+    pass
 
 class JournalEntry(models.Model):
     transaction_id = models.IntegerField('ID')
@@ -186,7 +191,7 @@ class MarketIndex(models.Model):
         return index
 
 class MarketIndexValue(models.Model):
-    item = models.ForeignKey('ccp.Item', related_name='index_values')
+    item = models.ForeignKey('ccp.Item', related_name='indexes')
     index = models.ForeignKey(MarketIndex, related_name='items')
     date = models.DateField()
     buy = models.FloatField()
@@ -199,6 +204,46 @@ class MarketIndexValue(models.Model):
 
     def __unicode__(self):
         return u"%s: %f/%f" % (self.item, self.buy, self.sell)
+
+@cachedmethod(15)
+def get_index_price(item, profile=None, type=None):
+    """
+    Helper utility to look up the sale/buy price of an item, either
+    the public price, or a user's preferred price.
+    """
+
+    # Make sure it's an Item. (Some views call this on MarketGroups.)
+    if not isinstance(item, Item):
+        return None
+
+    if type is None:
+        raise ValueError("Must pass a value of 'sell' or 'buy' for type.")
+    if type == 'buy':
+        buy = True
+    elif type == 'sell':
+        buy = False
+    else:
+        raise ValueError('Can only lookup buy or sell prices, not: %s' % type)
+
+    q = Q(index__user__isnull = True)
+    if profile:
+        q = q | Q(index__user=profile)
+
+    if buy:
+        q = q & Q(buy__gt=0)
+    else:
+        q = q & Q(sell__gt=0)
+
+    q = item.indexes.filter(q).order_by('-index__priority')
+
+    try:
+        if buy:
+            return q[0].buy
+        else:
+            return q[0].sell
+    except IndexError:
+        return None
+
 
 class BlueprintOwned(models.Model):
     user = models.ForeignKey('user.UserProfile', related_name='blueprints')

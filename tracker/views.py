@@ -1,10 +1,13 @@
-from eve.lib.jinja import render_to_response
-from eve.tracker.models import ChangeLog
-from eve.lib.formatting import make_nav
 from datetime import datetime
 import time
 
-changelog_nav = make_nav("Changes", "/changelog/", '10_16', note='Updates to the Widget.')
+from lib.jinja import render_to_response
+from lib.formatting import NavigationElement
+from tracker.models import ChangeLog
+
+changelog_nav = NavigationElement(
+    "Changes", "/changelog/", '10_16', 'Updates to the Widget.'
+)
 
 def changelog(request, when=None):
     d = {}

@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import patterns
 
-urlpatterns = patterns('eve.user.views.',
+urlpatterns = patterns('eve.user.views',
     (r'^$', 'main'),
     (r'^character/(?P<id>\d+)/$', 'character'),
 

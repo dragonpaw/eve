@@ -4,26 +4,31 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseRedirect
-from eve.lib.jinja import render_to_response
 
+from decimal import Decimal
 import re
 import logging
 
-from decimal import Decimal
-#from datetime import date
+from lib.formatting import NavigationElement
+from lib.jinja import render_to_response
+from ccp.models import Item, Material
+from trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue, JournalEntry
 
-from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue, JournalEntry
-from eve.ccp.models import Item, Material
-from eve.lib.formatting import make_nav
-
-index_nav = make_nav("Indexes", "/trade/indexes/", '25_08',
-                      note="Where the prices come from.")
-blueprint_nav = make_nav("Blueprints Owned", "/trade/blueprints/", '09_15',
-                          note="The blueprints you can make things with.")
-transaction_nav = make_nav("Transactions", "/trade/transactions/", '64_14',
-                            note="Everything you've bought and sold.")
-salvage_nav = make_nav('Salvage', '/trade/salvage/', '69_11',
-                       'Calculate what rigs you can make with that pile of salvage filling your hangar.')
+index_nav = NavigationElement(
+    "Indexes", "/trade/indexes/", '25_08', "Where the prices come from."
+)
+blueprint_nav = NavigationElement(
+    "Blueprints Owned", "/trade/blueprints/", '09_15',
+    "The blueprints you can make things with."
+)
+transaction_nav = NavigationElement(
+    "Transactions", "/trade/transactions/", '64_14',
+    "Everything you've bought and sold."
+)
+salvage_nav = NavigationElement(
+    'Salvage', '/trade/salvage/', '69_11',
+    'Calculate what rigs you can make with that pile of salvage filling your hangar.'
+)
 
 # Cache this crap!
 salvage_mat_q = Q(item__group__slug__startswith='rig-')

@@ -1,4 +1,4 @@
-import memcache
+import cmemcache as memcache
 import logging
 
 class MyCacheHandler(object):
