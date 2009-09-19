@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from django_extensions.management.jobs import BaseJob
+from django.template.defaultfilters import slugify
 from exceptions import Exception
 
 from eve.ccp.models import MarketGroup, Item, Region, Alliance, Group

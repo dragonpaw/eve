@@ -118,7 +118,6 @@ INSTALLED_APPS = (
     'django.contrib.flatpages',
     'django.contrib.markup',
     'django_extensions',
-    'debug_toolbar',
     'eve.debug',
     'eve.mining',
     'eve.tracker',
@@ -130,6 +129,8 @@ INSTALLED_APPS = (
     'eve.status',
     'eve.lib',
 )
+#if DEBUG:
+#    INSTALLED_APPS.append('debug_toolbar')
 
 CACHE_BACKEND = "memcached://127.0.0.1:11211/"
 CACHE_MIDDLEWARE_KEY_PREFIX = 'eve_widget'

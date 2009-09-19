@@ -9,4 +9,8 @@ mysql_evolutions = [
         "CREATE TABLE `trade_marketindexvalue` (\n    `id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY,\n    `item_id` integer NOT NULL,\n    `index_id` integer NOT NULL,\n    `date` date NOT NULL,\n    `buy` double precision NOT NULL,\n    `sell` double precision NOT NULL,\n    `buy_qty` integer NOT NULL,\n    `sell_qty` integer NOT NULL\n)\n;",
         "CREATE TABLE `trade_blueprintowned` (\n    `id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY,\n    `user_id` integer NOT NULL,\n    `blueprint_id` integer NOT NULL,\n    `pe` integer NOT NULL,\n    `me` integer NOT NULL,\n    `original` bool NOT NULL,\n    `cost_per_run` double precision NOT NULL\n)\n;",
     ],
+    [('fv1:-2098354881473224911','fv1:2364860626862231440'), # generated 2009-09-19 05:59:46.943025
+        "UPDATE `trade_blueprintowned` SET `cost_per_run` = 0 WHERE `cost_per_run` IS NULL;",
+        "ALTER TABLE `trade_blueprintowned` MODIFY COLUMN `cost_per_run` double precision NOT NULL;",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##

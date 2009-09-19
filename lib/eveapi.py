@@ -72,7 +72,8 @@ from calendar import timegm
 #-----------------------------------------------------------------------------
 # Added by Ash for ease of use.
 from eve.lib.cachehandler import MyCacheHandler
-from eve.settings import DEBUG
+from eve.settings import DEBUG, logging
+log = logging.getLogger('eveapi')
 
 def get_api(debug=DEBUG, throw=False):
         # Debug disabled for now.
@@ -228,11 +229,14 @@ class _RootContext(_Context):
 		if response is None:
 			http = httplib.HTTPConnection(self._host)
 			if kw:
+                                log.debug('Post[%s]: %s', path, urllib.urlencode(kw))
 				http.request("POST", path, urllib.urlencode(kw), {"Content-type": "application/x-www-form-urlencoded"})
 			else:
+                                log.debug('Get[%s].' % path)
 				http.request("GET", path)
 
 			response = http.getresponse()
+                        log.debug('Response: %s', response)
 			if response.status != 200:
 				if response.status == httplib.NOT_FOUND:
 					raise AttributeError("'%s' not available on API server (404 Not Found)" % path)
