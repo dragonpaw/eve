@@ -1296,16 +1296,9 @@ class MarketGroup(EveBase):
     def get_absolute_url(self):
         return "/items/%s/" % self.slug
 
+    @cachedmethod(60*4)
     def get_icon(self, size):
-        from django.core.cache import cache
-        key = 'eve.ccp.models.MarketGroup.get_icon(%d,%d)' % (self.id, size)
-        value = cache.get(key)
-        if value:
-            return value
-
-        value = self.graphic.get_icon(size)
-        cache.set(key, value)
-        return value
+        return self.graphic.get_icon(size)
 
 
 class MaterialPublishedManager(models.Manager):

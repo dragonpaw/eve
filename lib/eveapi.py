@@ -74,7 +74,7 @@ from calendar import timegm
 from eve.lib.cachehandler import MyCacheHandler
 from eve.settings import DEBUG
 
-def get_api(debug=False, throw=False):
+def get_api(debug=DEBUG, throw=False):
         # Debug disabled for now.
         cache = MyCacheHandler(debug=debug, throw=throw)
         api = EVEAPIConnection(cacheHandler=cache).context(version=2)
