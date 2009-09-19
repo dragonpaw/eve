@@ -28,7 +28,7 @@ delimiter ';'
 
 -- call AddColumnUnlessExists('GIS', 'boundaries', 'fillColour', 'int unsigned not null default 1');
 
-call AddColumnUnlessExists('eve', 'invTypes', 'slug', 'VARCHAR(50) NOT NULL');
+call AddColumnUnlessExists('eve', 'invTypes', 'slug', 'VARCHAR(100) NOT NULL');
 call AddColumnUnlessExists('eve', 'invMarketGroups', 'slug', 'VARCHAR(50) NOT NULL');
 call AddColumnUnlessExists('eve', 'invGroups', 'slug', 'VARCHAR(50) NOT NULL');
 call AddColumnUnlessExists('eve', 'mapRegions', 'slug', 'VARCHAR(50) NOT NULL');
@@ -67,3 +67,7 @@ call AddColumnUnlessExists('eve', 'invControlTowerResources', 'id', 'INTEGER UNS
 ALTER TABLE `eve`.`dgmTypeAttributes` ADD COLUMN `id` int  NOT NULL AUTO_INCREMENT AFTER `valueFloat`,
  DROP PRIMARY KEY,
  ADD PRIMARY KEY (`id`);
+
+
+-- (u'SELECT `dgmTypeAttributes`.`id`, `dgmTypeAttributes`.`typeID`, `dgmTypeAttributes`.`attributeID`, `dgmTypeAttributes`.`valueInt`, `dgmTypeAttributes`.`valueFloat` FROM `dgmTypeAttributes` LEFT OUTER JOIN `invTypes` ON (`dgmTypeAttributes`.`typeID` = `invTypes`.`typeID`) INNER JOIN `invGroups` ON (`invTypes`.`groupID` = `invGroups`.`groupID`) INNER JOIN `invCategories` ON (`invGroups`.`categoryID` = `invCategories`.`categoryID`) WHERE `invCategories`.`categoryName` = %s  ORDER BY `invTypes`.`typeName` ASC',
+-- ('Entity',))

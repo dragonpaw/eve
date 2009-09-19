@@ -23,6 +23,7 @@ def update_alliance(a):
 
 def _update_alliance(a):
     messages = ['Updating alliance: %s' % a.name]
+    print messages[0]
 
     try:
         alliance = Alliance.objects.get(id=a.allianceID)
