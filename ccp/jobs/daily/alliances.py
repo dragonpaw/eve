@@ -7,7 +7,7 @@ from datetime import datetime
 
 #from Queue import Queue
 #import threading
-import workerpool
+#import workerpool
 
 class Job(DailyJob):
     help = "Reload all of the alliances and member corporations."
@@ -75,7 +75,7 @@ def update_alliances():
     start_time = datetime.utcnow()
 
     #output = Queue()
-    pool = workerpool.WorkerPool(size=20)
+    #pool = workerpool.WorkerPool(size=20)
 
     #for a in api.eve.AllianceList().alliances:
     #    job = SimpleJob(output, update_alliance, a)
@@ -84,8 +84,9 @@ def update_alliances():
     alliance_ids = []
 
     try:
-        results = pool.map(update_alliance, api.eve.AllianceList().alliances)
-        for id, worked, messages in results:
+        #results = pool.map(update_alliance, api.eve.AllianceList().alliances)
+        for a_id in api.eve.AllianceList().alliances:
+            id, worked, messages = update_alliance(a_id)
             if worked:
                 alliance_ids.append(id)
             else:
@@ -95,8 +96,8 @@ def update_alliances():
     except Exception, e:
         print str(e)
 
-    pool.shutdown()
-    pool.wait()
+    #pool.shutdown()
+    #pool.wait()
 
     # Force immediate evaluation to protect from odd interaction with the cursor
     # while deleting rows.
