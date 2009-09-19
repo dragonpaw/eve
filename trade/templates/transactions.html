@@ -13,7 +13,7 @@ contract fees, etc, are filtered out for brevity.</p>
         <span class="quantity">x{{ t.quantity|comma }}</span>
     # else
         <span class="name">{{ t.client }}</span><br/>
-        # if t.reason and t.type != 'Bounty Prizes'
+        # if t.reason and t.type.name != 'Bounty Prizes'
             <span class="quantity">{{ t.reason }}</span><br/>
         # else
             <span class="quantity">&nbsp;</span>
