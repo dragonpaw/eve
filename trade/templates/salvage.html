@@ -1,21 +1,24 @@
-{% extends "base.html" %}
+# extends "base.html"
 
-{% block content %}
+# block content
 <h2>Rig Builder</h2>
 
 <form method="post">
-  <table>
-    <tr>
-    	<th>Salvage</th>
-    	<th class="number">Qty</th>
-    </tr>
-	{% for item in items -%}
+# for tl in SALVAGE_TECH_LEVEL.keys()
+    <table>
+        <tr><th class="center" colspan="2">Tech {{ tl }}</th></tr>
+        <tr>
+            <th>Salvage</th>
+            <th class="number">Qty</th>
+        </tr>
+	# for item in SALVAGE_TECH_LEVEL[tl]
 	<tr>
 	  <th><a href="{{ item.get_absolute_url() }}"> <img src="{{ item.icon16 }}"> {{ item.name }}</a></th>
-	  <td><input type="text" size="8" value="0" name="{{ item.id }}"></td>
+	  <td><input type="text" size="8" value="" name="{{ item.id }}"></td>
 	</tr>
-	{%- endfor %}
-</table>
+	# endfor
+    </table>
 <input type="submit" value="What can I build?"/>
+# endfor
 </form>
-{% endblock %}
+# endblock

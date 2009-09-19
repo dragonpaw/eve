@@ -4,15 +4,16 @@ from django.template import RequestContext
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.http import HttpResponseRedirect
+from collections import defaultdict
 
 from decimal import Decimal
 import re
 import logging
 
-from lib.formatting import NavigationElement
-from lib.jinja import render_to_response
-from ccp.models import Item, Material
-from trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue, JournalEntry
+from eve.lib.formatting import NavigationElement
+from eve.lib.jinja import render_to_response
+from eve.ccp.models import Item, Material
+from eve.trade.models import Transaction, BlueprintOwned, MarketIndex, MarketIndexValue, JournalEntry, get_buy_price, get_sell_price
 
 index_nav = NavigationElement(
     "Indexes", "/trade/indexes/", '25_08', "Where the prices come from."
@@ -31,14 +32,28 @@ salvage_nav = NavigationElement(
 )
 
 # Cache this crap!
-salvage_mat_q = Q(item__group__slug__startswith='rig-')
-salvage_mat_q &= ~Q(material__group__category__name='Skill')
-salvage_mat_q &= Q(activity__name='Manufacturing')
-SALVAGE_MATS = {}
-for m in Material.objects.filter(salvage_mat_q).select_related('item'):
-    if m.item not in SALVAGE_MATS:
-        SALVAGE_MATS[m.item] = []
-    SALVAGE_MATS[m.item].append((m.material_id, m.quantity))
+salvage_mat_q = (
+    Q(item__group__slug__startswith='rig-')
+    & Q(item__published=True)
+    & Q(material__group__name='Salvaged Materials')
+    & Q(activity__name='Manufacturing')
+)
+SALVAGE_NEEDED = defaultdict(dict)
+SALVAGE_MATS = set()
+SALVAGE_TECH_LEVEL = defaultdict(set)
+for m in Material.objects.filter(salvage_mat_q).select_related('item', 'material'):
+    makes = m.item.blueprint_makes
+    SALVAGE_NEEDED[makes][m.material] = m.quantity
+    SALVAGE_MATS.add(m.material)
+    SALVAGE_TECH_LEVEL[makes.tech_level].add(m.material)
+# Precalculate the short name, and the size name.
+for rig in SALVAGE_NEEDED.keys():
+    rig.size = rig.attribute_by_name('rigSize').display_value
+    rig.short_name = rig.name.replace('Large ','').replace('Medium ','').replace('Small ','')
+# Convert it back from sets to lists, and sort them.
+for tl in SALVAGE_TECH_LEVEL:
+    SALVAGE_TECH_LEVEL[tl] = list(SALVAGE_TECH_LEVEL[tl])
+    SALVAGE_TECH_LEVEL[tl].sort(key=lambda x: x.name)
 
 @login_required
 def transactions(request):
@@ -209,9 +224,10 @@ def fixed_price_update(request, id):
 
 def salvage(request):
     d = {}
-    d['items'] = Item.objects.filter(group__name='Salvaged Materials').select_related('graphic', 'group')
     d['nav'] = [salvage_nav]
-    log = logging.getLogger('eve.trade.views.salvage')
+    d['SALVAGE_MATS'] = SALVAGE_MATS
+    d['SALVAGE_TECH_LEVEL'] = SALVAGE_TECH_LEVEL
+    #log = logging.getLogger('eve.trade.views.salvage')
 
     if request.method != 'POST':
         return render_to_response('salvage.html', d, request)
@@ -223,58 +239,31 @@ def salvage(request):
     else:
         profile = None
 
-    bits = {}
+    bits = defaultdict(int)
     d['bits'] = bits
     d['nav'].append({'name':'Rigs you can make'})
 
-    # Make a lookup table out of the salvage available.
-    digits = re.compile(r'\d+')
+    for mat in SALVAGE_MATS:
+        try:
+            bits[mat] = int( request.POST[unicode(mat.id)] )
+        except ValueError:
+            bits[mat] = 0
 
-    for key in request.POST.keys():
-        id = int(key)
-        if not id > 0:
-            continue
+    rigs = defaultdict(dict)
+    for rig in SALVAGE_NEEDED:
+        can_make = min( (bits[mat] / SALVAGE_NEEDED[rig][mat] for mat in SALVAGE_NEEDED[rig] ) )
+        if can_make:
+            rigs[rig.short_name][rig.size] = {'item': rig, 'quantity': can_make }
+    d['rigs'] = rigs
 
-        match = digits.search(request.POST[key])
-        if not match:
-            bits[id] = 0
-        else:
-            bits[id] = int(match.group(0))
-
-    rigs = {}
-    for rig in SALVAGE_MATS:
-        log.debug('Trying: %s' % rig.name)
-        can_make = None
-        for id, quantity in SALVAGE_MATS[rig]:
-            log.debug('Material ID: %d, Qty: %d' % (id, quantity))
-            if id not in bits:
-                can_make = 0
-            elif can_make is None:
-                can_make = int(bits[id] / quantity)
-            else:
-                can_make = min(bits[id] / quantity, can_make)
-
-            # If we can make 0, it's not going to get higher.
-            if can_make == 0:
-                break
-        if can_make > 0:
-            rigs[rig] = can_make
-            log.debug('Can make: %s' % rig.name)
-
-    objects = []
-    d['objects'] = objects
-    for rig in rigs.keys():
-        item = rig.blueprint_makes # We're actually storing the BP ID, not the item.
-        if profile:
-            buy = profile.get_buy_price(item)
-            sell =  profile.get_sell_price(item)
-        else:
-            buy = sell = None
-        objects.append({
-                        'item':item,
-                        'quantity':rigs[rig],
-                        'buy':buy,
-                        'sell':sell,
-                        })
-    objects.sort(key=lambda x:x['item'].name)
-    return render_to_response('item_list.html', d, request)
+    #objects = []
+    #d['objects'] = objects
+    #for rig in rigs.keys():
+    #    objects.append({
+    #                    'item':item,
+    #                    'quantity':rigs[rig],
+    #                    'buy':get_buy_price(item, profile=profile),
+    #                    'sell':get_sell_price(item, profile=profile),
+    #                    })
+    #objects.sort(key=lambda x:x['item'].name)
+    return render_to_response('salvage_result.html', d, request)

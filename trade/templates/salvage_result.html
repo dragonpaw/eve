@@ -1,0 +1,17 @@
+# extends "base.html"
+
+# block content
+<table>
+    <tr><th>Name</th><th>Large</th><th>Medium</th><th>Small</th></tr>
+# for short_name in rigs|sort
+    <tr>
+        <td class="name">{{ short_name }}</td>
+        # for size_class in ('Large', 'Medium', 'Small')
+            <td><a href="{{rigs[short_name][size_class].item.get_absolute_url()}}">
+                {{ rigs[short_name][size_class].quantity }}
+            </a></td>
+        # endfor
+    </tr>
+# endfor
+</table>
+# endblock
