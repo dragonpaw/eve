@@ -81,7 +81,7 @@ MIDDLEWARE_CLASSES = [
     'eve.lib.jinja_flatpage.middleware.FlatpageFallbackMiddleware',
     'eve.tracker.middleware.ChangeLogMiddleware',
 
-    'maintenancemode.middleware.MaintenanceModeMiddleware',
+    #'maintenancemode.middleware.MaintenanceModeMiddleware',
 ]
 #if DEBUG:
 #    MIDDLEWARE_CLASSES.append('debug_toolbar.middleware.DebugToolbarMiddleware')
