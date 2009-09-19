@@ -6,6 +6,7 @@ from eve.ccp.models import Alliance, Corporation
 from datetime import datetime
 
 #from Queue import Queue
+#import threading
 import workerpool
 
 class Job(DailyJob):
@@ -14,64 +15,57 @@ class Job(DailyJob):
     def execute(self):
         update_alliances()
 
-def check_link(alliance, corp_id):
-    messages = []
-    corp = None
-    try:
-        corp = Corporation.objects.get(id=corp_id)
-        corp.failed = False # This counts as a sucessful refresh.
-        if corp.alliance != alliance:
-            old = corp.alliance
-            corp.alliance = alliance
-            corp.save()
-            messages.append('Updated alliance link on %s: %s -> %s' % (corp.name, old, alliance))
-    except Corporation.DoesNotExist:
-        messages.append('Refreshing new corp: %s' % corp_id)
-        corp = Corporation(id=corp_id)
-        messages.extend( corp.refresh() )
-    return corp, messages
-
 def update_alliance(a):
+    try:
+        return _update_alliance(a)
+    except Exception as e:
+        return a.allianceID, False, (str(e),)
+
+def _update_alliance(a):
     messages = ['Updating alliance: %s' % a.name]
-    worked = False
 
     try:
         alliance = Alliance.objects.get(id=a.allianceID)
     except Alliance.DoesNotExist:
         alliance = Alliance(id=a.allianceID, name=a.name, ticker=a.shortName)
+
+    # Check the executor corp, creating if needed.
+    corp_id = a.executorCorpID
+    try:
+        corp = Corporation.objects.get(id=corp_id)
+    except Corporation.DoesNotExist:
+        messages.append('Refreshing new corp: %d' % corp_id)
+        corp = Corporation(id=corp_id)
+        messages.extend( corp.refresh() )
+        if corp.refresh_failed is True:
+            return (alliance.id, False, messages)
+
+    alliance.executor = corp
     alliance.member_count = a.memberCount
     alliance.save()
 
-    members = [ a.executorCorpID ]
-
-    # Check the executor corp.
-    corp, msg = check_link(alliance, a.executorCorpID)
-    messages.extend(msg)
-
-    # Have to set executor and re-save it here to work around constraints.
-    # Can't add an alliance unless the exec corp exists first. Can't add a
-    # Corp unless the alliance it belongs to exists.
-    # So dance is: Make alliance without exec, add corp, set exec.
-    if corp.failed is True:
-        messages.append('Alliance refresh failed. Will be deleted.')
-        return (alliance.id, worked, messages)
-
-    alliance.executor = corp
-    alliance.save()
-    worked = True
-    # Refresh all the member corps too.
+    # Refresh all the member corps too. (This includes the exec.)
+    members = list()
     for c in a.memberCorporations:
-        id = c.corporationID
-        members.append(id)
-        messages.extend( check_link(alliance, id) )
+        corp_id = c.corporationID
+        members.append(corp_id)
+        try:
+            corp = Corporation.objects.get(id=corp_id)
+        except Corporation.DoesNotExist:
+            messages.append('Refreshing new corp: %d' % corp_id)
+            corp = Corporation(id=corp_id)
+            messages.extend( corp.refresh() )
+        if corp.alliance != alliance:
+            corp.alliance = alliance
+            corp.save()
 
-    for c in Corporation.objects.filter(alliance=alliance):
+    for c in alliance.corporations.all():
         if c.id not in members:
             c.alliance = None
             c.save()
             messages.append('Removed from alliance %s: %s' % (alliance.name, c.name))
 
-    return (alliance.id, worked, messages)
+    return (alliance.id, True, messages)
 
 
 def update_alliances():
