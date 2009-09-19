@@ -13,7 +13,7 @@ from eve.lib.formatting import NavigationElement
 from eve.lib.jinja import render_to_response
 from eve.pos.models import PlayerStation
 from eve.settings import logging
-from eve.trade.models import BlueprintOwned, get_index_price
+from eve.trade.models import BlueprintOwned, get_buy_price, get_sell_price
 
 item_nav = NavigationElement(
     "Items", "/items/", '24_05', note='All items in the game.'
@@ -165,12 +165,6 @@ def group(request, slug):
     d['objects'].sort(key=lambda x:x['item'].name)
     return render_to_response('item_list.html', d,
                               request)
-
-def get_sell_price(profile, item):
-    return get_index_price(item, type='sell', profile=profile)
-
-def get_buy_price(profile, item):
-    return get_index_price(item, type='buy', profile=profile)
 
 # Cannot cache as it depends on user prices.
 def item(request, slug, days=30):
