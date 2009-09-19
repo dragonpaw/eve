@@ -3,3 +3,4 @@ syntax: glob
 database_settings.py
 log/*
 _static/corplogos/*
+maint/maint.lua
