@@ -3,11 +3,12 @@ All of the CCP-provided objects, plus a few minor addons like the Alliance
 object and extensions to the Corporation
 '''
 from decimal import Decimal
+import os
+
 from django.core.cache import cache
 from django.db import models
-from django.db.models import Q, signals
-from django.template.defaultfilters import slugify
-import os
+from django.db.models import Q
+from django.db.models.signals import pre_delete, pre_save
 
 from eve.lib import eveapi, evelogo, null_fields
 from eve.lib.alliance_graphics import alliance_graphics
@@ -17,7 +18,7 @@ from eve.lib.formatting import unique_slug
 from eve.lib.jfilters import filter_comma as comma, filter_time as time
 from eve import settings
 
-evelogo.resourcePath = os.path.join(settings.STATIC_DIR, 'ccp-icons', 'corplogos')
+evelogo.resourcePath = os.path.join(settings.MEDIA_ROOT, 'ccp-icons', 'corplogos')
 
 TRUE_FALSE = (
     ('true', 'Yes'),
@@ -141,7 +142,7 @@ class Alliance(Base):
     executor = models.ForeignKey('Corporation', related_name='executors')
     ticker = models.CharField(max_length=10)
     member_count = models.IntegerField(default=0)
-    slug = models.SlugField(max_length=100)
+    slug = models.SlugField(max_length=100, db_index=True)
 
     def get_icon(self, size):
         if alliance_graphics.has_key(self.id):
@@ -149,23 +150,21 @@ class Alliance(Base):
         else:
             return "/static/ccp-icons/alliances/%d_%d/icon%s.png" % (size, size, '01_01')
 
-    def save(self, *args, **kwargs):
-        self.slug = unique_slug(self)
-        super(Alliance, self).save(*args, **kwargs)
+    def save(self, force_insert=False, force_update=False):
+        #print 'Alliance pre-save.'
+        if not self.slug:
+            self.slug = unique_slug(self)
+        super(Alliance, self).save(force_insert, force_update)
 
     def delete(self):
-        # Break the links to the alliance, so they are clean, and don't
-        # get cascade deleted.
-        print "Braking all links for alliance '%s'." % self.name
-        self.executor = None
-        self.save()
+        print "Breaking all links for alliance '%s'." % self.name
+        #self.executor = None
         self.corporations.clear()
         self.solarsystems_lost.clear()
         self.solarsystems.clear()
         self.constellations.clear()
-        super(Alliance, self).delete()
-
-
+        self.save()
+        super(Alliance, self).delete(force_insert, force_update)
 
 class Attribute(EveBase):
     """This table seems to contain the various attributes of an Item that can
@@ -507,7 +506,7 @@ class Corporation(EveBase):
         return self.characters.filter(is_director=True)
 
     def logofile(self):
-        return os.path.join(settings.STATIC_DIR, 'corplogos', '32_32', (str(self.id) + '.png'))
+        return os.path.join(settings.MEDIA_ROOT, 'corplogos', '32_32', (str(self.id) + '.png'))
 
     def updatelogo(self, record=None):
         path = self.logofile()
@@ -527,7 +526,7 @@ class Corporation(EveBase):
 
     def refresh(self, character=None, name=None):
         messages = []
-        self.failed = False
+        self.refresh_failed = False
 
         if self.is_player_corp is False:
             messages.append('No refresh needed for NPC corps.')
@@ -546,12 +545,12 @@ class Corporation(EveBase):
             name = record.corporationName
         except eveapi.Error, e:
             messages.append("EVE API ERROR on corp (%s) refresh: %s" % (self.id, e))
-            self.failed = True
+            self.refresh_failed = True
             return messages
 
         if name == None:
             messages.append("Unable to refresh corporation '%s', no name available." % self.id)
-            self.failed = True
+            self.refresh_failed = True
             return messages
 
         try:
@@ -561,11 +560,14 @@ class Corporation(EveBase):
             name.save()
             messages.append("Added: %s to name database. [%d]" % (name.name, name.id))
 
-        if record:
-            if record.allianceID:
+        if record.allianceID:
+            try:
                 self.alliance = Alliance.objects.get(pk=record.allianceID)
-            else:
-                self.alliance = None
+            except Alliance.DoesNotExist:
+                # Happens when we first create the alliance. The corp will
+                # be added later.
+                messages.append('Alliance unavailable: %s' % record.allianceID)
+
         messages.append('Corp refreshed: %s(%s)' % (name.name, self.id))
         self.save()
 
@@ -700,7 +702,7 @@ class Group(EveBase):
     anchorable = models.NullBooleanField()
     fittablenonsingleton = models.NullBooleanField(db_column='fittableNonSingleton')
     published = models.NullBooleanField()
-    slug = models.SlugField(max_length=100)
+    slug = models.SlugField(max_length=100, db_index=True)
 
     class Meta(EveBase.Meta):
         db_table = 'invGroups'
@@ -875,7 +877,7 @@ class Item(EveBase):
     published = models.NullBooleanField()
     marketgroup = null_fields.Key('MarketGroup', db_column='marketGroupID')
     chanceofduplicating = null_fields.Float(db_column='chanceOfDuplicating')
-    slug = models.SlugField(max_length=100)
+    slug = models.SlugField(max_length=100, db_index=True)
 
     # If I don't have both managers, it gets weird.
     objects = models.Manager()
@@ -942,8 +944,6 @@ class Item(EveBase):
             icon = "%(dir)s/%(cat)s/%(size)d_%(size)d/%(item_id)d.png" % d
         else:
             icon = self.graphic.get_icon(size)
-
-        cache.set(key, icon, 60*60*6)
         return icon
 
     @cachedmethod(60)
@@ -954,6 +954,14 @@ class Item(EveBase):
     @cachedmethod(60)
     def attribute_by_name(self, name):
         return self.attributes.get(attribute__attributename=name)
+
+    @property
+    def meta_level(self):
+        return int(self.attribute_by_name('metaLevel').value)
+
+    @property
+    def tech_level(self):
+        return int(self.attribute_by_name('techLevel').value)
 
     @cachedmethod(60)
     def dps(self):
@@ -1213,8 +1221,8 @@ class ItemAttribute(EveBase):
             }[int(self.value)] # Sometimes it's a float. Don't ask me why.
         elif self.attribute.attributename.startswith('requiredSkill'):
             value = "%s %s" % (
-                Item.objects.get(pk=self.valueint),
-                self.item.attribute_by_name('%sLevel' % self.attribute.attributename).valueint
+                Item.objects.get( pk=int(self.value) ),
+                int( self.item.attribute_by_name('%sLevel' % self.attribute.attributename).value ),
             )
         elif unit == 'groupID':
             value = Group.objects.get(pk=self.valueint)
@@ -1279,7 +1287,7 @@ class MarketGroup(EveBase):
     description = null_fields.Char(max_length=3000)
     graphic = null_fields.Key('Graphic', db_column='graphicID')
     hastypes = models.NullBooleanField(db_column='hasTypes')
-    slug = models.SlugField(max_length=100)
+    slug = models.SlugField(max_length=100, db_index=True)
 
     class Meta(EveBase.Meta):
         db_table = 'invMarketGroups'
@@ -1427,7 +1435,7 @@ class Region(EveBase):
     zmax = null_fields.Float(db_column='zMax')
     faction = null_fields.Key('Faction', db_column='factionID')
     radius = null_fields.Float()
-    slug = models.SlugField()
+    slug = models.SlugField(db_index=True)
 
     class Meta(EveBase.Meta):
         db_table = 'mapRegions'
