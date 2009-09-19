@@ -1,7 +1,7 @@
-# $Id$
-from django.conf.urls.defaults import include, patterns, handler500, handler404 # need the handlers for django.
-from eve.settings import STATIC_DIR, DEBUG
+from django.conf.urls.defaults import *
 from django.contrib import admin
+
+from eve import settings
 
 admin.autodiscover()
 
@@ -27,8 +27,8 @@ urlpatterns = patterns('',
     (r'^changelog/(?P<when>\d{4}-\d\d-\d\d-\d\d:\d\d)/$', 'eve.tracker.views.changelog'),
 )
 
-if DEBUG:
+if settings.DEBUG:
     urlpatterns += patterns('',
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
-        {'document_root': STATIC_DIR}),
+        {'document_root': settings.MEDIA_ROOT}),
     )
