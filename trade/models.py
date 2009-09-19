@@ -244,6 +244,11 @@ def get_index_price(item, profile=None, type=None):
     except IndexError:
         return None
 
+def get_sell_price(item, profile=None):
+    return get_index_price(item, profile, type='sell')
+
+def get_buy_price(item, profile=None):
+    return get_index_price(item, profile, type='buy')
 
 class BlueprintOwned(models.Model):
     user = models.ForeignKey('user.UserProfile', related_name='blueprints')
