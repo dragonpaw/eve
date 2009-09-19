@@ -8,6 +8,7 @@ DAEMON   = True
 METHOD   = 'fork'
 MAX_REQUESTS = 1000
 HOST     = '127.0.0.1'
+MAX_CHILDREN = 3
 
 # Add a custom Python path.
 sys.path.insert(0, "/home/ash/django-sites")
@@ -40,6 +41,7 @@ runfastcgi(method      = METHOD,
            workdir     = WORK_DIR, 
            port        = PORT, 
            maxrequests = MAX_REQUESTS,
+           maxChildren = MAX_CHILDREN,
            host        = HOST, 
            pidfile     = PID_FILE,
 )
