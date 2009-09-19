@@ -33,7 +33,7 @@ TEMPLATE_DEBUG = False
 DEFAULT_FROM_EMAIL='ash@dragonpaw.org'
 
 # Necessary for (mt) Django GridContainer
-FORCE_SCRIPT_NAME = ""
+#FORCE_SCRIPT_NAME = ""
 
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/8.1/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
@@ -54,11 +54,11 @@ USE_I18N = True
 
 # Absolute path to the directory that holds media.
 # Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
+MEDIA_ROOT = os.path.join(ROOTDIR, '_static')
 
 # URL that handles the media served from MEDIA_ROOT.
 # Example: "http://media.lawrence.com"
-MEDIA_URL = ''
+MEDIA_URL = '/static'
 
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
@@ -80,6 +80,8 @@ MIDDLEWARE_CLASSES = [
     'django.middleware.doc.XViewMiddleware',
     'eve.lib.jinja_flatpage.middleware.FlatpageFallbackMiddleware',
     'eve.tracker.middleware.ChangeLogMiddleware',
+
+    'maintenancemode.middleware.MaintenanceModeMiddleware',
 ]
 #if DEBUG:
 #    MIDDLEWARE_CLASSES.append('debug_toolbar.middleware.DebugToolbarMiddleware')
@@ -132,8 +134,8 @@ INSTALLED_APPS = (
 CACHE_BACKEND = "memcached://127.0.0.1:11211/"
 CACHE_MIDDLEWARE_KEY_PREFIX = 'eve_widget'
 
-STATIC_DIR = os.path.join(ROOTDIR, '_static')
-
 AUTH_PROFILE_MODULE = 'user.UserProfile'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/user/login/'
+
+MAINTENANCE_MODE = True
