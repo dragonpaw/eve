@@ -34,30 +34,14 @@
 	    {{ icon32(n) }}
             <span class="name">{{- n.name -}}</span>
             {%- if n.note -%}<br><span class="note">{{- n.note -}}</span>{%- endif -%}
+            {%- if n.buy or n.sell -%}
+                <br>
+                    <span class="index-buy">{{ n.buy }}</span>
+                    <span class="right index-sell">{{ n.sell }}</span>
+            {%- endif -%}
         </a>
     </li>{%- endfor %}
 </ul>
 {% endif %}
 {% endif %}
 {%- endmacro %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
