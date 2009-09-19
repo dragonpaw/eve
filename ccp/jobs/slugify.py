@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-# $Id$
 from django_extensions.management.jobs import BaseJob
-from django.template.defaultfilters import slugify
+from exceptions import Exception
 
 from eve.ccp.models import MarketGroup, Item, Region, Alliance, Group
+from eve.lib.formatting import unique_slug
 
-from exceptions import Exception
 
 class Job(BaseJob):
     help = "Add slug values for all the CCP items."
@@ -18,15 +17,15 @@ class Job(BaseJob):
         self.slugify_group()
         # No longer needed, as the save handler is taking care of it.
         #self.slugify_alliance()
+        print "ADD INDEXES TO ALL SLUG FIELDS NOW!!!!"
 
     def slugify_something(self, things):
         for x in things:
             # print x
             if x.slug:
                 continue
-
             try:
-                x.slug = slugify(x.name)
+                x.slug = unique_slug(x)
                 x.save()
                 print "Slugged: %-20s %s" % (x.slug, x.name)
             except Exception, e:
