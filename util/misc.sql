@@ -36,7 +36,9 @@ call AddColumnUnlessExists('eve', 'mapRegions', 'slug', 'VARCHAR(50) NOT NULL');
 -- Only call these AFTER you slugify the objects.
 -- ALTER TABLE `eve`.`invTypes` ADD UNIQUE INDEX `slug`(`slug`);
 -- ALTER TABLE `eve`.`invMarketGroups` ADD UNIQUE INDEX `slug`(`slug`);
+-- ALTER TABLE `eve`.`invGroups` ADD UNIQUE INDEX `slug`(`slug`);
 -- ALTER TABLE `eve`.`mapRegions` ADD UNIQUE INDEX `slug`(`slug`);
+-- ALTER TABLE `eve`.`ccp_alliance` ADD UNIQUE INDEX `slug`(`slug`);
 
 call AddColumnUnlessExists('eve', 'crpNPCCorporations', 'alliance_id', 'INT(11) NULL DEFAULT NULL');
 call AddColumnUnlessExists('eve', 'crpNPCCorporations', 'last_updated', 'DATETIME NULL DEFAULT NULL');
