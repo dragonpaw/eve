@@ -16,6 +16,10 @@ from lib.log import logging, setup_log
 ROOTDIR = os.path.abspath(os.path.dirname(__file__))
 LOGFILE = "django.log"
 setup_log(os.path.join(ROOTDIR, 'log', user+"-"+LOGFILE))
+if DEBUG:
+    logging.getLogger('').setLevel(logging.DEBUG)
+else:
+    logging.getLogger('').setLevel(logging.INFO)
 
 os.environ['TZ'] = 'UTC'
 
