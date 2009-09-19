@@ -15,6 +15,6 @@ def setup_log(logfile):
         logging.getLogger('').addHandler(handler)
         logging.getLogger('').setLevel(logging.DEBUG)
         logging.getLogger('MARKDOWN').setLevel(logging.INFO)
-        logging.getLogger('eveapi').setLevel(logging.INFO)
+        #logging.getLogger('eveapi').setLevel(logging.INFO)
         logging.set_up_done=True
         logging.debug("Logging started.")

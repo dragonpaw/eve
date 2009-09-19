@@ -7,4 +7,8 @@ mysql_evolutions = [
         "CREATE TABLE `user_character` (\n    `id` integer NOT NULL PRIMARY KEY,\n    `account_id` integer NOT NULL,\n    `name` varchar(100) NOT NULL,\n    `isk` double precision,\n    `training_completion` datetime,\n    `training_level` integer,\n    `training_skill_id` integer,\n    `is_director` bool NOT NULL,\n    `is_pos_monkey` bool NOT NULL,\n    `corporation_id` integer NOT NULL,\n    `user_id` integer NOT NULL,\n    `last_refreshed` datetime NOT NULL,\n    `cached_until` datetime NOT NULL,\n    `refresh_messages` longtext NOT NULL\n)\n;",
         "CREATE TABLE `user_skilllevel` (\n    `id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY,\n    `character_id` integer NOT NULL,\n    `skill_id` integer NOT NULL,\n    `level` integer NOT NULL,\n    `points` integer NOT NULL\n)\n;",
     ],
+    [('fv1:-8553226820598921118','fv1:-4810847124748903936'), # generated 2009-09-19 05:59:53.267385
+        "UPDATE `user_account` SET `refresh_messages` = '' WHERE `refresh_messages` IS NULL;",
+        "ALTER TABLE `user_account` MODIFY COLUMN `refresh_messages` longtext NOT NULL;",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##

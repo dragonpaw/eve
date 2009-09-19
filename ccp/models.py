@@ -164,7 +164,7 @@ class Alliance(Base):
         self.solarsystems.clear()
         self.constellations.clear()
         self.save()
-        super(Alliance, self).delete(force_insert, force_update)
+        super(Alliance, self).delete()
 
 class Attribute(EveBase):
     """This table seems to contain the various attributes of an Item that can

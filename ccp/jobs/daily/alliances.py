@@ -18,7 +18,7 @@ class Job(DailyJob):
 def update_alliance(a):
     try:
         return _update_alliance(a)
-    except Exception as e:
+    except Exception, e:
         return a.allianceID, False, (str(e),)
 
 def _update_alliance(a):
