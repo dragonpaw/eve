@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from django.template import RequestContext
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import Http404
+from django.core import cache
 import re
 
 from eve.lib.formatting import NavigationElement
@@ -92,48 +94,11 @@ def debug_loader(request):
 @staff_member_required
 def memcached(request):
 
-    try:
-        import memcache
-    except ImportError:
-        raise http.Http404
-
-    # get first memcached URI
-    m = re.match(
-        "memcached://([.\w]+:\d+)", settings.CACHE_BACKEND
-    )
-    if not m:
-        raise http.Http404
-
-    host = memcache._Host(m.group(1))
-    host.connect()
-    host.send_cmd("stats")
-
-    class Stats:
-        pass
-
-    stats = Stats()
-
-    while 1:
-        line = host.readline().split(None, 2)
-        if line[0] == "END":
-            break
-        stat, key, value = line
-        try:
-            # convert to native type, if possible
-            value = int(value)
-            if key == "uptime":
-                value = timedelta(seconds=value)
-            elif key == "time":
-                value = datetime.fromtimestamp(value)
-        except ValueError:
-            pass
-        setattr(stats, key, value)
-
-    host.close_socket()
+    stats = cache.cache._cache.get_stats()
 
     return render_to_response(
         'debug_memcached.html', dict(
             stats=stats,
-            hit_rate=100 * stats.get_hits / stats.cmd_get,
+            nav = (debug_nav, debug_memcache_nav),
             time=datetime.now(), # server time
         ))

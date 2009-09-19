@@ -1,19 +1,22 @@
 # extends 'base.html'
 
 # block content
-<h1>cache status</h1>
+<h3>cache status</h3>
 
+# for name, server_stats in stats
+<h4>{{ name }}</h4>
 <ul>
 <li>memory usage:
-    {{ stats.bytes|filesizeformat }}
+    {{ server_stats.bytes|filesizeformat }}
 <li>keys in cache:
-    {{ stats.curr_items }} of {{ stats.total_items }}
+    {{ server_stats.curr_items }} of {{ server_stats.total_items }}
 <li>cache hits:
-    {{ stats.get_hits }} of {{ stats.cmd_get }}:
-    <b>{{ hit_rate }}%</b>
+    {{ server_stats.get_hits }} of {{ server_stats.cmd_get }}:
+    <strong>{{ (100 * server_stats.get_hits|int / server_stats.cmd_get|int)|floatformat }}%</strong>
 <li>cache traffic:
-    {{ stats.bytes_read|filesizeformat }} in,
-    {{ stats.bytes_written|filesizeformat }} out
-<li>uptime: {{ stats.uptime }}
+    {{ server_stats.bytes_read|filesizeformat }} in,
+    {{ server_stats.bytes_written|filesizeformat }} out
+<li>uptime: {{ server_stats.uptime }}
 </ul>
+# endfor
 # endblock
