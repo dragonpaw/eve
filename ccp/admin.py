@@ -12,9 +12,21 @@ class AgentTypeOptions(admin.ModelAdmin):
     search_fields = ('id',)
     list_display = ('id', 'agenttype')
 
+
+class Corporation_Inline(admin.TabularInline):
+    model = Corporation
+    fieldsets = (
+        (None, {
+            'fields': ('id', )
+        }),
+    )
+
 class AllianceOptions(admin.ModelAdmin):
+    inlines = [Corporation_Inline]
     search_fields = ('name', 'ticker')
+    raw_id_fields = ('executor',)
     list_display = ('name', 'executor', 'ticker', 'member_count')
+
 
 class AttributeOptions(admin.ModelAdmin):
     search_fields = ('attributename', 'displayname', 'id')
