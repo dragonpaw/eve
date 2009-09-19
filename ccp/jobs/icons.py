@@ -17,7 +17,7 @@ icon_dirs = (
     'structure',
 )
 
-base_dir = os.path.join(settings.STATIC_DIR, 'ccp-icons')
+base_dir = os.path.join(settings.MEDIA_ROOT, 'ccp-icons')
 
 def die(error):
     raise error
