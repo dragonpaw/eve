@@ -229,14 +229,14 @@ class _RootContext(_Context):
 		if response is None:
 			http = httplib.HTTPConnection(self._host)
 			if kw:
-                                log.debug('Post[%s]: %s', path, urllib.urlencode(kw))
+                                log.debug('Post: http://%s%s?%s', self._host, path, urllib.urlencode(kw))
 				http.request("POST", path, urllib.urlencode(kw), {"Content-type": "application/x-www-form-urlencoded"})
 			else:
-                                log.debug('Get[%s].' % path)
+                                log.debug('Get: http://%s%s.', self._host, path)
 				http.request("GET", path)
 
 			response = http.getresponse()
-                        log.debug('Response: %s', response)
+                        log.debug('Response: %s', response.status)
 			if response.status != 200:
 				if response.status == httplib.NOT_FOUND:
 					raise AttributeError("'%s' not available on API server (404 Not Found)" % path)

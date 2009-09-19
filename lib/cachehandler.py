@@ -1,5 +1,5 @@
 import memcache
-import logging
+from settings import logging
 
 class MyCacheHandler(object):
     def __init__(self, debug=True, throw=False, server=['127.0.0.1:11211']):
