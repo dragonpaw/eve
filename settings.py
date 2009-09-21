@@ -30,8 +30,8 @@ LOGFILE = os.path.join(ROOTDIR, 'log', "%s-django.log" % user)
 
 DEFAULT_FROM_EMAIL='ash@dragonpaw.org'
 
-# Necessary for (mt) Django GridContainer
-#FORCE_SCRIPT_NAME = ""
+# Necessary for fcgi
+FORCE_SCRIPT_NAME = ""
 
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/8.1/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
