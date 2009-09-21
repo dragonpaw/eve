@@ -93,10 +93,13 @@ def transaction_detail(request, type, id=None):
     else:
         transaction = JournalEntry.objects.filter(transaction_id=id, character__user=profile).select_related()
         template = 'journal_detail.html'
-    if transaction.count() == 0:
-        raise Http404
-    else:
+
+    # Pull the first transaction.
+    # (Yes, there can be dupes. Buy something from yourself.)
+    try:
         transaction = transaction[0]
+    except (JournalEntry.DoesNotExist, Transaction.DoesNotExist):
+        raise Http404
 
     return render_to_response(template, {
         'nav': ( transaction_nav, transaction ),
