@@ -1,3 +1,4 @@
+from collections import defaultdict
 from decimal import Decimal
 from datetime import datetime, timedelta
 import time
@@ -327,15 +328,15 @@ class Account(models.Model):
 
     def refresh(self, force=False):
         log = logging.getLogger('eve.user.models.Account.refresh')
-        m = []
-        char_messages = []
         auth = self.api_auth()
+
+        m = defaultdict(list)
         log.debug('Refreshing: %s', self)
-        messages = [{'name':'Account', 'messages':m}]
+
         if self.user.is_stale and not force:
-            m.append('This account has not been accessed recently, so refresh is disabled.')
+            m['Account'].append('This account has not been accessed recently, so refresh is disabled.')
             log.debug('This account has not been accessed recently, so refresh is disabled.')
-            return messages
+            return m
 
         try:
             result = auth.account.Characters()
@@ -351,46 +352,51 @@ class Account(models.Model):
                 character.account = self
                 character.user=self.user
 
-                temp = []
+                # Name might not be set yet.
+                log.info("%s: Account: %s", self, character)
+                temp = character.refresh(force=force)
+                log.debug(temp)
+                m[character.name] = temp
+                m['Account'].append('Account has character: %s' % character.name)
 
-                temp.extend( character.refresh(force=force) )
-                char_messages.append({'name':character.name, 'messages':temp})
-                m.append('Account has character: %s' % character.name)
 
             # Look for deleted characters.
             for character in Character.objects.filter(account__id=self.id).exclude(id__in=ids):
-                m.append("Lost character: %s will be purged." % character.name)
+                m[character.name] = ["Lost character: %s will be purged." % character.name]
+                log.info('%s: Character no longer exists. Deleted.', character)
                 character.delete()
 
         except eveapi.Error, e:
-            if e.message in ('Authentication failure',
-                             'Invalid accountKey provided',
-                             'Failed getting user information',
-                             'Cached API key authentication failure'):
-                m.append("This account has an invalid API key. Deleted.")
+            if str(e) in ('Authentication failure',
+                          'Invalid accountKey provided',
+                          'Failed getting user information',
+                          'Cached API key authentication failure'):
+                m['Account'].append("This account has an invalid API key. Deleted.")
                 log.warn("%s: This account has an invalid API key. Deleted.", self)
                 self.email('user_invalid_api_key.txt', subject='Invalid API key')
                 self.delete()
-                return messages
-            elif e.message == 'Current security level not high enough':
+                return m
+            elif str(e) == 'Current security level not high enough':
                 self.email('user_wrong_api_key.txt', subject='Wrong API key used')
-                m.append("Deleted account '%s', user gave limited key." % self.id)
+                m['Account'].append("Deleted account '%s', user gave limited key." % self.id)
                 log.warn("%s: User gave limited key. Deleted.", self)
                 self.delete()
-                return messages
+                return m
+            elif str(e) == 'Login denied by account status':
+                m['Account'].append("This accout shows as suspended.")
+                log.warn('%s: Account is no longer active')
             else:
-                m.append('EVE API error: %s' % e)
+                m['Account'].append('EVE API error: %s' % e)
                 log.error('%s: EVE API error: %s', self, e)
         except socket.error, e:
-            m.append('EVE API error(socket): %s' % e)
+            m['Account'].append('EVE API error(socket): %s' % e)
             log.error('%s: EVE API error(socket): %s', self, e)
 
-        messages += char_messages
-        self.refresh_messages = pickle.dumps(m)
+        self.refresh_messages = pickle.dumps(m['Account'])
         self.last_refreshed = datetime.now()
         self.save()
         log.debug('%s: Done.', self)
-        return messages
+        return m
 
     def email(self, template, subject=None):
         return self.user.email(template, subject=subject, account=self)
@@ -683,7 +689,7 @@ class Character(models.Model):
                     messages.append("Loaded %d new transactions." % qty)
                     return messages, qty
         except eveapi.Error, e:
-            if str(e).count('Wallet exhausted'):
+            if 'Wallet exhausted' in str(e) or 'Already returned one week of data:' in str(e):
                 messages.append(str(e))
                 return messages, qty
             else:
