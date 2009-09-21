@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import time
 import pickle
 import socket
+import logging
 
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
@@ -325,12 +326,15 @@ class Account(models.Model):
         return auth
 
     def refresh(self, force=False):
+        log = logging.getLogger('eve.user.models.Account.refresh')
         m = []
         char_messages = []
         auth = self.api_auth()
+        log.debug('Refreshing: %s', self)
         messages = [{'name':'Account', 'messages':m}]
         if self.user.is_stale and not force:
             m.append('This account has not been accessed recently, so refresh is disabled.')
+            log.debug('This account has not been accessed recently, so refresh is disabled.')
             return messages
 
         try:
@@ -339,7 +343,6 @@ class Account(models.Model):
             ids = []
             for c in result.characters:
                 ids.append(c.characterID)
-
 
                 try:
                     character = Character.objects.get(id = c.characterID)
@@ -365,24 +368,28 @@ class Account(models.Model):
                              'Failed getting user information',
                              'Cached API key authentication failure'):
                 m.append("This account has an invalid API key. Deleted.")
+                log.warn("%s: This account has an invalid API key. Deleted.", self)
                 self.email('user_invalid_api_key.txt', subject='Invalid API key')
                 self.delete()
                 return messages
             elif e.message == 'Current security level not high enough':
                 self.email('user_wrong_api_key.txt', subject='Wrong API key used')
                 m.append("Deleted account '%s', user gave limited key." % self.id)
+                log.warn("%s: User gave limited key. Deleted.", self)
                 self.delete()
                 return messages
             else:
                 m.append('EVE API error: %s' % e)
+                log.error('%s: EVE API error: %s', self, e)
         except socket.error, e:
             m.append('EVE API error(socket): %s' % e)
+            log.error('%s: EVE API error(socket): %s', self, e)
 
         messages += char_messages
         self.refresh_messages = pickle.dumps(m)
         self.last_refreshed = datetime.now()
         self.save()
-
+        log.debug('%s: Done.', self)
         return messages
 
     def email(self, template, subject=None):
@@ -753,8 +760,7 @@ class Character(models.Model):
                 messages.append('Loaded %d new journal entries.' % qty)
             return messages
         except eveapi.Error, e:
-            print "ERROR!"
-            if str(e).count('Wallet exhausted'):
+            if 'Wallet exhausted' in str(e):
                 messages.append(str(e))
                 return messages
             else:

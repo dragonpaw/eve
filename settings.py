@@ -1,25 +1,17 @@
 # Django settings for eve project.
-# $Id$
 
 from database_settings import *
-import sys
 import deseb
+import logging, logging.handlers
 import os
+import sys
 try:
     import pwd
     user = pwd.getpwuid(os.getuid())[0]
 except ImportError:
     user = 'none'
 
-from lib.log import logging, setup_log
-
 ROOTDIR = os.path.abspath(os.path.dirname(__file__))
-LOGFILE = "django.log"
-setup_log(os.path.join(ROOTDIR, 'log', user+"-"+LOGFILE))
-if DEBUG:
-    logging.getLogger('').setLevel(logging.DEBUG)
-else:
-    logging.getLogger('').setLevel(logging.INFO)
 
 os.environ['TZ'] = 'UTC'
 
@@ -33,6 +25,8 @@ INTERNAL_IPS = ('127.0.0.1', '10.0.2.2')
 MANAGERS = ADMINS
 
 TEMPLATE_DEBUG = False
+
+LOGFILE = os.path.join(ROOTDIR, 'log', "%s-django.log" % user)
 
 DEFAULT_FROM_EMAIL='ash@dragonpaw.org'
 
@@ -144,3 +138,30 @@ LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/user/login/'
 
 MAINTENANCE_MODE = True
+
+# Big ugly logging setup handler.
+if len(logging.getLogger('').handlers) == 0:
+    handler = logging.handlers.RotatingFileHandler(
+        LOGFILE, maxBytes=500000, backupCount=2)
+    handler.setLevel(logging.DEBUG)
+    # set a format which is simpler for console use
+    formatter = logging.Formatter('%(asctime)s %(name)-35s: %(levelname)-8s %(message)s')
+    handler.setFormatter(formatter)
+
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(handler)
+    logging.getLogger('MARKDOWN').setLevel(logging.INFO)
+    #logging.getLogger('eveapi').setLevel(logging.INFO)
+    logging.set_up_done=True
+    logging.debug("Logging started.")
+
+    if DEBUG:
+        logging.getLogger('').setLevel(logging.DEBUG)
+    else:
+        logging.getLogger('').setLevel(logging.INFO)
+        email = logging.handlers.SMTPHandler(EMAIL_HOST,
+                                             DEFAULT_FROM_EMAIL,
+                                             [x[1] for x in ADMINS],
+                                             'EVE Widget Error!')
+        email.setLevel(logging.ERROR)
+        logging.getLogger('').addHandler(email)
