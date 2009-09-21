@@ -1,53 +1,37 @@
-from django_extensions.management.jobs import BaseJob
+from eve.lib.log import BaseJob
 import traceback
 
 from eve.lib import eveapi
-from eve.settings import DEBUG
 from eve.user.models import UserProfile
-
-#from Queue import Queue
-#import workerpool
 
 class Job(BaseJob):
     help = "Reload all of the alliances and member corporations."
     when = '5min'
 
-    def execute(self):
-        update_users()
+    def execute(self, user=None, force=False):
+        messages = []
+        api = eveapi.get_api()
+        log = self.logger()
 
-def update_users(user=None, force=False):
-    messages = []
-    api = eveapi.get_api()
+        if user:
+            log.info("Only loading characters for: %s", user)
+            users = UserProfile.objects.filter(user__username=user)
+        else:
+            # All the non-stale users.
+            q = UserProfile.objects.order_by('user__username')
+            users = [u for u in q if not u.is_stale]
 
-    if user:
-        print("Only loading characters for: %s" % user)
-        users = UserProfile.objects.filter(user__username=user)
-    else:
-        # All the non-stale users.
-        q = UserProfile.objects.order_by('user__username')
-        users = [u for u in q if not u.is_stale]
+        if force:
+            log.info("Forcing reload, cache times will be ignored.")
 
-    if force:
-        print("Forcing reload, cache times will be ignored.")
-
-    for u in users:
-        print  "-" * 77
-        print "User: %s" % u
-        error = False
-        m = []
-        for a in u.accounts.all():
-            print "  " + ('- ' * 38)
-            print "  Account: %s" % a.id
-            try:
-                messages = a.refresh(force=force)
-            except Exception, e:
-                m.append(traceback.format_exc())
-                if DEBUG:
-                    raise
-            for x in messages:
-                print "  -- %s" % x['name']
-                for msg in x['messages']:
-                    print "    " + msg
-            if error:
-                print "    Fatal error occured."
-                print "    " + error
+        for u in users:
+            log.info("User: %s", u)
+            m = []
+            for a in u.accounts.all():
+                log.info("Account: %s", a.id)
+                try:
+                    messages = a.refresh(force=force)
+                except Exception, e:
+                    text = traceback.format_exc()
+                    m.append(text)
+                    log.error(text)
