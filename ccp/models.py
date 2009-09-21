@@ -1180,7 +1180,7 @@ class ItemAttribute(EveBase):
         name = self.attribute.attributename
 
         if name.startswith('chargeGroup') or name == 'launcherGroup':
-            g = Group.objects.get(pk=self.valueint)
+            g = Group.objects.get(pk = int(self.value) )
         # There are no default icons on required skills. :(
         elif name == 'requiredSkill1':
             g = get_graphic('50_13')
@@ -1188,8 +1188,10 @@ class ItemAttribute(EveBase):
             g = get_graphic('50_11')
         elif name == 'requiredSkill3':
             g = get_graphic('50_14')
+        elif name == 'reprocessingSkillType':
+            g = get_graphic('17_01')
         elif name in ('primaryAttribute','secondaryAttribute'):
-            g = Attribute.objects.get(pk=self.valueint).graphic
+            g = Attribute.objects.get(pk=int(self.value)).graphic
         elif self.attribute.graphic:
             g = self.attribute.graphic
         else:
@@ -1220,18 +1222,22 @@ class ItemAttribute(EveBase):
                 4: 'X-Large'
             }[int(self.value)] # Sometimes it's a float. Don't ask me why.
         elif self.attribute.attributename.startswith('requiredSkill'):
+            try:
+                level = int( self.item.attribute_by_name('%sLevel' % self.attribute.attributename).value )
+            except ItemAttribute.DoesNotExist:
+                level = 1
             value = "%s %s" % (
-                Item.objects.get( pk=int(self.value) ),
-                int( self.item.attribute_by_name('%sLevel' % self.attribute.attributename).value ),
+                Item.objects.get(pk=int(self.value)),
+                level,
             )
         elif unit == 'groupID':
-            value = Group.objects.get(pk=self.valueint)
+            value = Group.objects.get(pk=int(self.value))
         elif unit == 'Milliseconds' and self.value > 1000:
             value = time(self.value/1000.0)
         elif unit == 'typeID':
-            value = Item.objects.get(pk=self.valueint).name
+            value = Item.objects.get(pk=int(self.value)).name
         elif unit == 'attributeID':
-            value = Attribute.objects.get(pk=self.valueint).name
+            value = Attribute.objects.get(pk=int(self.value)).name
         elif unit == 'Inverse Absolute Percent':
             value = "%d %%" % int((1 - self.value) * 100)
         else:
