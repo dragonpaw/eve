@@ -610,7 +610,7 @@ class Character(models.Model):
         return ['Wallet balance: %s ISK' % comma(self.isk)]
 
     def refresh_skills(self):
-        from eve.ccp.models import Item
+        log = logging.getLogger('eve.user.models.Character.refresh_skills')
 
         me = self.api_character()
         skills = 0
@@ -634,20 +634,12 @@ class Character(models.Model):
 
         sheet = me.CharacterSheet()
         for skill in sheet.skills:
-            #trained = sheet.skills.Get(d_skill.id, False)
-            #if trained:
-                skills += 1
-                item = Item.objects.get(id=skill.typeID)
-                #print "Found skill: %s (%s) %s" % (skill.typeID, skill.skillpoints, skill.level)
-                try:
-                    obj = SkillLevel.objects.get(character = self, skill = item)
-                    obj.points = skill.skillpoints
-                    obj.level = skill.level
-                except SkillLevel.DoesNotExist:
-                    obj = SkillLevel(character = self, skill = item,
-                                     level = skill.level, points = skill.skillpoints)
-                points += obj.points
-                obj.save()
+            skills += 1
+            obj, _ = self.skills.get_or_create(skill__pk = skill.typeID)
+            obj.points = skill.skillpoints
+            obj.level = skill.level
+            points += obj.points
+            obj.save()
 
         messages.append('Skills: %d, Total SP: %0.2fm' % (skills, points/1000000.0))
         return messages
@@ -794,11 +786,12 @@ class SkillLevel(models.Model):
     character = models.ForeignKey(Character, related_name='skills')
     skill = models.ForeignKey('ccp.Item',
               limit_choices_to = {'group__category__name__exact': 'Skill'})
-    level = models.IntegerField()
-    points = models.IntegerField()
+    level = models.IntegerField(default=0)
+    points = models.IntegerField(default=0)
 
     class Meta:
         ordering = ('character', 'skill')
+        unique_together = (('character', 'skill'),)
 
     def __unicode__(self):
         return u"%s: %s" % (self.skill.name, self.level)

@@ -1,92 +1,68 @@
 #!/usr/bin/env python
 
-from django_extensions.management.jobs import BaseJob
+from eve.lib.log import BaseJob
 import traceback
 
 from eve.lib import eveapi
-from eve.settings import DEBUG
-from eve.user.models import UserProfile
-from eve.pos.models import PlayerStation
-from eve.ccp.models import Corporation, Name
-
-#from Queue import Queue
-#import workerpool
+from eve.ccp.models import Corporation
 
 class Job(BaseJob):
     help = "Reload all of the player-owned structures."
     when = '5min'
 
+    # Change to ignore POS timers and refresh them all.
+    force = False
+
     def execute(self):
-        update_poses()
+        messages = []
+        api = eveapi.get_api()
+        log = self.logger()
 
-def get_director(corp):
-    for c in corp.characters.all():
-        if c.is_director:
-            return c
-    return None
-
-def update_poses(corp=None, force=False):
-    messages = []
-    api = eveapi.get_api()
-
-    if corp:
-        name = Name.objects.get(name=corp)
-        corps = [ Corporation.objects.get(id=name.id) ]
-    else:
         # All the player corps.
         corps = [c for c in Corporation.objects.all() if c.is_player_corp]
 
-    if force:
-        print("Forcing reload, cache times will be ignored.")
-
-    for c in corps:
-
-        # Skip corps that we don't have a director for.
-        # (Which is actually like 99%, as we have all alliance members as corps)
-        director = get_director(c)
-        if director is None:
-            continue
-        else:
+        for c in corps:
+            # Skip corps that we don't have a director for.
+            # (Which is actually like 99%, as we have all alliance members as corps)
             try:
-                update_corp_pos(c, director, force)
+                director = c.directors()[0]
+                log.debug("Corp: %s", corp)
+                log.debug('%s: Director: %s.', c, director)
+            except IndexError:
+                director = None
+                log.debug('%s: No director avilable.', c)
+                if c.pos.count():
+                    log.warn("%s: Can't refresh. No director found. Purging POSes.")
+                    c.pos.delete()
+                # Nothing else do be done.
+                continue
+
+            try:
+                ids = set()
+                api = director.api_corporation()
+                for record in api.StarbaseList().starbases:
+                    ids.add(record.itemID)
+                    try:
+                        pos = c.pos.get(id=record.itemID)
+                    except PlayerStation.DoesNotExist:
+                        pos = c.pos.create(id=record.itemID)
+
+                    messages = pos.refresh(record, api, corp=corp, force=self.force)
+                    log.debug('%s: Messages: %s', pos, messages)
+
+            except eveapi.Error, e:
+                if str(e) in ( 'Login denied by account status',
+                               'Character must be a Director or CEO',
+                               'Authentication failure' ):
+                    director.is_director = False
+                    director.save()
+                    log.info("%s: Marked as no longer a director, %s", director, e)
+                else:
+                    raise e
             except Exception, e:
-                print "ERROR refreshing corporation '%s': %s" % (corp, e)
-                print '-'*60
-                traceback.print_exc()
-                print '-'*60
-
-def update_corp_pos(corp, director, force=None):
-        print  "-" * 77
-        print "Corp: %s" % corp
-        print " Director: %s" % director
-
-        try:
-            ids = []
-            api = director.api_corporation()
-            for record in api.StarbaseList().starbases:
-                ids.append(record.itemID)
-                try:
-                    station = PlayerStation.objects.get(id=record.itemID)
-                except PlayerStation.DoesNotExist:
-                    station = PlayerStation(id=record.itemID)
-
-                messages = station.refresh(record, api, corp=corp, force=force)
-                #print "  %s:" % station
-                for m in messages:
-                    print "  " + m
+                log.error(traceback.format_exc())
 
             # Look for POSes that got taken down.
-            for pos in PlayerStation.objects.filter(corporation=corp).exclude(id__in=ids):
-                print "  Removed POS: %s will be purged." % pos.moon
+            for pos in c.pos.exclude(id__in=ids):
+                log.info("%s removed. POS will be purged.", pos.moon)
                 pos.delete()
-        except eveapi.Error, e:
-            if str(e) == 'Login denied by account status':
-                director.is_director = False
-                director.save()
-                print "  Marked '%s' as no longer a director, as their account is disabled." % director
-            elif str(e) == 'Character must be a Director or CEO':
-                director.is_director = False
-                director.save()
-                print "  Marked '%s' as no longer a director, as the API says so." % director
-            else:
-                raise e
