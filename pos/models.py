@@ -219,7 +219,7 @@ class PlayerStation(models.Model):
             return True
 
     def refresh(self, record, api, corp=None, force=False):
-        log = logging.getLogger('pos.refresh')
+        log = logging.getLogger('eve.pos.PlaterStation.refresh')
         messages = []
 
         try:
@@ -239,7 +239,7 @@ class PlayerStation(models.Model):
 
         log.info('Reloading: %s' % self.id)
         messages.append("Reloading: POS: %s at %s." % (tower, moon))
-
+        
         detail = api.StarbaseDetail(itemID=record.itemID)
 
         self.tower = tower
