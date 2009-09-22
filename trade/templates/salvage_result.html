@@ -2,15 +2,19 @@
 
 # block content
 <table>
-    <tr><th>Name</th><th>Large</th><th>Medium</th><th>Small</th></tr>
+    <tr><th>Name</th><th class="right">Large</th><th class="right">Medium</th><th class="right">Small</th></tr>
 # for short_name in rigs|sort
     <tr>
         <td class="name">{{ short_name }}</td>
         # for size_class in ('Large', 'Medium', 'Small')
+				    # if size_class in rigs[short_name]
             <td><a href="{{rigs[short_name][size_class].item.get_absolute_url()}}">
                 {{ rigs[short_name][size_class].quantity }}
             </a></td>
-        # endfor
+				    # else
+				      <td></td>
+						# endif	
+				# endfor
     </tr>
 # endfor
 </table>

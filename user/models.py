@@ -17,6 +17,7 @@ from eve.lib.jfilters import filter_comma as comma
 from eve.trade.models import Transaction, JournalEntry, MarketIndexValue, MarketIndex
 from eve.pos.models import PlayerStation
 from eve.lib.decorators import cachedmethod
+from eve.ccp.models import Item
 
 API = eveapi.get_api()
 

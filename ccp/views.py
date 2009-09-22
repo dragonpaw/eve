@@ -125,7 +125,7 @@ def region(request, slug):
 
 #@cache_page(60 * 60 * 2)
 def region_list(request):
-    q = Q(faction__isnull=True) | ~Q(faction__name='Jove Empire')
+    q = ( Q(faction__isnull=True) | ~Q(faction__name='Jove Empire') ) & ~Q(slug__startswith='unknown')
     regions = Region.objects.select_related('constellation').filter(q)
 
     return render_to_response('regions.html', {
@@ -230,7 +230,8 @@ def item(request, slug, days=30):
                                                              }
         materials['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, my_blueprint.me)
         # We only show our manufacturing if we have the blueprint.
-        del materials['titles']['Manufacturing']
+        if 'Manufacturing' in materials['titles']:
+            del materials['titles']['Manufacturing']
 
     #-------------------------------------------------------------------------
     for key, value in materials['titles'].items():

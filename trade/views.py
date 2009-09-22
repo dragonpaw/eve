@@ -111,7 +111,7 @@ def blueprint_list(request):
     d = {}
     d['nav'] = [ blueprint_nav ]
     d['user'] = request.user
-    d['blueprints'] = request.user.get_profile().blueprints.select_related().order_by('ccp_item.name')
+    d['blueprints'] = request.user.get_profile().blueprints.select_related().order_by('blueprint__name')
 
     return render_to_response('blueprint_list.html', d, request)
 
@@ -181,7 +181,7 @@ def market_index_detail(request, name):
     d = {}
     d['nav'] = [ index_nav, index ]
     d['index'] = index
-    d['values'] = index.items.select_related().order_by('ccp_item.name')
+    d['values'] = index.items.select_related().order_by('item__name')
 
     return render_to_response('index_detail.html', d, request)
 

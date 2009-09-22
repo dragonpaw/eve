@@ -116,13 +116,18 @@ def cachedmethod(length=5, cache_key=None):
         def wrapper(self, *args, **kwargs):
             from django.core.cache import cache
 
-            key = "%s.%s(pk=%d).%s:" % (func.__module__,
+            pk = getattr(self, 'pk', None)
+            if pk:
+                key = "%s.%s(pk=%d).%s:" % (func.__module__,
                                         self.__class__.__name__,
                                         self.pk,
                                         func.__name__)
+            else:
+               key = "%s.%s(-none-).%s" % (func.__module__, self.__class__.__name__, func.__name__)
+
             if cache_key:
                 key += cache_key % self.__dict__
-            else:
+            elif len(args) or len(kwargs):
                 raw = [args, kwargs]
                 pickled = pickle.dumps(raw, protocol=pickle.HIGHEST_PROTOCOL)
                 key += hashlib.md5(pickled).hexdigest()
