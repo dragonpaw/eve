@@ -175,6 +175,7 @@ class PlayerStation(models.Model):
             return max(remaining, timedelta(0))
 
     def setup_fuel_supply(self):
+        log = logging.getLogger('eve.pos.model.PlayerStation.setup_fuel_supply')
         for f in self.tower.fuel.all():
             if f.faction:
                 if f.faction != self.solarsystem.faction:
@@ -184,6 +185,7 @@ class PlayerStation(models.Model):
             try:
                 self.fuel.get(station=self, type=f.type)
             except FuelSupply.DoesNotExist:
+                log.debug('%s: Creating fuel record for type: %s', self, f)
                 self.fuel.create(
                     type            = f.type,
                     quantity        = 0,
@@ -315,6 +317,7 @@ class PlayerStation(models.Model):
 
         # Now, the fuel.
         for fuel_type in detail.fuel:
+            log.debug("Fuel type: %s", fuel_type)
             type = Item.objects.get(id=fuel_type.typeID)
             fuel = self.fuel.get(type=type)
             purpose = fuel.purpose

@@ -5,6 +5,7 @@ import traceback
 
 from eve.lib import eveapi
 from eve.ccp.models import Corporation
+from eve.pos.models import PlayerStation
 
 class Job(BaseJob):
     help = "Reload all of the player-owned structures."
@@ -26,14 +27,14 @@ class Job(BaseJob):
             # (Which is actually like 99%, as we have all alliance members as corps)
             try:
                 director = c.directors()[0]
-                log.debug("Corp: %s", corp)
+                log.debug("Corp: %s", c)
                 log.debug('%s: Director: %s.', c, director)
             except IndexError:
                 director = None
                 log.debug('%s: No director avilable.', c)
                 if c.pos.count():
                     log.warn("%s: Can't refresh. No director found. Purging POSes.")
-                    c.pos.delete()
+                    c.pos.all().delete()
                 # Nothing else do be done.
                 continue
 
@@ -45,9 +46,9 @@ class Job(BaseJob):
                     try:
                         pos = c.pos.get(id=record.itemID)
                     except PlayerStation.DoesNotExist:
-                        pos = c.pos.create(id=record.itemID)
+                        pos = PlayerStation(id=record.itemID)
 
-                    messages = pos.refresh(record, api, corp=corp, force=self.force)
+                    messages = pos.refresh(record, api, corp=c, force=self.force)
                     log.debug('%s: Messages: %s', pos, messages)
 
             except eveapi.Error, e:
@@ -57,6 +58,9 @@ class Job(BaseJob):
                     director.is_director = False
                     director.save()
                     log.info("%s: Marked as no longer a director, %s", director, e)
+                elif 'EVE backend database temporarily disabled' in str(e):
+                    log.warn('EVE API taken offline by CCP. No refresh available.')
+                    return
                 else:
                     raise e
             except Exception, e:

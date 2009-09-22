@@ -32,6 +32,10 @@ class Job(BaseJob):
                 try:
                     messages = a.refresh(force=force)
                 except Exception, e:
-                    text = traceback.format_exc()
-                    m.append(text)
-                    log.error(text)
+                    if 'EVE backend database temporarily disabled' in str(e):
+                        log.warn('EVE API taken offline by CCP. No refresh today.')
+                        return False
+                    else:
+                        text = traceback.format_exc()
+                        m.append(text)
+                        log.error(text)
