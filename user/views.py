@@ -81,7 +81,10 @@ def account_refresh(request, id):
     if account.user != request.user.get_profile():
         raise Http404
 
-    account.refresh()
+    try:
+        account.refresh()
+    except:
+        pass
     redirect(account_log)
 
 #@login_required
