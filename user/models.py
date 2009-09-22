@@ -363,7 +363,7 @@ class Account(models.Model):
 
             # Look for deleted characters.
             for character in Character.objects.filter(account__id=self.id).exclude(id__in=ids):
-                m[character.name] = ["Lost character: %s will be purged." % character.name]
+                m['Account'].append("Lost character: %s will be purged." % character.name)
                 log.info('%s: Character no longer exists. Deleted.', character)
                 character.delete()
 
@@ -386,6 +386,9 @@ class Account(models.Model):
             elif str(e) == 'Login denied by account status':
                 m['Account'].append("This accout shows as suspended.")
                 log.warn('%s: Account is no longer active')
+            elif str(e) == 'EVE backend database temporarily disabled':
+                m['Account'].append('The EVE API has been taken offline by CCP.')
+                log.warn('EVE API disabled.')
             else:
                 m['Account'].append('EVE API error: %s' % e)
                 log.error('%s: EVE API error: %s', self, e)
