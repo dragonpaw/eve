@@ -72,12 +72,12 @@ from calendar import timegm
 #-----------------------------------------------------------------------------
 # Added by Ash for ease of use.
 from eve.lib.cachehandler import MyCacheHandler
-from eve.settings import DEBUG, logging
-log = logging.getLogger('eveapi')
+import logging
+log = logging.getLogger('eve.lib.eveapi')
 
-def get_api(debug=DEBUG, throw=False):
+def get_api():
         # Debug disabled for now.
-        cache = MyCacheHandler(debug=debug, throw=throw)
+        cache = MyCacheHandler()
         api = EVEAPIConnection(cacheHandler=cache).context(version=2)
         return api
 
