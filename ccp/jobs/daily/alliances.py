@@ -16,10 +16,12 @@ class Job(BaseJob):
         start_time = datetime.utcnow()
 
         alliance_ids = set()
+        alliance_rows = list()
 
         try:
-            for id in api.eve.AllianceList().alliances:
-                alliance_ids.add( id )
+            for a in api.eve.AllianceList().alliances:
+                alliance_ids.add( a.allianceID )
+                alliance_rows.append(a)
         except Exception, e:
             if str(e) == 'EVE backend database temporarily disabled':
                 self.log.warn('EVE API taken offline by CCP.')
@@ -27,20 +29,32 @@ class Job(BaseJob):
                 self.log.error('Error refreshing alliances: %s', e)
             return
 
-        for id in alliance_ids:
+        for row in alliance_rows:
             try:
-                self.update_alliance(id)
+                self.update_alliance(row)
             except Exception, e:
                 self.log.error('Unhandled exception in alliance refresh: %s', e)
 
         # And now, remove all of the dead alliances.
         for id in [x[0] for x in Alliance.objects.values_list('pk')]:
             if id not in alliance_ids:
+                a = Alliance.objects.get(id=id)
                 self.log.info('Removing defunct alliance: %s', a)
-                Alliance.objects.filter(pk=id).delete()
+                a.delete()
 
         self.log.debug("Elapsed: %s", datetime.utcnow() - start_time)
 
+    def corp_gor(self, id):
+        '''gor stands for Get_or_refresh'''
+        try:
+            corp = Corporation.objects.get(id=id)
+        except Corporation.DoesNotExist:
+            self.log.debug('Adding new corp: %d', id)
+            corp = Corporation(id=id)
+            messages =  corp.refresh()
+            corp.messages = messages
+            self.log.debug('Corp messgaes: %s', messages)
+        return corp
 
     def update_alliance(self, a):
         self.log.debug('Updating alliance: %s', a.name)
@@ -51,16 +65,9 @@ class Job(BaseJob):
             alliance = Alliance(id=a.allianceID, name=a.name, ticker=a.shortName)
 
         # Check the executor corp, creating if needed.
-        corp_id = a.executorCorpID
-        try:
-            corp = Corporation.objects.get(id=corp_id)
-        except Corporation.DoesNotExist:
-            self.log.debug('Adding new corp: %d', corp_id)
-            corp = Corporation(id=corp_id)
-            messages =  corp.refresh()
-            log.debug('Corp messgaes: %s', messages)
-            if corp.refresh_failed is True:
-                return False
+        corp = self.corp_gor(a.executorCorpID)
+        if corp.refresh_failed is True:
+            return False
 
         alliance.executor = corp
         alliance.member_count = a.memberCount
@@ -69,14 +76,8 @@ class Job(BaseJob):
         # Refresh all the member corps too. (This includes the exec.)
         members = set()
         for c in a.memberCorporations:
-            corp_id = c.corporationID
-            members.add(corp_id)
-            try:
-                corp = Corporation.objects.get(id=corp_id)
-            except Corporation.DoesNotExist:
-                messages.append('Refreshing new corp: %d' % corp_id)
-                corp = Corporation(id=corp_id)
-                messages.extend( corp.refresh() )
+            members.add(c.corporationID)
+            corp = self.corp_gor(c.corporationID)
             if corp.alliance != alliance:
                 corp.alliance = alliance
                 corp.save()

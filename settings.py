@@ -141,6 +141,8 @@ MAINTENANCE_MODE = True
 
 # Big ugly logging setup handler.
 if len(logging.getLogger('').handlers) == 0:
+    root = logging.getLogger('')
+
     handler = logging.handlers.RotatingFileHandler(
         LOGFILE, maxBytes=500000, backupCount=2)
     handler.setLevel(logging.DEBUG)
@@ -149,14 +151,14 @@ if len(logging.getLogger('').handlers) == 0:
     handler.setFormatter(formatter)
 
     # add the handler to the root logger
-    logging.getLogger('').addHandler(handler)
-    logging.getLogger('MARKDOWN').setLevel(logging.INFO)
-    #logging.getLogger('eveapi').setLevel(logging.INFO)
-    logging.set_up_done=True
-    logging.debug("Logging started.")
+    root.addHandler(handler)
+    #logging.getLogger('MARKDOWN').setLevel(logging.INFO)
 
     if DEBUG:
-        logging.getLogger('').setLevel(logging.DEBUG)
+        root.setLevel(logging.DEBUG)
+        stream = logging.StreamHandler()
+        stream.setLevel(logging.DEBUG)
+        root.addHandler( stream )
     else:
         logging.getLogger('').setLevel(logging.INFO)
         email = logging.handlers.SMTPHandler(EMAIL_HOST,
@@ -165,3 +167,6 @@ if len(logging.getLogger('').handlers) == 0:
                                              'EVE Widget Error!')
         email.setLevel(logging.ERROR)
         logging.getLogger('').addHandler(email)
+
+    logging.set_up_done=True
+    logging.debug("Logging started.")

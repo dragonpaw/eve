@@ -483,6 +483,8 @@ class Corporation(EveBase):
     last_updated = models.DateTimeField(null=True)
     cached_until = models.DateTimeField(null=True)
 
+    refresh_failed = None
+
     class Meta(EveBase.Meta):
         ordering = ('id',)
         db_table = 'crpNPCCorporations'
@@ -574,8 +576,7 @@ class Corporation(EveBase):
         self.updatelogo()
 
         return messages
-#
-#
+
 #class CorporationActivity(EveBase):
 #    id = models.IntegerField(primary_key=True, db_column='activityID')
 #    name = null_fields.Char(max_length=100, db_column='activityname')
