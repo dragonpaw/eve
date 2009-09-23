@@ -385,7 +385,7 @@ class Account(models.Model):
                 return m
             elif str(e) == 'Login denied by account status':
                 m['Account'].append("This accout shows as suspended.")
-                log.warn('%s: Account is no longer active')
+                log.warn('%s: Account is no longer active', self)
             elif str(e) == 'EVE backend database temporarily disabled':
                 m['Account'].append('The EVE API has been taken offline by CCP.')
                 log.warn('EVE API disabled.')
@@ -644,7 +644,7 @@ class Character(models.Model):
 
             skill = Item.objects.get(pk=skill.typeID)
             obj, _ = self.skills.get_or_create(skill=skill)
-            
+
             if obj.points != skill.skillpoints or obj.level != skill.level:
                 obj.points = skill.skillpoints
                 obj.level = skill.level
