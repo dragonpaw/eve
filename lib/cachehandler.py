@@ -2,11 +2,9 @@ import memcache
 from settings import logging
 
 class MyCacheHandler(object):
-    def __init__(self, debug=True, throw=False, server=['127.0.0.1:11211']):
-        self.debug = debug
-        self.throw = throw # depricated.
-        self.mc = memcache.Client(server, debug=debug)
-        self.log = logging.getLogger('eveapi.CacheHandler')
+    def __init__(self, server=['127.0.0.1:11211']):
+        self.mc = memcache.Client(server, debug=1)
+        self.log = logging.getLogger('eve.lib.cachehandler.MyCacheHandler')
 
     def key(self, path, params):
         key = path + '?' + '&'.join([ "%s=%s" % (x[0], x[1]) for x in params.items() if x[0].lower() != 'apikey'])
@@ -29,11 +27,15 @@ class MyCacheHandler(object):
     def store(self, host, path, params, doc, obj):
         # eveapi is asking us to cache an item
         key = self.key(path, params)
+        self.log.debug('Document length for cahing: %d', len(doc))
 
         time = obj.cachedUntil - obj.currentTime or 300
         time = max(time, 300) # Make sure we alwyas cache at least a little.
         # Cache time of 0 would mean 'forever', which we don't want.
-        self.log.debug('Cached (%d seconds)' % time)
 
-        self.mc.set(key, doc, time=time)
-        return True
+        ret = self.mc.set(key, doc, time=time, min_compress_len=100000)
+        if ret:
+            self.log.debug('Cached (%d seconds)' % time)
+        else:
+            self.log.warn('Cache failed for key: "%s"', key)
+        return ret
