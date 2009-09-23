@@ -91,6 +91,8 @@ class PlayerStation(models.Model):
     sov_fuel_rate = models.DecimalField(default=1, max_digits=6, decimal_places=4)
     sov_level = models.CharField(max_length=20, default='None')
 
+
+
     class Meta:
         ordering = ['moon']
 
@@ -176,6 +178,7 @@ class PlayerStation(models.Model):
 
     def setup_fuel_supply(self):
         log = logging.getLogger('eve.pos.model.PlayerStation.setup_fuel_supply')
+        log.debug('Invoked.')
         for f in self.tower.fuel.all():
             if f.faction:
                 if f.faction != self.solarsystem.faction:
@@ -184,8 +187,9 @@ class PlayerStation(models.Model):
                     continue
             try:
                 self.fuel.get(station=self, type=f.type)
+                log.debug('%s: Already exists: %s', self, f)
             except FuelSupply.DoesNotExist:
-                log.debug('%s: Creating fuel record for type: %s', self, f)
+                log.info('%s: Creating fuel record for type: %s', self, f)
                 self.fuel.create(
                     type            = f.type,
                     quantity        = 0,
@@ -221,7 +225,7 @@ class PlayerStation(models.Model):
             return True
 
     def refresh(self, record, api, corp=None, force=False):
-        log = logging.getLogger('eve.pos.PlaterStation.refresh')
+        log = logging.getLogger('eve.pos.model.PlayerStation.refresh')
         messages = []
 
         try:
@@ -241,7 +245,7 @@ class PlayerStation(models.Model):
 
         log.info('Reloading: %s' % self.id)
         messages.append("Reloading: POS: %s at %s." % (tower, moon))
-        
+
         detail = api.StarbaseDetail(itemID=record.itemID)
 
         self.tower = tower
@@ -264,7 +268,6 @@ class PlayerStation(models.Model):
         if self.state_time and state_time:
             assert isinstance(state_time, datetime)
             assert isinstance(self.state_time, datetime)
-            #print "ID:", self.id, "s.st:", self.state_time, "st", state_time
             delta = state_time - self.state_time
             hours_since_update = (delta.seconds / 60**2) + (delta.days * 24)
             log.debug('Time then: %s, Now: %s' % (self.state_time, state_time))
@@ -319,9 +322,14 @@ class PlayerStation(models.Model):
         for fuel_type in detail.fuel:
             log.debug("Fuel type: %s", fuel_type)
             type = Item.objects.get(id=fuel_type.typeID)
-            fuel = self.fuel.get(type=type)
-            purpose = fuel.purpose
+            try:
+                fuel = self.fuel.get(type=type)
+            except FuelSupply.DoesNotExist:
+                messages.append('POS fuel "%s" is loaded in tower, but not a used type for this POS.' % type)
+                log.info('%s: Un-needed fuel loaded: %s', self, type)
+                continue
 
+            purpose = fuel.purpose
             messages.append(' %s (%s): %s -> %s' % (type.name, purpose, fuel.quantity, fuel_type.quantity) )
             log.info('%s: %s (%s): %s -> %s (%s hours)' % (self.id, type.name, purpose, fuel.quantity, fuel_type.quantity, hours_since_update) )
 
@@ -385,6 +393,7 @@ class FuelSupply(models.Model):
 
     class Meta:
         ordering = ['type']
+        unique_together = (('station', 'type'),)
 
     def __unicode__(self):
         return u"%s: %s (%d)" % (self.station, self.type, self.quantity)
