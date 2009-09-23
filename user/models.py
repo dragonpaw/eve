@@ -638,16 +638,16 @@ class Character(models.Model):
         self.save()
 
         sheet = me.CharacterSheet()
-        for skill in sheet.skills:
+        for row in sheet.skills:
             skills += 1
-            points += skill.skillpoints
+            points += row.skillpoints
 
             skill = Item.objects.get(pk=skill.typeID)
             obj, _ = self.skills.get_or_create(skill=skill)
 
-            if obj.points != skill.skillpoints or obj.level != skill.level:
-                obj.points = skill.skillpoints
-                obj.level = skill.level
+            if obj.points != row.skillpoints or obj.level != row.level:
+                obj.points = row.skillpoints
+                obj.level = row.level
                 obj.save()
 
         messages.append('Skills: %d, Total SP: %0.2fm' % (skills, points/1000000.0))
