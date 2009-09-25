@@ -201,6 +201,7 @@ class MarketIndexValue(models.Model):
 
     class Meta:
         ordering = ['item']
+        unique_together = (('item','index'),)
 
     def __unicode__(self):
         return u"%s: %f/%f" % (self.item, self.buy, self.sell)
