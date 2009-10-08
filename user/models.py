@@ -543,35 +543,13 @@ class Character(models.Model):
             corporation = Corporation(id=character_sheet.corporationID)
         messages.extend( corporation.refresh(character=self, name=character_sheet.corporationName) )
         self.corporation = corporation
-        #print "Corp:", self.corporation, "ID:", self.corporation.id
 
         messages.append("Starting Character: %s (%d)" % (self.name, self.id))
-        #corp = update_corporation(character_sheet.corporationID, name=character_sheet.corporationName)
-
-        # Am I a director?
-        #try:
-        #    auth = self.api_corporation()
-        #    auth.StarbaseList()
-        #    self.is_director = True
-        #    messages.append("Is a Director.")
-        #except eveapi.Error, e:
-        #    if e.message == 'Character must be a Director or CEO':
-        #        self.is_director = False
-        #        messages.append("Not Director.")
-        #    else:
-        #        raise
-        #except RuntimeError, e:
-        #    if str(e) == "Invalid API response: expected 'eveapi', got html":
-        #        self.is_director = True
-        #        messages.append('Director. EVE POS API still broken. Freaking CCP...')
-        #    else:
-        #        raise
 
         # We set the account earlier in update_account. Now just make sure it matches.
         # Usernames can not change, but a character might move between accounts.
         self.user = self.account.user
         self.last_refreshed = datetime.utcnow()
-        #self.cached_until = datetime.utcnow() + CHARACTER_CACHE_TIME
         self.cached_until = datetime.utcfromtimestamp(character_sheet._meta.cachedUntil)
 
         self.is_director = False
@@ -635,14 +613,13 @@ class Character(models.Model):
             self.training_completion = None
         messages.append('Training: %s %s' % (self.training_skill, self.training_level))
         log.debug('%s: Now training: %s', self, self.training_skill)
-        self.save()
 
         sheet = me.CharacterSheet()
         for row in sheet.skills:
             skills += 1
             points += row.skillpoints
 
-            skill = Item.objects.get(pk=skill.typeID)
+            skill = Item.objects.get(pk=row.typeID)
             obj, _ = self.skills.get_or_create(skill=skill)
 
             if obj.points != row.skillpoints or obj.level != row.level:
@@ -767,7 +744,7 @@ class Character(models.Model):
                 messages.append('Loaded %d new journal entries.' % qty)
             return messages
         except eveapi.Error, e:
-            if 'Wallet exhausted' in str(e):
+            if 'Wallet exhausted' in str(e) or 'Already returned one week of data' in str(e):
                 messages.append(str(e))
                 return messages
             else:
