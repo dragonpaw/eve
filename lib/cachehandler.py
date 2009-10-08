@@ -27,7 +27,7 @@ class MyCacheHandler(object):
     def store(self, host, path, params, doc, obj):
         # eveapi is asking us to cache an item
         key = self.key(path, params)
-        self.log.debug('Document length for cahing: %d', len(doc))
+        self.log.debug('Document length for cacheing: %d', len(doc))
 
         time = obj.cachedUntil - obj.currentTime or 300
         time = max(time, 300) # Make sure we alwyas cache at least a little.
