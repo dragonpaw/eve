@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-# $Id$
-from django_extensions.management.jobs import DailyJob
+from eve.lib.log import BaseJob
 
 import httplib
 import xml.dom.minidom
@@ -20,8 +19,9 @@ from eve.trade.sources import QtcIndustries, EveCentral
 #socket.setdefaulttimeout(10)
 
 
-class Job(DailyJob):
+class Job(BaseJob):
     help = "Load prices from external sources."
+    when = 'daily'
 
     def execute(self):
         print("Starting EVE Central index...")
@@ -149,16 +149,15 @@ def update_evecentral():
 class EveCentralToolbox(object):
     "Create a http connection to the server."
     def __init__(self, host):
-        #print "Host: %s" % host
-        self.http = httplib.HTTPConnection(host)
-        #self.http.connect()
+        # Can't cache any more, as a non-200 error kills the connection.
+        self.host = host
+        #self.http = httplib.HTTPConnection(host)
 
     def fetch(self, url, id=None):
-        #print "GET %s" % url
-        self.http.request("GET", url)
+        http = httplib.HTTPConnection(self.host)
+        http.request("GET", url)
 
-        response = self.http.getresponse()
-        #print "%s: %s %s" % (url, response.status, response.reason)
+        response = http.getresponse()
         if response.status != 200:
             raise RuntimeError("'%s' request failed (%d %s)" % (url,
                                                                 response.status,
