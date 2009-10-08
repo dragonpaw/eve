@@ -42,6 +42,13 @@ class Job(BaseJob):
                 ids = set()
                 api = director.api_corporation()
                 for record in api.StarbaseList().starbases:
+
+                    # Sometimes CCP likes to give out moon ID's of 0 or like
+                    # 1941.
+                    if record.moonID < 10000 :
+                        log.warn("%s: POS #%d has moon ID of %d", c, record.itemID, record.moonID)
+                        continue
+
                     ids.add(record.itemID)
                     try:
                         pos = c.pos.get(id=record.itemID)
@@ -51,7 +58,7 @@ class Job(BaseJob):
                     messages = pos.refresh(record, api, corp=c, force=self.force)
                     log.debug('%s: Messages: %s', pos, messages)
 
-            except eveapi.Error, e:
+            except Exception, e:
                 if str(e) in ( 'Login denied by account status',
                                'Character must be a Director or CEO',
                                'Authentication failure' ):
@@ -62,9 +69,8 @@ class Job(BaseJob):
                     log.warn('EVE API taken offline by CCP. No refresh available.')
                     return
                 else:
-                    raise e
-            except Exception, e:
-                log.error(traceback.format_exc())
+                    log.error(traceback.format_exc())
+                    continue
 
             # Look for POSes that got taken down.
             for pos in c.pos.exclude(id__in=ids):
