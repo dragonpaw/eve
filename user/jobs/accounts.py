@@ -9,7 +9,6 @@ class Job(BaseJob):
     when = '5min'
 
     def execute(self, user=None, force=False):
-        messages = []
         api = eveapi.get_api()
         log = self.logger()
 
@@ -26,16 +25,13 @@ class Job(BaseJob):
 
         for u in users:
             log.info("User: %s", u)
-            m = []
             for a in u.accounts.all():
                 log.info("Account: %s", a.id)
                 try:
-                    messages = a.refresh(force=force)
+                    a.refresh(force=force)
                 except Exception, e:
                     if 'EVE backend database temporarily disabled' in str(e):
                         log.warn('EVE API taken offline by CCP. No refresh today.')
                         return False
                     else:
-                        text = traceback.format_exc()
-                        m.append(text)
-                        log.error(text)
+                        log.error( traceback.format_exc() )
