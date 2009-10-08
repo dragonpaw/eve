@@ -68,6 +68,9 @@ class Job(BaseJob):
                 elif 'EVE backend database temporarily disabled' in str(e):
                     log.warn('EVE API taken offline by CCP. No refresh available.')
                     return
+                elif str(e) == 'Connection reset by peer':
+                    log.warn('EVE API server closed connection. No refresh available.')
+                    continue
                 else:
                     log.error(traceback.format_exc())
                     continue
