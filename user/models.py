@@ -94,7 +94,8 @@ class UserProfile(models.Model):
         self.email('user_password_lost.txt', subject='Password recovery link')
 
     def email(self, template, subject=None, account=None):
-        if self.user.email is None:
+        if not self.user.email:
+            logging.getLogger('user.model.UserProfile.email').error('%s: User has no email address set, so mail surpressed', self)
             return
 
         d = {}
@@ -368,7 +369,8 @@ class Account(models.Model):
                 character.delete()
 
         except eveapi.Error, e:
-            if str(e) in ('Authentication failure',
+            msg = str(e)
+            if msg in ('Authentication failure',
                           'Invalid accountKey provided',
                           'Failed getting user information',
                           'Cached API key authentication failure'):
@@ -377,24 +379,30 @@ class Account(models.Model):
                 self.email('user_invalid_api_key.txt', subject='Invalid API key')
                 self.delete()
                 return m
-            elif str(e) == 'Current security level not high enough':
+            elif msg == 'Current security level not high enough':
                 self.email('user_wrong_api_key.txt', subject='Wrong API key used')
                 m['Account'].append("Deleted account '%s', user gave limited key." % self.id)
                 log.warn("%s: User gave limited key. Deleted.", self)
                 self.delete()
                 return m
-            elif str(e) == 'Login denied by account status':
+            elif msg == 'Login denied by account status':
                 m['Account'].append("This accout shows as suspended.")
                 log.warn('%s: Account is no longer active', self)
-            elif str(e) == 'EVE backend database temporarily disabled':
+            elif msg == 'EVE backend database temporarily disabled':
                 m['Account'].append('The EVE API has been taken offline by CCP.')
                 log.warn('EVE API disabled.')
+            elif msg == 'Unexpected failure accessing database':
+                m['Account'].append('EVE API gave unexpected error')
+                log.warn('EVE API gave unexpected error.')
             else:
-                m['Account'].append('EVE API error: %s' % e)
-                log.error('%s: EVE API error: %s', self, e)
+                m['Account'].append('EVE API error: %s' % msg)
+                log.exception('%s: EVE API error: %s', self, msg)
         except socket.error, e:
-            m['Account'].append('EVE API error(socket): %s' % e)
-            log.error('%s: EVE API error(socket): %s', self, e)
+            if 'Connection reset by peer' in str(e):
+                log.warn('Connection reset on EVE API call.')
+            else:
+                m['Account'].append('EVE API error(socket): %s' % e)
+                log.error('%s: EVE API error(socket): %s', self, e)
 
         self.refresh_messages = pickle.dumps(m['Account'])
         self.last_refreshed = datetime.now()
