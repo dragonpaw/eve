@@ -59,20 +59,24 @@ class Job(BaseJob):
                     log.debug('%s: Messages: %s', pos, messages)
 
             except Exception, e:
-                if str(e) in ( 'Login denied by account status',
-                               'Character must be a Director or CEO',
-                               'Authentication failure' ):
+                msg = str(e)
+                if msg in ( 'Login denied by account status',
+                            'Character must be a Director or CEO',
+                            'Authentication failure' ):
                     director.is_director = False
                     director.save()
                     log.info("%s: Marked as no longer a director, %s", director, e)
-                elif 'EVE backend database temporarily disabled' in str(e):
+                elif 'EVE backend database temporarily disabled' in msg:
                     log.warn('EVE API taken offline by CCP. No refresh available.')
                     return
-                elif str(e) == 'Connection reset by peer':
+                elif msg == 'Connection reset by peer':
                     log.warn('EVE API server closed connection. No refresh available.')
                     continue
+                elif msg == 'Invalid itemID provided':
+                    log.warn('%s: POS ID is invalid: %s POS will be removed.', corp, record.itemID)
+                    pos.delete()
                 else:
-                    log.error(traceback.format_exc())
+                    log.exception('Unknown error refresshing POS: %s', pos)
                     continue
 
             # Look for POSes that got taken down.
