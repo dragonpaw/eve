@@ -85,7 +85,7 @@ def account_refresh(request, id):
         account.refresh()
     except:
         pass
-    redirect(account_log)
+    return redirect(account_log)
 
 #@login_required
 #def account_overview(request, id):

@@ -398,8 +398,12 @@ class Account(models.Model):
                 m['Account'].append('EVE API error: %s' % msg)
                 log.exception('%s: EVE API error: %s', self, msg)
         except socket.error, e:
-            if 'Connection reset by peer' in str(e):
+            msg = str(e)
+            if 'Connection reset by peer' in msg:
                 log.warn('Connection reset on EVE API call.')
+            elif 'Connection refused' in msg:
+                m['Account'].append('EVE API server is not accepting connections.')
+                log.warn('EVE API server: connection refused.')
             else:
                 m['Account'].append('EVE API error(socket): %s' % e)
                 log.error('%s: EVE API error(socket): %s', self, e)
@@ -675,11 +679,18 @@ class Character(models.Model):
                     messages.append("Loaded %d new transactions." % qty)
                     return messages, qty
         except eveapi.Error, e:
-            if 'Wallet exhausted' in str(e) or 'Already returned one week of data:' in str(e):
-                messages.append(str(e))
-                return messages, qty
+            msg = str(e)
+            messages.append(msg)
+            if 'Wallet exhausted' in msg:
+                pass
+            elif 'Expected before ref/trans ID' in msg:
+                pass
+            elif 'Already returned one week of data:' in msg:
+                pass
             else:
                 raise
+
+            return messages, qty
 
     def update_transactions_single(self, t):
         from eve.ccp.models import Item, Station
