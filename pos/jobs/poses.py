@@ -69,14 +69,17 @@ class Job(BaseJob):
                 elif 'EVE backend database temporarily disabled' in msg:
                     log.warn('EVE API taken offline by CCP. No refresh available.')
                     return
+                elif msg == 'Connection refused':
+                    log.warn('EVE API server is not accepting connections. No refresh available.')
+                    continue
                 elif msg == 'Connection reset by peer':
                     log.warn('EVE API server closed connection. No refresh available.')
                     continue
                 elif msg == 'Invalid itemID provided':
-                    log.warn('%s: POS ID is invalid: %s POS will be removed.', corp, record.itemID)
+                    log.warn('%s: POS ID is invalid: %s POS will be removed.', c, record.itemID)
                     pos.delete()
                 else:
-                    log.exception('Unknown error refresshing POS: %s', pos)
+                    log.exception('Unknown error refreshing POS.')
                     continue
 
             # Look for POSes that got taken down.
