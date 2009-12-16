@@ -10,7 +10,7 @@ from eve.pos.models import PlayerStation
 hour = 3600
 now = datetime.utcnow()
 
-class Job(WeeklyJob):
+class Job(BaseJob):
     help = "Reset the cache_until time for objects so as to spread out the refresh load."
     when = 'weekly'
 

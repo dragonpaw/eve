@@ -295,7 +295,7 @@ class PlayerStation(models.Model):
 
         self.corporation_use = detail.generalSettings.allowCorporationMembers == 1
         self.alliance_use = detail.generalSettings.allowAllianceMembers == 1
-        self.claim = detail.generalSettings.claimSovereignty == 1
+        #self.claim = detail.generalSettings.claimSovereignty == 1
         self.usage_flags = detail.generalSettings.usageFlags
         self.deploy_flags = detail.generalSettings.deployFlags
 
