@@ -94,7 +94,8 @@ class UserProfile(models.Model):
         self.email('user_password_lost.txt', subject='Password recovery link')
 
     def email(self, template, subject=None, account=None):
-        if self.user.email is None:
+        if not self.user.email:
+            logging.getLogger('user.model.UserProfile.email').error('%s: User has no email address set, so mail surpressed', self)
             return
 
         d = {}
@@ -368,7 +369,8 @@ class Account(models.Model):
                 character.delete()
 
         except eveapi.Error, e:
-            if str(e) in ('Authentication failure',
+            msg = str(e)
+            if msg in ('Authentication failure',
                           'Invalid accountKey provided',
                           'Failed getting user information',
                           'Cached API key authentication failure'):
@@ -377,24 +379,34 @@ class Account(models.Model):
                 self.email('user_invalid_api_key.txt', subject='Invalid API key')
                 self.delete()
                 return m
-            elif str(e) == 'Current security level not high enough':
+            elif msg == 'Current security level not high enough':
                 self.email('user_wrong_api_key.txt', subject='Wrong API key used')
                 m['Account'].append("Deleted account '%s', user gave limited key." % self.id)
                 log.warn("%s: User gave limited key. Deleted.", self)
                 self.delete()
                 return m
-            elif str(e) == 'Login denied by account status':
+            elif msg == 'Login denied by account status':
                 m['Account'].append("This accout shows as suspended.")
                 log.warn('%s: Account is no longer active', self)
-            elif str(e) == 'EVE backend database temporarily disabled':
+            elif msg == 'EVE backend database temporarily disabled':
                 m['Account'].append('The EVE API has been taken offline by CCP.')
                 log.warn('EVE API disabled.')
+            elif msg == 'Unexpected failure accessing database':
+                m['Account'].append('EVE API gave unexpected error')
+                log.warn('EVE API gave unexpected error.')
             else:
-                m['Account'].append('EVE API error: %s' % e)
-                log.error('%s: EVE API error: %s', self, e)
+                m['Account'].append('EVE API error: %s' % msg)
+                log.exception('%s: EVE API error: %s', self, msg)
         except socket.error, e:
-            m['Account'].append('EVE API error(socket): %s' % e)
-            log.error('%s: EVE API error(socket): %s', self, e)
+            msg = str(e)
+            if 'Connection reset by peer' in msg:
+                log.warn('Connection reset on EVE API call.')
+            elif 'Connection refused' in msg:
+                m['Account'].append('EVE API server is not accepting connections.')
+                log.warn('EVE API server: connection refused.')
+            else:
+                m['Account'].append('EVE API error(socket): %s' % e)
+                log.error('%s: EVE API error(socket): %s', self, e)
 
         self.refresh_messages = pickle.dumps(m['Account'])
         self.last_refreshed = datetime.now()
@@ -543,35 +555,13 @@ class Character(models.Model):
             corporation = Corporation(id=character_sheet.corporationID)
         messages.extend( corporation.refresh(character=self, name=character_sheet.corporationName) )
         self.corporation = corporation
-        #print "Corp:", self.corporation, "ID:", self.corporation.id
 
         messages.append("Starting Character: %s (%d)" % (self.name, self.id))
-        #corp = update_corporation(character_sheet.corporationID, name=character_sheet.corporationName)
-
-        # Am I a director?
-        #try:
-        #    auth = self.api_corporation()
-        #    auth.StarbaseList()
-        #    self.is_director = True
-        #    messages.append("Is a Director.")
-        #except eveapi.Error, e:
-        #    if e.message == 'Character must be a Director or CEO':
-        #        self.is_director = False
-        #        messages.append("Not Director.")
-        #    else:
-        #        raise
-        #except RuntimeError, e:
-        #    if str(e) == "Invalid API response: expected 'eveapi', got html":
-        #        self.is_director = True
-        #        messages.append('Director. EVE POS API still broken. Freaking CCP...')
-        #    else:
-        #        raise
 
         # We set the account earlier in update_account. Now just make sure it matches.
         # Usernames can not change, but a character might move between accounts.
         self.user = self.account.user
         self.last_refreshed = datetime.utcnow()
-        #self.cached_until = datetime.utcnow() + CHARACTER_CACHE_TIME
         self.cached_until = datetime.utcfromtimestamp(character_sheet._meta.cachedUntil)
 
         self.is_director = False
@@ -635,14 +625,13 @@ class Character(models.Model):
             self.training_completion = None
         messages.append('Training: %s %s' % (self.training_skill, self.training_level))
         log.debug('%s: Now training: %s', self, self.training_skill)
-        self.save()
 
         sheet = me.CharacterSheet()
         for row in sheet.skills:
             skills += 1
             points += row.skillpoints
 
-            skill = Item.objects.get(pk=skill.typeID)
+            skill = Item.objects.get(pk=row.typeID)
             obj, _ = self.skills.get_or_create(skill=skill)
 
             if obj.points != row.skillpoints or obj.level != row.level:
@@ -690,11 +679,18 @@ class Character(models.Model):
                     messages.append("Loaded %d new transactions." % qty)
                     return messages, qty
         except eveapi.Error, e:
-            if 'Wallet exhausted' in str(e) or 'Already returned one week of data:' in str(e):
-                messages.append(str(e))
-                return messages, qty
+            msg = str(e)
+            messages.append(msg)
+            if 'Wallet exhausted' in msg:
+                pass
+            elif 'Expected before ref/trans ID' in msg:
+                pass
+            elif 'Already returned one week of data:' in msg:
+                pass
             else:
                 raise
+
+            return messages, qty
 
     def update_transactions_single(self, t):
         from eve.ccp.models import Item, Station
@@ -767,7 +763,7 @@ class Character(models.Model):
                 messages.append('Loaded %d new journal entries.' % qty)
             return messages
         except eveapi.Error, e:
-            if 'Wallet exhausted' in str(e):
+            if 'Wallet exhausted' in str(e) or 'Already returned one week of data' in str(e):
                 messages.append(str(e))
                 return messages
             else:

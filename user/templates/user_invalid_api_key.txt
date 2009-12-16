@@ -1,5 +1,5 @@
 When you registered your account with the EVE Magic widget, you provided an
-API key for the account numbered {{ account.id|e }}.
+API key for the account numbered {{ account.id }}.
 
 Unfortunately, the key was refused when the Widget tried to gather your data.
 As the key was rejected as being incorrect. Either you changed it recently, or
