@@ -4,9 +4,8 @@ from lib import eveapi
 from lib.cachehandler import MyCacheHandler
 from lib.formatting import NavigationElement
 from lib.jinja import render_to_response
-import settings
 
-api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=settings.DEBUG, throw=False)).context(version=2)
+api = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler()).context(version=2)
 
 status_nav = NavigationElement(
     "Tranquility Status", "/status/", '74_13',
