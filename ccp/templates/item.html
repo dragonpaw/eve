@@ -103,7 +103,7 @@
                 <span class="quantity">Required level: {{ m[x] }}</span>
                 <span class="skill right">Skill</span>
             # else
-                <span class="quantity">x{{ m[x]|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
+                <span class="quantity">x{{ m[x]|floatformat(-3)|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
                 # if m.buy_price
                     <span class="right index-buy">{{ (m.buy_price * m[x])|round|comma }} ISK</span>
                 # endif

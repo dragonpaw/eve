@@ -194,8 +194,8 @@ class MarketIndexValue(models.Model):
     item = models.ForeignKey('ccp.Item', related_name='indexes')
     index = models.ForeignKey(MarketIndex, related_name='items')
     date = models.DateField()
-    buy = models.FloatField()
-    sell = models.FloatField()
+    buy = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    sell = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     buy_qty = models.DecimalField(max_digits=15, decimal_places=0, blank=True, default=0)
     sell_qty = models.DecimalField(max_digits=15, decimal_places=0, blank=True, default=0)
 
