@@ -19,4 +19,7 @@ mysql_evolutions = [
         "ALTER TABLE `user_character` DROP COLUMN `training_level`;",
         "-- end warning",
     ],
+    [('fv1:-3316076659933319594','fv1:4939214094813406265'), # generated 2010-01-03 01:21:22.760078
+        "ALTER TABLE `user_skillintraining` MODIFY COLUMN `finish_time` datetime NULL;",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##

@@ -331,6 +331,10 @@ li.character a {
 	font-size: 1.1em;
 }
 
+td.skill-completion {
+	min-width: 50px;
+}
+
 .character .portrait {
 	padding: 10px 32px 10px 27px;
 	position: relative;

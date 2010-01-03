@@ -878,7 +878,7 @@ class Item(EveBase):
     published = models.NullBooleanField()
     marketgroup = null_fields.Key('MarketGroup', db_column='marketGroupID')
     chanceofduplicating = null_fields.Float(db_column='chanceOfDuplicating')
-    slug = models.SlugField(max_length=100, db_index=True)
+    slug = models.SlugField(max_length=100, db_index=True, default='')
 
     # If I don't have both managers, it gets weird.
     objects = models.Manager()
