@@ -196,8 +196,8 @@ class MarketIndexValue(models.Model):
     date = models.DateField()
     buy = models.FloatField()
     sell = models.FloatField()
-    buy_qty = models.IntegerField(blank=True, default=0)
-    sell_qty = models.IntegerField(blank=True, default=0)
+    buy_qty = models.DecimalField(max_digits=15, decimal_places=0, blank=True, default=0)
+    sell_qty = models.DecimalField(max_digits=15, decimal_places=0, blank=True, default=0)
 
     class Meta:
         ordering = ['item']

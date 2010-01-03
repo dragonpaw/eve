@@ -22,4 +22,7 @@ mysql_evolutions = [
     [('fv1:-3316076659933319594','fv1:4939214094813406265'), # generated 2010-01-03 01:21:22.760078
         "ALTER TABLE `user_skillintraining` MODIFY COLUMN `finish_time` datetime NULL;",
     ],
+    [('fv1:-776422834835482277','fv1:674206596723670124'), # generated 2010-01-03 10:42:34.286478
+        "ALTER TABLE `user_skillintraining` MODIFY COLUMN `finish_time` datetime NULL;",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##
