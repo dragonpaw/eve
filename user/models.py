@@ -639,7 +639,11 @@ class Character(models.Model):
             skills += 1
             points += row.skillpoints
 
-            skill = Item.objects.get(pk=row.typeID)
+            try:
+                skill = Item.objects.get(pk=row.typeID)
+            except Item.DoesNotExist:
+                log.warn('%s: Has a non-existant skill: ID=%s', self, row.typeID)
+                continue
             obj, _ = self.skills.get_or_create(skill=skill)
 
             if obj.points != row.skillpoints or obj.level != row.level:
