@@ -5,7 +5,7 @@
 <table>
 {% for o in objects -%}
 <tr>
-	<td rowspan="2"><img src="{{ o.item.icon32 }}"></td>
+	<td rowspan="2">{{ o.item|icon32 }}</td>
 	<th colspan="2"><a href="{{ o.item.get_absolute_url() }}">{{ o.item.name }}</a>
 	{% if o.quantity %}<span class="quantity"> x{{ o.quantity }}</span>{% endif %}
 	</th>
@@ -22,7 +22,7 @@
 {% for o in objects -%}
     <li class="item">
         <a href="{{ o.item.get_absolute_url() }}">
-            <img src="{{ o.item.icon32 }}"><span class="name">{{ o.item.name }}</span><br>
+            {{ o.item|icon32 }}<span class="name">{{ o.item.name }}</span><br>
             {% if o.quantity %}<span class="quantity">x{{ o.quantity }}</span><br>{% endif %}
             {% if o.item.marketgroup %}
             {% if o.buy %}<span class="index-buy">{{ o.buy|floatformat(2)|isk }} isk</span>{% endif %}

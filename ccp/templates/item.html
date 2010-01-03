@@ -6,7 +6,7 @@
     <div class="description">
         <h2>{{ item.name }}</h2>
         {{ item.description|default("No Description")|markdown }}
-        <img src="{{ item.icon64 }}" class="icon">
+        {{ item|icon(64) }}
     </div>
 
     <h3>Details</h3>
@@ -29,22 +29,22 @@
 	<h4>{{ c.name }}<!-- {{ c.id }} --></h4>
 	<table class="item-details">
         # if c.name == 'Structure'
-            <tr><td class="icon"><img src="{{ VOLUME.icon16 }}"></td>
+            <tr><td class="icon">{{ VOLUME|icon(16) }}</td>
             <th>{{ VOLUME.name }}<!-- Fake attribute --></th>
             <td>{{ item.volume|comma }}</td></tr>
             # if item.portionsize > 1
-                <tr><td class="icon"><img src="{{ PORTIONSIZE.icon16 }}"></td>
+                <tr><td class="icon">{{ PORTIONSIZE|icon(16) }}</td>
                 <th>{{ PORTIONSIZE.name }}<!-- Fake attribute --></th>
                 <td>{{ item.portionsize|comma }}</td></tr>
             # endif
             # if item.capacity
-                <tr><td class="icon"><img src="{{ CAPACITY.icon16 }}"></td>
+                <tr><td class="icon">{{ CAPACITY|icon(16) }}</td>
                 <th>{{ CAPACITY.name }}<!-- Fake attribute --></th>
                 <td>{{ item.capacity|comma }}</td></tr>
             # endif
         # endif
 	# for a in v
-            <tr><td class="icon"><img src="{{ a.icon16 }}"></td>
+            <tr><td class="icon">{{ a|icon(16) }}</td>
             <th>{{ a.name }}<!-- {{ a.id }} --></th>
             <td>{{ a.display_value }}</td></tr>
         # endfor
@@ -58,7 +58,7 @@
     <table>
     # for fuel in item.fuel.all()
         <tr>
-            <td class="icon"><img src="{{ fuel.type.icon16 }}"></td>
+            <td class="icon">{{ fuel.type|icon(16) }}</td>
             <th>{{ fuel.type }}</th>
             <td>{{ fuel.quantity }}</td>
         </tr>
@@ -96,7 +96,7 @@
         # for m in materials.materials
         # if m.has_key(x) and m[x]
             <li><a href="{{ m.material.get_absolute_url() }}">
-            <img src="{{ m.material.icon32 }}">
+            {{ m.material|icon32 }}
             <span class="name">{{ m.material.name }}</span>
             <br>
             # if m.material.is_skill
@@ -105,10 +105,10 @@
             # else
                 <span class="quantity">x{{ m[x]|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
                 # if m.buy_price
-                    <span class="right index-buy">{{ m.buy_price|floatformat(2)|comma }} ISK</span>
+                    <span class="right index-buy">{{ (m.buy_price * m[x])|round|comma }} ISK</span>
                 # endif
                 # if m.sell_price
-                    <span class="right index-sell">{{ m.sell_price|floatformat(2)|comma }} ISK</span>
+                    <span class="right index-sell">{{ (m.sell_price * m[x])|round|comma }} ISK</span>
                 # endif
             # endif
             </a></li>
@@ -116,27 +116,38 @@
         # endfor
         </ul>
         # if materials['isk'][x] is defined and materials['isk'][x] > 0
-            <p>Total cost (at buy prices): {{ materials['isk'][x]|floatformat(2)|comma }} ISK</p>
+            <p>Total cost (at buy prices): {{ materials['isk'][x]|round|comma }} ISK</p>
         # endif
     # endfor
 # endif
-
+{#
 # if makes
     <h3>Used in</h3>
     <ul class="links materials">
     {% for m in makes -%}
         <li>
             <a href="{{ m.item.get_absolute_url() }}">
-            <img src="{{ m.item.icon32 }}">
+            {{ m.item|icon32 }}
             <span class="name">{{ m.item.name }}</span>
             <br>
             <span class="note">{{ m.activity }}
-                ({% if item.is_skill %}Level: {{ m.quantity }}{% else %}x {{ m.quantity }}{% endif %})
+                ({% if item.is_skill %}Level: {{ m.quantity }}{% else %}x {{ m.quantity|comma }}{% endif %})
             </span>
             </a></li>
     {%- endfor %}
     </ul>
 # endif
+#}
+# if other_uses
+    <h3>Uses</h3>
+    <ul class="links materials">
+        <li>
+            <a href="{{ lib.url('eve.ccp.views.item_uses',item.slug) }}">
+                <span class="note">Item has {{ other_uses }} other uses.</span>
+            </a>
+        </li>
+    </ul>
+#endif
 
 # if item.marketgroup
     <h3>Market Indexes</h3>
@@ -156,10 +167,10 @@
         <span class="name">{{ i.index.name }}</span>
         <br>
         # if i.buy
-            <span class="index-buy">{{ i.buy|floatformat(2)|comma }} ISK</span>
+            <span class="index-buy">{{ i.buy|isk }} ISK</span>
         # endif
 	# if i.sell
-            <span class="right index-sell">{{ i.sell|floatformat(2)|comma }} ISK</span>
+            <span class="right index-sell">{{ i.sell|isk }} ISK</span>
         # endif
         </a></li>
     {%- endfor %}

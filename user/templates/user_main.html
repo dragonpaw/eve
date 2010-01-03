@@ -21,12 +21,20 @@
     <span class="isk">{{ c.isk|int|comma }} ISK</span>
     <span class="right skill-points">{{- c.skill_points|isk }} SP</span>
     <br>
-    {% if c.training_skill %}
-    <span class="skill">{{ c.training_skill|e }} {{ c.training_level|e }}</span>
-    <span class="right skill-completion">{{ c.training_remaining|time|default('Done',True) }}</span>
-    {% else %}
-    <span class="skill">No skill in training.</span>
-    {% endif %}
+    <table>
+        # if c.skills_in_queue.count()
+            # for s in c.skills_in_queue.all()
+                <tr>
+                    <td class="skill left">{{ s.skill|e }} {{ s.level }}</td>
+                    <td class="skill-completion">{{ s.remaining|time }}</td>
+                </tr>
+            # endfor
+        # else
+            <tr>
+                <td class="skill left">No skills queued.</td>
+            </tr>
+        # endif
+    </table>
     </a>
     </li>
   {% endfor %}

@@ -27,12 +27,6 @@ class Key(models.ForeignKey):
         kwargs['blank'] = True
         return super(Key, self).__init__(*args, **kwargs)
 
-class Char(models.CharField):
-    def __init__(self, *args, **kwargs):
-        kwargs['null'] = True
-        kwargs['blank'] = True
-        return super(Char, self).__init__(*args, **kwargs)
-
 class Small(models.SmallIntegerField):
     def __init__(self, *args, **kwargs):
         kwargs['null'] = True

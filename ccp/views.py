@@ -30,6 +30,10 @@ npc_nav = NavigationElement(
     note='All the things to blow up, or be blown up by.'
 )
 
+uses_nav = NavigationElement(
+    'Uses', None, None
+)
+
 NPC_ICONS = {
     'shield': get_graphic('02_01'),
     'armor': get_graphic('01_10'),
@@ -65,6 +69,10 @@ except:
         displayname = 'Portion Size',
         graphic = get_graphic('07_16'),
     ).save()
+
+USES_FILTER  = ~Q(activity__name__contains='Not in game')
+USES_FILTER &=  Q(quantity__gt=0)
+USES_FILTER &= ~Q(activity__name='Refining')
 
 def generate_navigation(object):
     """Build up a heiracy of objects"""
@@ -168,8 +176,9 @@ def group(request, slug):
 
 # Cannot cache as it depends on user prices.
 def item(request, slug, days=30):
+    log = logging.getLogger('eve.ccp.views.item')
     item = get_object_or_404(Item, slug=slug)
-    d = {}
+    d = dict()
     d['time_span'] = '%d days' % days
     d['item'] = item
 
@@ -191,14 +200,17 @@ def item(request, slug, days=30):
     my_blueprint = None
     if profile:
         try:
-            my_blueprint = BlueprintOwned.objects.get(blueprint=item.blueprint, user=profile)
+            my_blueprint = BlueprintOwned.objects.get(
+                blueprint=item.blueprint, user=profile
+            )
         except BlueprintOwned.DoesNotExist:
             pass
 
-
-    materials = {'titles':{},
-                 'materials':{},
-                 'isk': {} }
+    mats = {
+        'titles':{},
+        'materials':{},
+        'isk': {}
+    }
 
     #-------------------------------------------------------------------------
     # Can it be manufactured?
@@ -207,127 +219,133 @@ def item(request, slug, days=30):
             continue
 
         name = mat.activity.name
-        materials['titles'][name] = name
-        if not materials['materials'].has_key(mat.material.id):
-            price = get_buy_price(profile, mat.material)
-            materials['materials'][mat.material.id] = {'material': mat.material,
-                                                       'buy_price': price}
-        materials['materials'][mat.material.id][name] = mat.quantity
-
-        # Then, if we own the blueprint, the manufacture quantity.
+        mats['titles'][name] = name
+        material = mat.material
+        if id not in mats['materials']:
+            mats['materials'][material] = dict()
+        # If we own the blueprint, show our manufacture quantity instead.
         if my_blueprint and name == 'Manufacturing':
-            perfect = materials['materials'][mat.material.id]['Manufacturing']
-            materials['materials'][mat.material.id]['Personal'] = my_blueprint.mineral(perfect, max_pe)
+            mats['materials'][material]['Personal'] = my_blueprint.mineral(
+                mat.quantity, max_pe
+            )
+        else:
+            mats['materials'][material][name] = mat.quantity
 
     #-------------------------------------------------------------------------
     # If we own this blueprint...
     if my_blueprint:
-        # Add in the Blueprint itself.
-        materials['materials'][my_blueprint.blueprint.id] = {'Personal': 1,
-                                                             'material':my_blueprint.blueprint,
-                                                             'buy_price':my_blueprint.cost_per_run,
-                                                             'input':'Blueprint run cost',
-                                                             }
-        materials['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, my_blueprint.me)
-        # We only show our manufacturing if we have the blueprint.
-        if 'Manufacturing' in materials['titles']:
-            del materials['titles']['Manufacturing']
+        # Add in the blueprint itself as a material.
+        mats['materials'][my_blueprint.blueprint.id] = {
+            'Personal': 1,
+            'material':my_blueprint.blueprint,
+            'buy_price':my_blueprint.cost_per_run,
+            'input':'Blueprint run cost',
+        }
+        mats['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, my_blueprint.me)
 
     #-------------------------------------------------------------------------
-    for key, value in materials['titles'].items():
-        cost = Decimal(0)
-        for m in materials['materials'].values():
-            if m.has_key(key) and m['buy_price'] and not m['material'].is_skill:
-                cost += Decimal(str(m['buy_price'])) * m[key]
-        if item.is_blueprint:
-            portion = item.blueprint_makes.portionsize
-        else:
-            portion = item.portionsize
-        cost = cost / portion
-        materials['isk'][key] = cost
-
-    #-------------------------------------------------------------------------
-    if (materials['isk'].has_key('Personal') and best_values.has_key('sell')
+    if (mats['isk'].has_key('Personal') and best_values.has_key('sell')
         and best_values['sell'] and best_values['sell']['sell_price'] > 0
-        and materials['isk']['Personal'] > 0):
-        best_values['manufacturing_profit_isk'] =  ( best_values['sell']['sell_price']
-                                                    - materials['isk']['Personal'])
-        best_values['manufacturing_profit_pct'] = (best_values['manufacturing_profit_isk']
-                                                    / materials['isk']['Personal']) * 100
+        and mats['isk']['Personal'] > 0):
+        best_values['manufacturing_profit_isk'] =  (
+            best_values['sell']['sell_price'] - mats['isk']['Personal']
+        )
+        best_values['manufacturing_profit_pct'] = (
+            best_values['manufacturing_profit_isk'] / mats['isk']['Personal']
+        ) * 100
 
     #-------------------------------------------------------------------------
     # We don't want isk prices on where things refine -from-
     if item.group.name in ('Mineral','Ice Product'):
-        materials['titles']['Refined From'] = "Refined From"
+        mats['titles']['Refined From'] = "Refined From"
         for mat in item.helps_make.filter(activity=50):
             value = "%0.2f" % mat.quantity_per_unit()
-            price = get_buy_price(profile, mat.item)
-            materials['materials'][mat.item.id] = {'material' : mat.item,
-                                                   'buy_price'    : price,
-                                                   'Refined From' : value}
+            mats['materials'][mat.item] = {
+                'material' : mat.item,
+                'Refined From' : value,
+            }
 
     #-------------------------------------------------------------------------
     # This triggers on materials that CAN react.
     if item.reacts.count():
         for mat in item.reacts.all():
-            price = get_buy_price(profile, mat.reaction)
-            reaction = mat.reaction
             if mat.input:
-                materials['titles']['Reaction-in'] = 'Reactions Needing'
-                for r in reaction.reactions.filter(input=False):
-                    materials['materials'][r.item.id] = {'material': r.item,
-                                                         'buy_price': price,
-                                                         'input':'Needed',
-                                                         'Reaction-in': mat.quantity
-                                                         }
+                mats['titles']['Reaction-in'] = 'Reactions Needing'
+                for r in mat.reaction.reactions.filter(input=False):
+                    mats['materials'][r.item] = {
+                        'material': r.item,
+                        'input':'Needed',
+                        'Reaction-in': mat.quantity,
+                    }
             else:
-                materials['titles']['Reaction-out'] = 'Materials to React'
-                for r in reaction.reactions.filter(input=True):
-                    materials['materials'][r.item.id] = {'material': r.item,
-                                                         'buy_price': price,
-                                                         'input':'Used',
-                                                         'Reaction-out': r.quantity
-                                                         }
+                mats['titles']['Reaction-out'] = 'Materials to React'
+                for r in mat.reaction.reactions.filter(input=True):
+                    mats['materials'][r.item] = {
+                        'material': r.item,
+                        'input':'Used',
+                        'Reaction-out': r.quantity,
+                    }
 
     #-------------------------------------------------------------------------
     # This triggers on reaction blueprints
     if item.reactions.count():
-        materials['titles']['Reaction'] = 'POS Reaction'
+        mats['titles']['Reaction'] = 'POS Reaction'
         for mat in item.reactions.select_related('item__group__category'):
             buy_price = sell_price = 0
             if mat.input == True:
                 input = "Input"
-                buy_price = get_buy_price(profile, mat.item)
             else:
                 input = "Output"
                 sell_price = get_sell_price(profile, mat.item)
-            materials['materials'][mat.item.id] = {'material' : mat.item,
-                                                   'buy_price': buy_price,
-                                                   'input': input,
-                                                   'sell_price': sell_price,
-                                                   'Reaction' : mat.quantity}
+            mats['materials'][mat.item] = {
+                'material' : mat.item,
+                'input': input,
+                'sell_price': sell_price,
+                'Reaction' : mat.quantity
+            }
+
+    #-------------------------------------------------------------------------
+    # Lookup prices for all materials.
+    log.debug('Materials: %s', mats)
+    for mat, value in mats['materials'].items():
+        if mat.is_skill:
+            value['buy_price'] = None
+        else:
+            # Don't overwrite a value.
+            if 'buy_price' not in value:
+                value['buy_price'] = get_buy_price(mat, profile)
+        log.debug('Value for %s: %s', mat, value['buy_price'])
+
+    #-------------------------------------------------------------------------
+    # Calculate total prices for all actions.
+    for activity in mats['titles']:
+        cost = Decimal(0)
+        for m in mats['materials']:
+            v = mats['materials'][m]
+            v['material'] = m # Used by the template later.
+            if activity in v and v['buy_price']:
+                cost += Decimal(str(v['buy_price'])) * v[activity]
+        if item.is_blueprint:
+            portion = item.blueprint_makes.portionsize
+        else:
+            portion = item.portionsize
+        cost = cost / portion
+        mats['isk'][activity] = cost
 
     #-------------------------------------------------------------------------
     # Display order, and filter out actions we cannot perform.
-    materials['materials'] = [materials['materials'][key] for key in materials['materials'].keys()]
-    materials['materials'].sort(key=lambda x:"%s-%s" % (x['material'].is_blueprint, x['material'].name))
-    materials['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
+    mats['materials'] = mats['materials'].values()
+    mats['materials'].sort(key=lambda x:"%s-%s" % (x['material'].is_blueprint, x['material'].name))
+    mats['order'] = ['Manufacturing', 'Personal', 'Research Mineral Production',
                           'Research Time Production', 'Copying', 'Inventing', 'Refining',
                           'Refined From', 'Reaction', 'Reaction-in', 'Reaction-out']
-    materials['order'] = [x for x in materials['order'] if materials['titles'].has_key(x)]
+    mats['order'] = [x for x in mats['order'] if mats['titles'].has_key(x)]
 
-    d['materials'] = materials
+    d['materials'] = mats
+    log.debug('Materials2: %s', mats)
 
-    #-------------------------------------------------------------------------
-    # Un-seeded items have no group.
-    if item.marketgroup and item.marketgroup.name != 'Minerals':
-        filter = ~Q(activity__name__contains='Not in game')
-        filter &= Q(quantity__gt=0)
-        filter &= ~Q(activity__name='Refining')
-
-        d['makes'] = list(item.helps_make.filter(filter))
-        d['makes'].sort(key=lambda x:x.item.name)
-        # FIXME: Make this return an order_by instead.
+    if not (item.marketgroup and item.marketgroup.name == 'Minerals'):
+        d['other_uses'] = item.helps_make.filter(USES_FILTER).count()
 
     #-------------------------------------------------------------------------
     # Setup the attributes of an item.
@@ -355,8 +373,23 @@ def item(request, slug, days=30):
 
     d['blueprint'] = my_blueprint
 
-    return render_to_response('item.html', d,
-                              request)
+    return render_to_response('item.html', d, request)
+
+def item_uses(request, slug):
+    item = get_object_or_404(Item, slug=slug)
+    d = dict()
+    d['nav'] = generate_navigation(item)
+    d['nav'].append(uses_nav)
+    d['inline_nav'] = (item,)
+    d['item'] = item
+
+    # Un-seeded items have no group.
+    if not (item.marketgroup and item.marketgroup.name == 'Minerals'):
+        d['makes'] = item.helps_make.filter(USES_FILTER).order_by('item__name')
+        #d['makes'].sort(key=lambda x:x.item.name)
+        # FIXME: Make this return an order_by instead.
+
+    return render_to_response('item_uses.html', d, request)
 
 @cache_page(60 * 60 * 4)
 def sov_changes(request, days=14):

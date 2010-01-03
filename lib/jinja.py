@@ -69,7 +69,7 @@ jenv = Environment(autoescape=False,
 # Search for and load application specific functions, filters and tests.
 for app in settings.INSTALLED_APPS: #import jtemp.py from each app and add it to globals
     try:
-        jtemp = import_module( app + '.jtemp' )
+        jtemp = import_module( app + '.jtags' )
         app_name = app.split('.')[-1] #application name
         #if jtemp defines jinja_name, use it as the module name in jinja, otherwise use application name
         name = getattr( jtemp, 'jinja_name', app_name )

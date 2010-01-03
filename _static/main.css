@@ -237,15 +237,17 @@ input[type='submit'], input[type='text'],input[type='password'],select {
 }
 
 .buy,
-.index-buy {
+.index-buy,
+.links span.index-buy {
 	color: red !important;
-	font-size: 1.1em;
+	font-size: 1.0em;
 }
 
 .sell,
-.index-sell {
+.index-sell,
+.links span.index-sell {
 	color: green !important;
-	font-size: 1.1em;
+	font-size: 1.0em;
 }
 
 .item .description {

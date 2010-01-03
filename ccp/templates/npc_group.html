@@ -11,7 +11,7 @@
 
 {% macro cell_ewar(o, type) -%}
 {% if o.ewar[type] -%}
-    {{ inline.icon16(icon['ewar_'+type]) }}
+    {{ icon['ewar_'+type]|icon(16) }}
 {%- else -%}
     &nbsp;
 {%- endif -%}
@@ -23,29 +23,29 @@
         <td class="no_top"></td>
         <td class="no_top left">Name</td>
         <td class="no_top"></td>
-        <td class="center no_top icon">{{ inline.icon16(icon.dps_em) }}</td>
-        <td class="center no_top icon">{{ inline.icon16(icon.dps_th) }}</td>
-        <td class="center no_top icon">{{ inline.icon16(icon.dps_ki) }}</td>
-        <td class="center no_top icon">{{ inline.icon16(icon.dps_ex) }}</td>
+        <td class="center no_top icon">{{ icon.dps_em|icon(16) }}</td>
+        <td class="center no_top icon">{{ icon.dps_th|icon(16) }}</td>
+        <td class="center no_top icon">{{ icon.dps_ki|icon(16) }}</td>
+        <td class="center no_top icon">{{ icon.dps_ex|icon(16) }}</td>
         <td></td>
-        <td class="center no_top icon">{{ inline.icon16(icon.tank_em) }}</td>
-        <td class="center no_top icon">{{ inline.icon16(icon.tank_th) }}</td>
-        <td class="center no_top icon">{{ inline.icon16(icon.tank_ki) }}</td>
-        <td class="center no_top icon">{{ inline.icon16(icon.tank_ex) }}</td>
+        <td class="center no_top icon">{{ icon.tank_em|icon(16) }}</td>
+        <td class="center no_top icon">{{ icon.tank_th|icon(16) }}</td>
+        <td class="center no_top icon">{{ icon.tank_ki|icon(16) }}</td>
+        <td class="center no_top icon">{{ icon.tank_ex|icon(16) }}</td>
         <td class="center no_top">HP</td>
         <td class="center no_top">ISK</td>
     </tr>
 {% for o in objects -%}
     {% if o.ewar|count > 0 %}{% set rows = 3 %}{% else %}{% set rows = 2 %}{% endif %}
     <tr>
-        <td rowspan="{{rows}}" class="center">{{ inline.icon32(o) }}</td>
+        <td rowspan="{{rows}}" class="center">{{ o|icon32 }}</td>
         <td rowspan="{{rows}}" class="left"><a href="{{ o.get_absolute_url() }}">{{ o.name }}</a></td>
-        <td class="no_bottom icon">{{ inline.icon16(o.gun_icon) }}</td>
+        <td class="no_bottom icon">{{ o.gun_icon|icon(16) }}</td>
             <td class="center no_bottom em">{{ cell(o.dps.em) }}</td>
             <td class="center no_bottom thermal">{{ cell(o.dps.thermal) }}</td>
             <td class="center no_bottom kinetic">{{ cell(o.dps.kinetic) }}</td>
             <td class="center no_bottom explosive">{{ cell(o.dps.explosive) }}</td>
-        <td class="no_bottom icon">{{ inline.icon16(icon.shield) }}</td>
+        <td class="no_bottom icon">{{ icon.shield|icon(16) }}</td>
             <td class="center no_bottom em">{{ cell0(o.dps.shield_resist_em) }}</td>
             <td class="center no_bottom thermal">{{ cell0(o.dps.shield_resist_thermal) }}</td>
             <td class="center no_bottom kinetic">{{ cell0(o.dps.shield_resist_kinetic) }}</td>
@@ -56,12 +56,12 @@
     </tr>
     # set class = 'no_top'
     <tr>
-        <td class="{{class}} icon">{{ inline.icon16(o.missile_icon) }}</td>
+        <td class="{{class}} icon">{{ o.missile_icon|icon(16) }}</td>)
             <td class="center {{class}} em">{{ cell(o.dps.missile_em) }}</td>
             <td class="center {{class}} thermal">{{ cell(o.dps.missile_thermal) }}</td>
             <td class="center {{class}} kinetic">{{ cell(o.dps.missile_kinetic) }}</td>
             <td class="center {{class}} explosive">{{ cell(o.dps.missile_explosive) }}</td>
-        <td class="{{class}} icon">{{ inline.icon16(icon.armor) }}</td>
+        <td class="{{class}} icon">{{ icon.armor|icon(16) }}</td>
             <td class="center {{class}} em">{{ cell0(o.dps.armor_resist_em) }}</td>
             <td class="center {{class}} thermal">{{ cell0(o.dps.armor_resist_thermal) }}</td>
             <td class="center {{class}} kinetic">{{ cell0(o.dps.armor_resist_kinetic) }}</td>

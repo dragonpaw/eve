@@ -8,9 +8,9 @@
     <li class="sov-changes">
         <a href="{{ o.get_absolute_url }}">
             # if o.alliance_id is none
-                <img src="{{ o.alliance_old.icon32 }}">
+                {{ o.alliance_old|icon32 }}
             # else
-                <img src="{{ o.alliance.icon32 }}">
+                {{ o.alliance|icon32 }}
             # endif
             <span class="name">
                 {{ o.name }}

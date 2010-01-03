@@ -3,7 +3,7 @@
 
 {% block content %}
 <h2>{{ item.name }}</h2>
-{% if item.icon64 %}<img src="{{ item.icon64 }}" class="icon">{% endif %}
+{{ item|icon(64) }}
 
 <h3>Details</h3>
 <table>
@@ -19,7 +19,7 @@
 	{% for o in item.solarsystems.all() -%}
     	<li class="constellation">
         	<a href="{{ o.get_absolute_url() }}">
-                {{ inline.icon32(o) }}
+                {{ o|icon32 }}
             <span class="name">{{ o.name }}</span>
             {% if o.security < 0.5 -%}
                 <span class="security security-low">

@@ -13,7 +13,7 @@
 {% if inline_nav %}
 {% if browser == 'eve' %}
 <table>
-{% for n in inline_n %}<tr>
+{% for n in inline_nav %}<tr>
 	<td>{{ icon32(n) }}</td>
 	<td><a href="{{- n.get_absolute_url() -}}">
 	{{- n.name -}}

@@ -26,6 +26,8 @@ TRANSACTION_CUTOFF = timedelta(days=30)
 STALE_ACCOUNT = timedelta(days=14)
 ACCOUNT_LOST_EXPIRATION = timedelta(days=1)
 
+ITEM_SKILLS = {'group__category__name__exact': 'Skill'}
+
 class UserProfile(models.Model):
     '''
     A profile to extend the built-in Django User class.
@@ -422,10 +424,10 @@ class Character(models.Model):
     account = models.ForeignKey(Account, related_name='characters')
     name = models.CharField(max_length=100)
     isk = models.FloatField(null=True, blank=True)
-    training_completion = models.DateTimeField(null=True, blank=True)
-    training_level = models.IntegerField(null=True, blank=True)
-    training_skill = models.ForeignKey('ccp.Item', null=True, blank=True,
-                     limit_choices_to = {'group__category__name': 'Skill', 'published': True})
+    #training_completion = models.DateTimeField(null=True, blank=True)
+    #training_level = models.IntegerField(null=True, blank=True)
+    #training_skill = models.ForeignKey('ccp.Item', null=True, blank=True,
+    #                 limit_choices_to = {'group__category__name': 'Skill', 'published': True})
     is_director = models.BooleanField('Has Director role', default=False)
     is_pos_monkey = models.BooleanField('Has POS Caretaker role', default=False)
     corporation = models.ForeignKey('ccp.Corporation', related_name='characters')
@@ -611,20 +613,23 @@ class Character(models.Model):
         points = 0
         messages = []
 
-        training = me.SkillInTraining()
-        if training.skillInTraining:
-            t = datetime.fromtimestamp(training.trainingEndTime)
-            skill = Item.objects.get(pk=training.trainingTypeID)
+        # Easier to just wipe the queue and re-create each time.
+        SkillInTraining.objects.filter(character=self).delete()
+        for s in me.SkillQueue().skillqueue:
+            skill = Item.objects.get(pk=s.typeID)
+            t = datetime.fromtimestamp(s.endTime)
+            queued = self.skills_in_queue.create(
+                skill = skill,
+                level = s.level,
+                order = s.queuePosition,
+                finish_time = t,
+            )
 
-            self.training_skill = skill
-            self.training_level = training.trainingToLevel
-            self.training_completion = t
-        else:
-            self.training_skill = None
-            self.training_level = None
-            self.training_completion = None
-        messages.append('Training: %s %s' % (self.training_skill, self.training_level))
-        log.debug('%s: Now training: %s', self, self.training_skill)
+            messages.append('Training: %s %s' % (
+                    queued.skill, queued.level
+            ))
+            log.debug('%s: Now training: %s %s',
+                      self, queued.skill, queued.level)
 
         sheet = me.CharacterSheet()
         for row in sheet.skills:
@@ -789,8 +794,7 @@ class Character(models.Model):
 
 class SkillLevel(models.Model):
     character = models.ForeignKey(Character, related_name='skills')
-    skill = models.ForeignKey('ccp.Item',
-              limit_choices_to = {'group__category__name__exact': 'Skill'})
+    skill = models.ForeignKey('ccp.Item', limit_choices_to = ITEM_SKILLS)
     level = models.IntegerField(default=0)
     points = models.IntegerField(default=0)
 
@@ -800,3 +804,21 @@ class SkillLevel(models.Model):
 
     def __unicode__(self):
         return u"%s: %s" % (self.skill.name, self.level)
+
+
+class SkillInTraining(models.Model):
+    character = models.ForeignKey(Character, related_name='skills_in_queue')
+    skill = models.ForeignKey('ccp.Item', limit_choices_to = ITEM_SKILLS)
+    level = models.IntegerField()
+    order = models.IntegerField()
+    finish_time = models.DateTimeField()
+
+    class Meta:
+        ordering = ('order',)
+
+    def __unicode__(self):
+        return u"%s: %s" % (self.skill.name, self.level)
+
+    @property
+    def remaining(self):
+        return self.finish_time - datetime.utcnow()
