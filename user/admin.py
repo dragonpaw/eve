@@ -24,8 +24,9 @@ class AccountOptions(admin.ModelAdmin):
     ordering           = ['user__user__username']
 
 class CharacterOptions(admin.ModelAdmin):
-    list_display       = ['name', 'user', 'corporation', 'get_isk_formatted',
-                    'get_sp_formatted', 'training_skill', 'training_level']
+    list_display       = [
+        'name', 'user', 'corporation', 'get_isk_formatted', 'get_sp_formatted'
+    ]
     inlines            = [Skill_Inline]
     raw_id_fields      = ['corporation']
     search_fields      = ['name', 'user__user__username']

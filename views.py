@@ -29,7 +29,7 @@ def home(request):
                region_nav, item_nav,
                index_nav, sov_nav,
                features_nav, salvage_nav,
-               status_nav, npc_nav,
+               status_nav, # npc_nav,
     ]
 
     if user.is_authenticated():

@@ -13,7 +13,7 @@
 <ul class="links">
     {% for c in item.constellations.all() -%}
 		<li class="region"><a href="{{ c.get_absolute_url() }}">
-		{% if c.icon32 %}<img src="{{ c.icon32 }}">{% endif %}
+		{{ c|icon32 }}
 		<span class="name">{{ c.name }}</span><br>
 		<span class="systems">Systems: {{ c.solarsystems.count() }}</span>
 		{% if c.stations.count() %}<span class="stations">Stations: {{ c.stations.count() }}</span>{% endif %}

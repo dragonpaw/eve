@@ -121,7 +121,6 @@ INSTALLED_APPS = (
     'eve.tracker',
     'eve.ccp',
     'eve.user',
-    'eve.emails',
     'eve.trade',
     'eve.pos',
     'eve.status',

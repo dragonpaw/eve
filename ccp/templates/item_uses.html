@@ -1,0 +1,29 @@
+# extends "base.html"
+# import 'include_inlinenav.html' as inline
+
+# block content
+<div class="item">
+    <div class="description">
+        <h2>{{ item.name }}</h2>
+        {{ item.description|default("No Description")|markdown }}
+        {{ item|icon(64) }}
+    </div>
+
+    <h3>Used in</h3>
+    <ul class="links materials">
+    {% for m in makes -%}
+        <li>
+            <a href="{{ m.item.get_absolute_url() }}">
+            {{ m.item|icon32 }}
+            <span class="name">{{ m.item.name }}</span>
+            <br>
+            <span class="note">{{ m.activity }}
+                ({% if item.is_skill %}Level: {{ m.quantity }}{% else %}x {{ m.quantity }}{% endif %})
+            </span>
+            </a></li>
+    {%- endfor %}
+    </ul>
+# include "include_inlinenav.html"
+
+</div>
+# endblock

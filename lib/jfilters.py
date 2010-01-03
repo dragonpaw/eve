@@ -70,7 +70,9 @@ def filter_comma(num, separator=','):
         (num, more_to_do) = comma_regex .subn(r'\1%s\2' % separator,num)
     return num
 
-isk_map = (" kmbt") # kilo, million, billion, trillion...
+THOUSAND = 1000
+MILLION = 1000**2
+BILLION = 1000**3
 def filter_isk(isk):
     """Take a integer value and return it in human representation with a suffix
     such as 'b' for billion.
@@ -82,27 +84,26 @@ def filter_isk(isk):
     '100k ISK'  = isk(100000)
     '12.2m ISK' = isk(12000000)
     """
-    try:
-        isk = Decimal(str(isk))
-    except InvalidOperation:
-        return isk
-
-    if isk == 0:
-        return "0 ISK"
+    isk = float(isk)
+    if isk > 100*BILLION:
+        return '%3d B' % round(isk/BILLION)
+    elif isk > 10*BILLION:
+        return '%2.1f B' % (isk/BILLION)
+    elif isk > BILLION:
+        return '%1.2f B' % (isk/BILLION)
+    elif isk > 100*MILLION:
+        return '%3d M' % round(isk/MILLION)
+    elif isk > 10*MILLION:
+        return '%2.1f M' % (isk/MILLION)
+    elif isk > MILLION:
+        return '%1.2f M' % (isk/MILLION)
+    elif isk > 100:
+        return filter_comma(round(isk))
+    elif isk > 10:
+        return '%2.1f' % isk
     else:
-        floor = 1000
-        value = abs(isk)
-        for mag in isk_map:
-            if value < floor:
-                if isk/(floor/1000) > 100:
-                    return "%0.0f%s" % (isk/(floor/1000), mag)
-                elif isk/(floor/1000) > 10:
-                    return "%0.1f%s" % (isk/(floor/1000), mag)
-                else:
-                    return "%0.2f%s" % (isk/(floor/1000), mag)
-            else:
-                floor *= 1000
-        return isk
+        return '%1.2f' % isk
+
 
 def filter_floatformat(number, precision=-1):
     number = float(number) # Just to be sure. In case we're passed an int.
@@ -120,3 +121,12 @@ def filter_yesno(arg, yes, no):
         return yes
     else:
         return no
+
+def filter_icon(item, size):
+    icon = item.get_icon(size)
+    if icon:
+        return '<img src="%s" class="icon">' % icon
+    else:
+        return ''
+def filter_icon32(item):
+    return filter_icon(item, 32)

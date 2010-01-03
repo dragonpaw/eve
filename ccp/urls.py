@@ -3,8 +3,8 @@
 from django.conf.urls.defaults import patterns
 
 urlpatterns = patterns('eve.ccp.views',
-    (r'^npc/$', 'npc_groups'),
-    (r'^npc/(?P<slug>[\w\-]+)/$', 'npc_group'),
+    #(r'^npc/$', 'npc_groups'),
+    #(r'^npc/(?P<slug>[\w\-]+)/$', 'npc_group'),
 
     (r'^solarsystem/(?P<name>.*)/$', 'solarsystem'),
     (r'^constellation/(?P<name>.*)/$', 'constellation'),
@@ -12,6 +12,7 @@ urlpatterns = patterns('eve.ccp.views',
     (r'^regions/$', 'region_list'),
 
     (r'^item/(?P<slug>[\w\-]+)/$', 'item'),
+    (r'^item/(?P<slug>[\w\-]+)/uses/$', 'item_uses'),
     (r'^items/$', 'group_index'),
     (r'^items/(?P<slug>[\w\-]+)/$', 'group'),
 

@@ -11,4 +11,12 @@ mysql_evolutions = [
         "UPDATE `user_account` SET `refresh_messages` = '' WHERE `refresh_messages` IS NULL;",
         "ALTER TABLE `user_account` MODIFY COLUMN `refresh_messages` longtext NOT NULL;",
     ],
+    [('fv1:-4234292800486184428','fv1:-776422834835482277'), # generated 2010-01-02 22:13:11.229075
+        "CREATE TABLE `user_skillintraining` (\n    `id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY,\n    `character_id` integer NOT NULL,\n    `skill_id` smallint NOT NULL,\n    `level` integer NOT NULL,\n    `order` integer NOT NULL,\n    `finish_time` datetime NOT NULL\n)\n;",
+        "-- warning: the following may cause data loss",
+        "ALTER TABLE `user_character` DROP COLUMN `training_skill_id`;",
+        "ALTER TABLE `user_character` DROP COLUMN `training_completion`;",
+        "ALTER TABLE `user_character` DROP COLUMN `training_level`;",
+        "-- end warning",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##

@@ -1049,7 +1049,7 @@ class Item(EveBase):
         >>> myrm.is_skill
         False
         '''
-        if self.category == 'Skill':
+        if self.category.name == 'Skill':
             return True
         else:
             return False
@@ -1305,7 +1305,10 @@ class MarketGroup(EveBase):
 
     @cachedmethod(60*4)
     def get_icon(self, size):
-        return self.graphic.get_icon(size)
+        if self.graphic:
+            return self.graphic.get_icon(size)
+        else:
+            return None
 
 
 class MaterialPublishedManager(models.Manager):

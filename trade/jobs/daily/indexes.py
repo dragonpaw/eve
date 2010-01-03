@@ -48,7 +48,7 @@ class Job(BaseJob):
         url = "http://eve-central.com/dumps/{0}.dump.gz".format(
             day.strftime("%Y-%m-%d")
         )
-        log.info("Fetching: %s", url)
+        self.log.info("Fetching: %s", url)
         result = fetch_url(url)
         #result = open('2009-12-15.dump.gz')
 

@@ -6,19 +6,12 @@
 <div class="character">
 <h3>{{ c.name|e }}</h3>
 <table>
-	<tr><th>Character ID</th><td>{{ c.id|e }}</td></tr>
-	<tr><th>Corporation</th><td>{{ c.corporation|e }}</td></tr>
-	<tr><th>Director?</th><td>{{ c.is_director|yesno('Yes','No') }}</td></tr>
-	<tr><th>POS Helper?</th><td>{{ c.is_pos_monkey|yesno('Yes','No') }}</td></tr>
-	<tr><th>ISK</th><td>{{ c.isk|comma }}</td></tr>
-	<tr><th>Skill Points</th><td>{{ c.skill_points|comma }}</td></tr>
-    {% if c.training_skill %} 
-	<tr><th>Training</th><td>{{ c.training_skill|e }} {{ c.training_level }}</td></tr>
-	<tr><th>Training Completion</th><td>{{ c.training_remaining|default('Done')|time }}</td></tr>
-    {% else %}
-	<tr><th>Training</th><td>None</td></tr>
-	<tr><th>Training Completion</th><td>N/A</td></tr>
-    {%- endif -%}
+    <tr><th>Character ID</th><td>{{ c.id|e }}</td></tr>
+    <tr><th>Corporation</th><td>{{ c.corporation|e }}</td></tr>
+    <tr><th>Director?</th><td>{{ c.is_director|yesno('Yes','No') }}</td></tr>
+    <tr><th>POS Helper?</th><td>{{ c.is_pos_monkey|yesno('Yes','No') }}</td></tr>
+    <tr><th>ISK</th><td>{{ c.isk|comma }}</td></tr>
+    <tr><th>Skill Points</th><td>{{ c.skill_points|comma }}</td></tr>
     <tr><th>Market Transactions</th><td>{{ c.transactions.count() }}</td></tr>
     <tr><th>Last Refreshed</th><td>{{ c.last_refreshed_delta()|time }} ago</td></tr>
     <tr><th>Cache Remaining</th><td>{{ c.cache_remaining()|time|default('None') }}</td></tr>

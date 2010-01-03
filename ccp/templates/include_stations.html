@@ -5,7 +5,7 @@
 	{% for o in item.stations.all() -%}
     	<li class="stations">
         	<a href="{{ o.solarsystem.get_absolute_url() }}">
-                    <img src="{{ o.icon32 }}">
+                    {{ o|icon32 }}
                     <span class="name">{{ o.name }}</span>
                     <br/>
                     <span class="note corporation">{{ o.corporation }}</span>
