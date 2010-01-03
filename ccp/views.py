@@ -235,7 +235,7 @@ def item(request, slug, days=30):
     # If we own this blueprint...
     if my_blueprint:
         # Add in the blueprint itself as a material.
-        mats['materials'][my_blueprint.blueprint.id] = {
+        mats['materials'][my_blueprint.blueprint] = {
             'Personal': 1,
             'material':my_blueprint.blueprint,
             'buy_price':my_blueprint.cost_per_run,

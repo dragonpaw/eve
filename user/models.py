@@ -617,7 +617,10 @@ class Character(models.Model):
         SkillInTraining.objects.filter(character=self).delete()
         for s in me.SkillQueue().skillqueue:
             skill = Item.objects.get(pk=s.typeID)
-            t = datetime.fromtimestamp(s.endTime)
+            if s.endTime:
+                t = datetime.fromtimestamp(s.endTime)
+            else:
+                t = None
             queued = self.skills_in_queue.create(
                 skill = skill,
                 level = s.level,
@@ -811,7 +814,7 @@ class SkillInTraining(models.Model):
     skill = models.ForeignKey('ccp.Item', limit_choices_to = ITEM_SKILLS)
     level = models.IntegerField()
     order = models.IntegerField()
-    finish_time = models.DateTimeField()
+    finish_time = models.DateTimeField(null=True)
 
     class Meta:
         ordering = ('order',)
@@ -821,4 +824,7 @@ class SkillInTraining(models.Model):
 
     @property
     def remaining(self):
-        return self.finish_time - datetime.utcnow()
+        if self.finish_time:
+            return self.finish_time - datetime.utcnow()
+        else:
+            return None
