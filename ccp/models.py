@@ -1341,7 +1341,7 @@ class Material(EveBase):
         return self.material.name
 
     def quantity_per_unit(self):
-        return float(self.quantity) / float(self.item.portionsize)
+        return ( Decimal(self.quantity) / Decimal(self.item.portionsize) )
 
     @property
     def volume(self):

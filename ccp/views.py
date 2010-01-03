@@ -257,12 +257,11 @@ def item(request, slug, days=30):
     #-------------------------------------------------------------------------
     # We don't want isk prices on where things refine -from-
     if item.group.name in ('Mineral','Ice Product'):
-        mats['titles']['Refined From'] = "Refined From"
+        mats['titles']['Refined From'] = 'Refined From'
         for mat in item.helps_make.filter(activity=50):
-            value = "%0.2f" % mat.quantity_per_unit()
             mats['materials'][mat.item] = {
                 'material' : mat.item,
-                'Refined From' : value,
+                'Refined From' : mat.quantity_per_unit(),
             }
 
     #-------------------------------------------------------------------------
@@ -309,7 +308,7 @@ def item(request, slug, days=30):
     log.debug('Materials: %s', mats)
     for mat, value in mats['materials'].items():
         if mat.is_skill:
-            value['buy_price'] = None
+            value['buy_price'] = Decimal(0)
         else:
             # Don't overwrite a value.
             if 'buy_price' not in value:
@@ -324,7 +323,7 @@ def item(request, slug, days=30):
             v = mats['materials'][m]
             v['material'] = m # Used by the template later.
             if activity in v and v['buy_price']:
-                cost += Decimal(str(v['buy_price'])) * v[activity]
+                cost += (v['buy_price'] * v[activity])
         if item.is_blueprint:
             portion = item.blueprint_makes.portionsize
         else:
