@@ -1539,7 +1539,10 @@ class SolarSystem(EveBase):
         return "/solarsystem/%s/" % self.name
 
     def get_icon(self, size):
-        return self.alliance.get_icon(size)
+        if self.alliance:
+            return self.alliance.get_icon(size)
+        else:
+            return None
 
     @property
     def note(self):
