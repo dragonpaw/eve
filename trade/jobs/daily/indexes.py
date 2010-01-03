@@ -45,9 +45,7 @@ class Job(BaseJob):
 
         #day=date.today()
         day=date.today()-timedelta(days=1)
-        url = "http://eve-central.com/dumps/{0}.dump.gz".format(
-            day.strftime("%Y-%m-%d")
-        )
+        url = "http://eve-central.com/dumps/%s.dump.gz" % day.strftime("%Y-%m-%d")
         self.log.info("Fetching: %s", url)
         result = fetch_url(url)
         #result = open('2009-12-15.dump.gz')
@@ -61,7 +59,8 @@ class Job(BaseJob):
             self.log.debug("Created data structure for system: %d", id)
 
         reader = csv.DictReader(file, skipinitialspace=True)
-        self.log.debug('Field names: %s', ','.join(reader.fieldnames))
+        # Barfs on Python 2.5
+        #self.log.debug('Field names: %s', ','.join(reader.fieldnames))
         for row in reader:
             system = int(row['systemid'])
 
@@ -70,7 +69,7 @@ class Job(BaseJob):
                 continue
 
             # The other fields that matter.
-            price = Decimal(row['price'])
+            price = Decimal(row['price'].strip())
             item_id = int(row['typeid'])
 
             # Populate a blank record for consistancy.
