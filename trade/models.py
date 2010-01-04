@@ -259,7 +259,7 @@ class BlueprintOwned(models.Model):
     pe = models.IntegerField('Production Efficiency', default=0)
     me = models.IntegerField('Material Efficiency', default=0)
     original = models.BooleanField('Is Original?', default=True)
-    cost_per_run = models.FloatField(default=0)
+    cost_per_run = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
     class Meta:
         ordering = ('blueprint',)
