@@ -19,4 +19,8 @@ mysql_evolutions = [
         "UPDATE `trade_marketindexvalue` SET `sell_qty` = 0 WHERE `sell_qty` IS NULL;",
         "ALTER TABLE `trade_marketindexvalue` MODIFY COLUMN `sell_qty` numeric(15, 0) NOT NULL;",
     ],
+    [('fv1:-7568494508689043539','fv1:-4886211896034941373'), # generated 2010-01-04 01:53:50.453829
+        "UPDATE `trade_blueprintowned` SET `cost_per_run` = 0 WHERE `cost_per_run` IS NULL;",
+        "ALTER TABLE `trade_blueprintowned` MODIFY COLUMN `cost_per_run` numeric(15, 2) NOT NULL;",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##

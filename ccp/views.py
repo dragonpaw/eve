@@ -219,9 +219,7 @@ def item(request, slug, days=30):
         mats['titles'][name] = name
         # If we own the blueprint, show our manufacture quantity instead.
         if my_blueprint and name == 'Manufacturing':
-            mats['materials'][mat.material]['Personal'] = my_blueprint.mineral(
-                mat.quantity, max_pe
-            )
+            pass
         else:
             mats['materials'][mat.material][name] = mat.quantity
 
@@ -236,17 +234,10 @@ def item(request, slug, days=30):
             'input':'Blueprint run cost',
         }
         mats['titles']['Personal'] = "Your Blueprint: PE%s/ME%d" % (max_pe, my_blueprint.me)
-
-    #-------------------------------------------------------------------------
-    if (mats['isk'].has_key('Personal') and best_values.has_key('sell')
-        and best_values['sell'] and best_values['sell']['sell_price'] > 0
-        and mats['isk']['Personal'] > 0):
-        best_values['manufacturing_profit_isk'] =  (
-            best_values['sell']['sell_price'] - mats['isk']['Personal']
-        )
-        best_values['manufacturing_profit_pct'] = (
-            best_values['manufacturing_profit_isk'] / mats['isk']['Personal']
-        ) * 100
+        for mat in my_blueprint.blueprint.materials(activity='Manufacturing'):
+            mats['materials'][mat.material]['Personal'] = my_blueprint.mineral(
+                mat.quantity, max_pe
+            )
 
     #-------------------------------------------------------------------------
     # We don't want isk prices on where things refine -from-
@@ -316,7 +307,7 @@ def item(request, slug, days=30):
         for m in mats['materials']:
             v = mats['materials'][m]
             v['material'] = m # Used by the template later.
-            if activity in v and v['buy_price']:
+            if activity in v and v['buy_price'] and activity != 'Refined From':
                 assert isinstance(v['buy_price'], Decimal), \
                     "Buy price is: %s" % type(v['buy_price'])
                 assert isinstance(v[activity], (Decimal, int, long)), \
@@ -328,6 +319,17 @@ def item(request, slug, days=30):
             portion = item.portionsize
         cost = cost / portion
         mats['isk'][activity] = cost
+
+    #-------------------------------------------------------------------------
+    if ('Personal' in mats['isk'] and 'sell' in best_values
+        and best_values['sell'] and best_values['sell']['sell_price'] > 0
+        and mats['isk']['Personal'] > 0):
+        best_values['manufacturing_profit_isk'] =  (
+            best_values['sell']['sell_price'] - mats['isk']['Personal']
+        )
+        best_values['manufacturing_profit_pct'] = (
+            best_values['manufacturing_profit_isk'] / mats['isk']['Personal']
+        ) * 100
 
     #-------------------------------------------------------------------------
     # Display order, and filter out actions we cannot perform.

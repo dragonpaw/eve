@@ -9,12 +9,12 @@
         {{ item|icon(64) }}
     </div>
 
-    <h3>Details</h3>
     # if not item.published
     <p>This item is marked as an unpublished item and will not actually be available in-game.
      Have fun looking at it anyways.</p>
     # endif
     # if item.is_blueprint
+    <h3>Blueprint Details</h3>
     <table class="item-details">
         <tr><th>Batch Size:</th><td>{{ item.blueprint_makes.portionsize }}</td></tr>
         <tr><th>Tech Level:</th><td>{{ item.blueprint_details.techlevel }}</td></tr>
@@ -24,7 +24,8 @@
         <tr><th>Research, copy:</th><td>{{ item.blueprint_details.researchcopytime|time }}</td></tr>
         <tr><th>Base Waste Factor:</th><td>{{ item.blueprint_details.wastefactor }} %</td></tr>
     </table>
-    # else
+    # elif attributes
+    <h3>Details</h3>
         # for c, v in attributes
 	<h4>{{ c.name }}<!-- {{ c.id }} --></h4>
 	<table class="item-details">
@@ -77,15 +78,13 @@
     # endif
 
     <ul class="links">
-    # if blueprint
-    # set blueprints = [blueprint]
-    # include "include_bpo.html"
-    # else
+    # if not blueprint
     <li><a href="/trade/blueprint/{{ item.blueprint.slug }}/">
     <span class="name">You do not own this blueprint.</span><br>
     <span class="note">Actually, I do. (Add to collection)</span></a></li>
     # endif
     </ul>
+    </div>
 # endif
 
 # if materials
@@ -95,6 +94,10 @@
         <ul class="links materials">
         # for m in materials.materials
         # if m.has_key(x) and m[x]
+            # if m.material.is_blueprint
+                # set blueprints = [blueprint]
+                # include "include_bpo.html"
+            # else
             <li><a href="{{ m.material.get_absolute_url() }}">
             {{ m.material|icon32 }}
             <span class="name">{{ m.material.name }}</span>
@@ -104,14 +107,20 @@
                 <span class="skill right">Skill</span>
             # else
                 <span class="quantity">x{{ m[x]|floatformat(-3)|comma }}{% if m.input %} ({{ m.input }}){% endif %}</span>
-                # if m.buy_price
-                    <span class="right index-buy">{{ (m.buy_price * m[x])|round|comma }} ISK</span>
-                # endif
-                # if m.sell_price
-                    <span class="right index-sell">{{ (m.sell_price * m[x])|round|comma }} ISK</span>
+                <!-- Don't print any value on refined from, because what would you
+                list? The below is material_price * qty, which says a chunk
+                of compressed veldspar is worth 500 billion ISK. -->
+                # if x != 'Refined From'
+                    # if m.buy_price
+                        <span class="right index-buy">{{ (m.buy_price * m[x])|round|comma }} ISK</span>
+                    # endif
+                    # if m.sell_price
+                        <span class="right index-sell">{{ (m.sell_price * m[x])|round|comma }} ISK</span>
+                    # endif
                 # endif
             # endif
             </a></li>
+            # endif
         # endif
         # endfor
         </ul>
