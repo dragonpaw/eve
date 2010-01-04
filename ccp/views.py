@@ -208,28 +208,22 @@ def item(request, slug, days=30):
 
     mats = {
         'titles':{},
-        'materials':{},
+        'materials': defaultdict(dict),
         'isk': {}
     }
 
     #-------------------------------------------------------------------------
     # Can it be manufactured?
     for mat in item.materials():
-        if mat.quantity <= 0:
-            continue
-
         name = mat.activity.name
         mats['titles'][name] = name
-        material = mat.material
-        if id not in mats['materials']:
-            mats['materials'][material] = dict()
         # If we own the blueprint, show our manufacture quantity instead.
         if my_blueprint and name == 'Manufacturing':
-            mats['materials'][material]['Personal'] = my_blueprint.mineral(
+            mats['materials'][mat.material]['Personal'] = my_blueprint.mineral(
                 mat.quantity, max_pe
             )
         else:
-            mats['materials'][material][name] = mat.quantity
+            mats['materials'][mat.material][name] = mat.quantity
 
     #-------------------------------------------------------------------------
     # If we own this blueprint...
@@ -306,14 +300,14 @@ def item(request, slug, days=30):
     #-------------------------------------------------------------------------
     # Lookup prices for all materials.
     log.debug('Materials: %s', mats)
-    for mat, value in mats['materials'].items():
-        if mat.is_skill:
-            value['buy_price'] = Decimal(0)
+    for m, v in mats['materials'].items():
+        if m.is_skill:
+            v['buy_price'] = Decimal(0)
         else:
             # Don't overwrite a value.
-            if 'buy_price' not in value:
-                value['buy_price'] = get_buy_price(mat, profile)
-        log.debug('Value for %s: %s', mat, value['buy_price'])
+            if 'buy_price' not in v:
+                v['buy_price'] = get_buy_price(m, profile)
+        log.debug('Value for %s: %s', m, v['buy_price'])
 
     #-------------------------------------------------------------------------
     # Calculate total prices for all actions.
@@ -323,6 +317,10 @@ def item(request, slug, days=30):
             v = mats['materials'][m]
             v['material'] = m # Used by the template later.
             if activity in v and v['buy_price']:
+                assert isinstance(v['buy_price'], Decimal), \
+                    "Buy price is: %s" % type(v['buy_price'])
+                assert isinstance(v[activity], (Decimal, int, long)), \
+                    "Activity is: %s" % type(v[activity])
                 cost += (v['buy_price'] * v[activity])
         if item.is_blueprint:
             portion = item.blueprint_makes.portionsize

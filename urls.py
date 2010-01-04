@@ -32,7 +32,3 @@ if settings.DEBUG:
     (r'^static/(?P<path>.*)$', 'django.views.static.serve',
         {'document_root': settings.MEDIA_ROOT}),
     )
-
-#from south.modelsinspector import add_introspection_rules
-#add_introspection_rules(rules=[], patterns=["^eve\.lib\.null_fields"])
-#add_introspection_rules([], ["^eve\.lib\.fields"])
