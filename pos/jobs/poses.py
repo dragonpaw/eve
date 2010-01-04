@@ -66,6 +66,9 @@ class Job(BaseJob):
                     director.is_director = False
                     director.save()
                     log.info("%s: Marked as no longer a director, %s", director, e)
+                elif msg == 'Character does not belong to account':
+                    log.warn('Deleting director: %s, as not longer associated with account', director)
+                    director.delete()
                 elif 'EVE backend database temporarily disabled' in msg:
                     log.warn('EVE API taken offline by CCP. No refresh available.')
                     return

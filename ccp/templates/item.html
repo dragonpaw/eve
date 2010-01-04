@@ -91,6 +91,9 @@
     # for x in materials.order
         <h3>{{ materials['titles'][x] }}</h3>
         <p>Red value is buy price, green value is sell price.</p>
+        # if item.portionsize > 1
+        <p>Materials listed are for {{ item.portionsize }} units.</p>
+        # endif
         <ul class="links materials">
         # for m in materials.materials
         # if m.has_key(x) and m[x]
@@ -125,7 +128,11 @@
         # endfor
         </ul>
         # if materials['isk'][x] is defined and materials['isk'][x] > 0
-            <p>Total cost (at buy prices): {{ materials['isk'][x]|round|comma }} ISK</p>
+            <p>Total cost (at buy prices): {{ materials['isk'][x]|round|comma }} ISK each.</p>
+        # endif
+        # if best_values.manufacturing_profit_isk
+        <p>Your best per-unit profit is {{ best_values.manufacturing_profit_isk|isk }} ISK
+            ({{ best_values.manufacturing_profit_pct|floatformat(2) }}%)</p>
         # endif
     # endfor
 # endif
@@ -234,7 +241,7 @@
             ({{ best_values.profit_pct|floatformat(2) }}%)</p>
         # endif
         # if best_values.manufacturing_profit_isk
-            <p>If you are to manufacture the item instead, your best per-unit
+            <p>When you manufacture the item, your best per-unit
             profit is {{ best_values.manufacturing_profit_isk|isk }} ISK
             ({{ best_values.manufacturing_profit_pct|floatformat(2) }}%)</p>
         # elif item.blueprint

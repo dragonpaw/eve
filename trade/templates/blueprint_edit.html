@@ -4,6 +4,12 @@
 <div class="blueprints">
 <ul class="links">
     <li>
+        <a href="{{ item.blueprint_makes.get_absolute_url() }}">
+            <img src="{{ item.blueprint_makes.icon32 }}">
+            <span class="name">{{ item.blueprint_makes.name }}</span>
+        </a>
+    </li>
+    <li>
         <a href="{{ item.get_absolute_url() }}">
             <img src="{{ item.icon32 }}">
             <span class="name">{{ item.name }}</span>

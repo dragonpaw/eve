@@ -18,8 +18,8 @@
     <img class="icon64" src="{{ c.icon64 }}">
     <span class="name">{{ c.name|e }}</span>
     <span class="corporation"><br>{{- c.corporation|e }}<br></span>
-    <span class="isk">{{ c.isk|int|comma }} ISK</span>
-    <span class="right skill-points">{{- c.skill_points|isk }} SP</span>
+    <span class="skill-points">{{- c.skill_points|isk }} SP</span>
+    <span class="right isk">{{ c.isk|int|comma }} ISK</span>
     <br>
     <table>
         # if c.skills_in_queue.count()
@@ -39,6 +39,7 @@
     </li>
   {% endfor %}
 </ul>
+<p class="sell right">Total ISK: {{ total_isk|int|comma }}</p>
 {% else %}
 <p>There are no characters on file for your accounts.</p>
 {% endif %}
