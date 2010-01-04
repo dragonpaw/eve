@@ -20,9 +20,9 @@ contract fees, etc, are filtered out for brevity.</p>
         # endif
     # endif
     # if t.sold
-            <span class="sold right">+ {{ t.value|floatformat(2)|comma }}</span>
+            <span class="sold right">+ {{ t.value|int|comma }}</span>
     # else
-            <span class="bought right">- {{ t.value|floatformat(2)|comma }}</span>
+            <span class="bought right">- {{ t.value|int|comma }}</span>
     # endif
 
     <br>

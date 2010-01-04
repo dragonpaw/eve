@@ -39,10 +39,14 @@ logout_nav = NavigationElement(
 def main(request):
     profile = request.user.get_profile()
 
+    characters = profile.characters.all()
+    total_isk = sum([c.isk for c in characters])
+
     return render_to_response('user_main.html', {
         'nav':        ( user_nav, ),
-        'characters': profile.characters.all(),
+        'characters': characters,
         'accounts':   profile.accounts.all(),
+        'total_isk':  total_isk,
         'inline_nav': ( account_add_nav, log_nav ),
     }, request)
 
