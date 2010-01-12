@@ -130,7 +130,7 @@
         # if materials['isk'][x] is defined and materials['isk'][x] > 0
             <p>Total cost (at buy prices): {{ materials['isk'][x]|round|comma }} ISK each.</p>
         # endif
-        # if best_values.manufacturing_profit_isk
+        # if best_values is defined and best_values.manufacturing_profit_isk
         <p>Your best per-unit profit is {{ best_values.manufacturing_profit_isk|isk }} ISK
             ({{ best_values.manufacturing_profit_pct|floatformat(2) }}%)</p>
         # endif
