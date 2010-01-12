@@ -81,6 +81,9 @@ class Job(BaseJob):
                 elif msg == 'Invalid itemID provided':
                     log.warn('%s: POS ID is invalid: %s POS will be removed.', c, record.itemID)
                     pos.delete()
+                elif msg == 'Unexpected failure accessing database':
+                    log.warn('EVE API giving unexpected database failure.')
+                    continue
                 else:
                     log.exception('Unknown error refreshing POS.')
                     continue

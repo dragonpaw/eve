@@ -775,8 +775,12 @@ class Character(models.Model):
                 messages.append('Loaded %d new journal entries.' % qty)
             return messages
         except eveapi.Error, e:
-            if 'Wallet exhausted' in str(e) or 'Already returned one week of data' in str(e):
-                messages.append(str(e))
+            msg = str(e)
+            if 'Wallet exhausted' in msg or 'Already returned one week of data' in msg:
+                messages.append(msg)
+                return messages
+            elif 'wallet previously loaded' in msg:
+                messages.append('Wallet already loaded by another API process.')
                 return messages
             else:
                 raise

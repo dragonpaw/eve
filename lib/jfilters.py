@@ -123,10 +123,14 @@ def filter_yesno(arg, yes, no):
         return no
 
 def filter_icon(item, size):
+    if item is None:
+        return ''
+
     icon = item.get_icon(size)
     if icon:
         return '<img src="%s" class="icon">' % icon
     else:
         return ''
+
 def filter_icon32(item):
     return filter_icon(item, 32)
