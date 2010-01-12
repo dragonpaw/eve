@@ -29,4 +29,10 @@ mysql_evolutions = [
         "UPDATE `trade_transaction` SET `transaction_id` = 0 WHERE `transaction_id` IS NULL;",
         "ALTER TABLE `trade_transaction` MODIFY COLUMN `transaction_id` numeric(20, 0) NOT NULL;",
     ],
+    [('fv1:2108721505323759407','fv1:8359134830156444955'), # generated 2010-01-12 06:25:36.389923
+        "UPDATE `trade_journalentry` SET `transaction_id` = 0 WHERE `transaction_id` IS NULL;",
+        "ALTER TABLE `trade_journalentry` MODIFY COLUMN `transaction_id` numeric(20, 0) NOT NULL;",
+        "UPDATE `trade_transaction` SET `transaction_id` = 0 WHERE `transaction_id` IS NULL;",
+        "ALTER TABLE `trade_transaction` MODIFY COLUMN `transaction_id` numeric(20, 0) NOT NULL;",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##
