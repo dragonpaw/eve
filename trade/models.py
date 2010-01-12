@@ -36,7 +36,7 @@ except:
     pass
 
 class JournalEntry(models.Model):
-    transaction_id = models.IntegerField('ID')
+    transaction_id = models.DecimalField('ID', max_digits=20, decimal_places=0, default=0)
     character = models.ForeignKey('user.Character', related_name='journal')
     type = models.ForeignKey(JournalEntryType)
     client = models.CharField(max_length=100)
@@ -86,7 +86,7 @@ class JournalEntry(models.Model):
         return self.get_icon(32)
 
 class Transaction(models.Model):
-    transaction_id = models.IntegerField('ID')
+    transaction_id = models.DecimalField('ID', max_digits=20, decimal_places=0, default=0)
     character = models.ForeignKey('user.Character', related_name='transactions')
     item = models.ForeignKey('ccp.Item')
     sold = models.BooleanField()

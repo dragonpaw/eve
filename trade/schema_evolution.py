@@ -23,4 +23,10 @@ mysql_evolutions = [
         "UPDATE `trade_blueprintowned` SET `cost_per_run` = 0 WHERE `cost_per_run` IS NULL;",
         "ALTER TABLE `trade_blueprintowned` MODIFY COLUMN `cost_per_run` numeric(15, 2) NOT NULL;",
     ],
+    [('fv1:-4886211896034941373','fv1:-7014047568890444953'), # generated 2010-01-12 06:03:34.028231
+        "UPDATE `trade_journalentry` SET `transaction_id` = 0 WHERE `transaction_id` IS NULL;",
+        "ALTER TABLE `trade_journalentry` MODIFY COLUMN `transaction_id` numeric(20, 0) NOT NULL;",
+        "UPDATE `trade_transaction` SET `transaction_id` = 0 WHERE `transaction_id` IS NULL;",
+        "ALTER TABLE `trade_transaction` MODIFY COLUMN `transaction_id` numeric(20, 0) NOT NULL;",
+    ],
 ] # don't delete this comment! ## mysql_evolutions_end ##
